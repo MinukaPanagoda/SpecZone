@@ -78,5 +78,34 @@ class Product {
         $stmt->execute();
         return $stmt;
     }
+
+    // Get single product
+    public function readSingle() {
+        $query = "SELECT p.*, c.name as category_name, u.first_name as seller_name,
+                         (SELECT image_url FROM product_images WHERE product_id = p.id LIMIT 1) as image_url
+                  FROM " . $this->table_name . " p
+                  LEFT JOIN categories c ON p.category_id = c.id
+                  LEFT JOIN users u ON p.seller_id = u.id
+                  WHERE p.id = :id
+                  LIMIT 1";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(":id", $this->id);
+        $stmt->execute();
+        
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($row) {
+            $this->seller_id = $row['seller_id'];
+            $this->category_id = $row['category_id'];
+            $this->title = $row['title'];
+            $this->description = $row['description'];
+            $this->price = $row['price'];
+            $this->stock_quantity = $row['stock_quantity'];
+            $this->specifications = $row['specifications'];
+            $this->image_url = $row['image_url'];
+            return $row;
+        }
+        return false;
+    }
 }
 ?>

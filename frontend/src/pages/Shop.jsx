@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Filter, Star, Search, Image as ImageIcon } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { Link } from 'react-router-dom';
 
 const Shop = () => {
   const { user } = useAuth();
@@ -91,17 +92,33 @@ const Shop = () => {
             ) : (
               products.map((product) => (
                 <div className="product-card" key={product.id}>
-                  {product.image_url ? (
-                    <img src={product.image_url} alt={product.name} style={{ width: '100%', height: '180px', objectFit: 'cover', borderRadius: 'var(--border-radius-sm)', marginBottom: '1rem' }} />
-                  ) : (
-                    <div style={{ height: '180px', backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 'var(--border-radius-sm)', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <ImageIcon size={48} color="rgba(255,255,255,0.2)" />
+                  <Link to={`/product/${product.id}`} style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
+                    <div style={{ position: 'relative', height: '200px', backgroundColor: 'rgba(0,0,0,0.3)', borderTopLeftRadius: '10px', borderTopRightRadius: '10px', overflow: 'hidden' }}>
+                      {product.image_url ? (
+                        <img src={product.image_url} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s ease' }} />
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                          <ImageIcon size={48} color="var(--text-secondary)" />
+                        </div>
+                      )}
+                      {product.stock <= 0 && (
+                        <div style={{ position: 'absolute', top: '10px', right: '10px', background: 'var(--danger)', color: 'white', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                          Out of Stock
+                        </div>
+                      )}
                     </div>
-                  )}
-                  <h4 style={{ fontSize: '1.1rem', marginBottom: '0.2rem' }}>{product.name}</h4>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>{product.category_name}</p>
+                  </Link>
                   
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                  <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--accent-primary)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+                      {product.category_name}
+                    </div>
+                    
+                    <Link to={`/product/${product.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                      <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem', lineHeight: '1.3' }}>{product.name}</h3>
+                    </Link>
+                    
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '1rem' }}>
                     <Star size={16} color="var(--warning)" fill="var(--warning)" />
                     <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>--</span>
                   </div>
@@ -120,6 +137,7 @@ const Shop = () => {
                         Cart
                       </button>
                     )}
+                  </div>
                   </div>
                 </div>
               ))

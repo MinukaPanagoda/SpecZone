@@ -86,6 +86,32 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         http_response_code(200);
         echo json_encode(array()); // Return empty array if no products
     }
+} else if ($action === 'read_single' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+    $product->id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+    
+    $row = $product->readSingle();
+    
+    if ($row) {
+        $product_item = array(
+            "id" => $row['id'],
+            "seller_id" => $row['seller_id'],
+            "seller_name" => $row['seller_name'],
+            "category_id" => $row['category_id'],
+            "category_name" => $row['category_name'],
+            "name" => $row['title'],
+            "description" => html_entity_decode($row['description'] ?? ""),
+            "price" => $row['price'],
+            "stock" => $row['stock_quantity'],
+            "image_url" => $row['image_url'],
+            "specs" => json_decode($row['specifications'] ?? "{}"),
+            "created_at" => $row['created_at']
+        );
+        http_response_code(200);
+        echo json_encode($product_item);
+    } else {
+        http_response_code(404);
+        echo json_encode(array("message" => "Product not found."));
+    }
 } else {
     http_response_code(404);
     echo json_encode(array("message" => "Action not found."));

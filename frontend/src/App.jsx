@@ -14,6 +14,7 @@ import SellerDashboard from './pages/SellerDashboard';
 import AddProduct from './pages/AddProduct';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
+import ProductDetails from './pages/ProductDetails';
 
 // App Component
 
@@ -32,6 +33,7 @@ const AppLayout = () => {
           <Route path="/builder" element={<Builder />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/product/:id" element={<ProductDetails />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/buyer/dashboard" element={<BuyerDashboard />} />

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingCart, User, LogOut } from 'lucide-react';
+import { ShoppingCart, User, LogOut, Cpu } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 
@@ -20,7 +20,8 @@ const Navbar = () => {
       <div className="container">
         {/* Brand */}
         <Link to="/" className="nav-brand text-gradient">
-          SpecZone
+          <Cpu size={28} color="var(--accent-primary)" />
+          <span>SpecZone</span>
         </Link>
 
         {/* Links */}
@@ -67,7 +68,7 @@ const Navbar = () => {
             
             {user ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginLeft: '1rem' }}>
-                <Link to={user.role === 'seller' ? '/seller/dashboard' : '/buyer/dashboard'} style={{ color: 'var(--accent-primary)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 'bold' }}>
+                <Link to={user.role === 'admin' ? '/admin/dashboard' : user.role === 'seller' ? '/seller/dashboard' : '/buyer/dashboard'} style={{ color: 'var(--accent-primary)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 'bold' }}>
                   <User size={20} />
                   <span>{user.first_name}</span>
                 </Link>

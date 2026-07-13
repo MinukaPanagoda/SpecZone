@@ -53,6 +53,10 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         echo json_encode(array("message" => "Unable to create product. Data is incomplete."));
     }
 } else if ($action === 'read' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+    if (isset($_GET['seller_id'])) {
+        $product->seller_id = intval($_GET['seller_id']);
+    }
+
     $stmt = $product->read();
     $num = $stmt->rowCount();
 

@@ -71,10 +71,20 @@ class Product {
                          (SELECT image_url FROM product_images WHERE product_id = p.id LIMIT 1) as image_url
                   FROM " . $this->table_name . " p
                   LEFT JOIN categories c ON p.category_id = c.id
-                  LEFT JOIN users u ON p.seller_id = u.id
-                  ORDER BY p.created_at DESC";
+                  LEFT JOIN users u ON p.seller_id = u.id";
+
+        if ($this->seller_id) {
+            $query .= " WHERE p.seller_id = :seller_id";
+        }
+        
+        $query .= " ORDER BY p.created_at DESC";
 
         $stmt = $this->conn->prepare($query);
+
+        if ($this->seller_id) {
+            $stmt->bindParam(":seller_id", $this->seller_id);
+        }
+
         $stmt->execute();
         return $stmt;
     }

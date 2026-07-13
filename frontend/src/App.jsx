@@ -11,22 +11,27 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import BuyerDashboard from './pages/BuyerDashboard';
 import SellerDashboard from './pages/SellerDashboard';
+import SellerOrders from './pages/SellerOrders';
+import SellerProducts from './pages/SellerProducts';
+import SellerAnalytics from './pages/SellerAnalytics';
 import AddProduct from './pages/AddProduct';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import ProductDetails from './pages/ProductDetails';
+import AdminDashboard from './pages/AdminDashboard';
 
 // App Component
 
 const AppLayout = () => {
   const location = useLocation();
   const isSellerRoute = location.pathname.startsWith('/seller');
+  const isAdminRoute = location.pathname.startsWith('/admin');
   const isBuyerRoute = location.pathname.startsWith('/buyer');
 
   return (
     <>
-      {!isSellerRoute && <Navbar />}
-      <div className={isSellerRoute ? "" : "page-content"}>
+      {(!isSellerRoute && !isAdminRoute) && <Navbar />}
+      <div className={(isSellerRoute || isAdminRoute) ? "" : "page-content"}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/shop" element={<Shop />} />
@@ -38,10 +43,14 @@ const AppLayout = () => {
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/buyer/dashboard" element={<BuyerDashboard />} />
           <Route path="/seller/dashboard" element={<SellerDashboard />} />
+          <Route path="/seller/orders" element={<SellerOrders />} />
+          <Route path="/seller/products" element={<SellerProducts />} />
+          <Route path="/seller/analytics" element={<SellerAnalytics />} />
           <Route path="/seller/add-product" element={<AddProduct />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
         </Routes>
       </div>
-      {!isSellerRoute && (
+      {(!isSellerRoute && !isAdminRoute) && (
         <div style={isBuyerRoute ? { marginLeft: '260px' } : {}}>
           <Footer />
         </div>

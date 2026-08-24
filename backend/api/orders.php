@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 
                 // Get items for this order
                 $item_query = "
-                    SELECT oi.id as item_id, oi.quantity, oi.unit_price, oi.status, p.title, 
+                    SELECT oi.id as item_id, oi.quantity, oi.unit_price, oi.status, p.title, p.seller_id,
                            (SELECT image_url FROM product_images WHERE product_id = p.id LIMIT 1) as image_url, 
                            u.first_name as seller_name
                     FROM order_items oi

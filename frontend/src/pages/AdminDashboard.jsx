@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Users, ShoppingBag, Package, LayoutDashboard, Trash2, LogOut, Star, AlertTriangle } from 'lucide-react';
+import { Users, ShoppingBag, Package, LayoutDashboard, Trash2, LogOut, Star, AlertTriangle, MessageSquareWarning, CheckCircle } from 'lucide-react';
 
 const AdminDashboard = () => {
   const { user, logout } = useAuth();
@@ -16,6 +16,7 @@ const AdminDashboard = () => {
   });
   
   const [users, setUsers] = useState([]);
+  const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterRole, setFilterRole] = useState('all');
 
@@ -40,6 +41,13 @@ const AdminDashboard = () => {
         const usersData = await usersRes.json();
         if (Array.isArray(usersData)) {
           setUsers(usersData);
+        }
+
+        // Fetch complaints
+        const complaintsRes = await fetch(`http://localhost/Spec%20Zone/backend/api/complaints.php?action=read`);
+        const complaintsData = await complaintsRes.json();
+        if (Array.isArray(complaintsData)) {
+          setComplaints(complaintsData);
         }
       } catch (err) {
         console.error("Error fetching admin data:", err);
@@ -74,6 +82,27 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleResolveComplaint = async (complaintId) => {
+    if (!window.confirm("Mark this dispute as resolved?")) return;
+
+    try {
+      const res = await fetch('http://localhost/Spec%20Zone/backend/api/complaints.php?action=resolve', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ complaint_id: complaintId })
+      });
+      
+      if (res.ok) {
+        setComplaints(complaints.map(c => c.id === complaintId ? { ...c, status: 'resolved' } : c));
+      } else {
+        alert("Failed to resolve complaint");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error resolving complaint");
+    }
+  };
+
   if (loading) return <div className="container" style={{ padding: '4rem 1rem', textAlign: 'center' }}>Loading Admin Dashboard...</div>;
 
   return (
@@ -103,6 +132,18 @@ const AdminDashboard = () => {
             onClick={() => setActiveTab('users')}
           >
             <Users size={20} /> Manage Users
+          </button>
+          <button 
+            className={`btn ${activeTab === 'disputes' ? 'btn-primary' : 'btn-outline'}`}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.8rem', justifyContent: 'flex-start', padding: '0.8rem 1rem', border: activeTab !== 'disputes' ? 'none' : '' }}
+            onClick={() => setActiveTab('disputes')}
+          >
+            <MessageSquareWarning size={20} /> Disputes & Complaints
+            {complaints.filter(c => c.status === 'pending').length > 0 && (
+              <span style={{ background: 'var(--danger)', color: 'white', padding: '0.1rem 0.5rem', borderRadius: '10px', fontSize: '0.7rem', marginLeft: 'auto' }}>
+                {complaints.filter(c => c.status === 'pending').length}
+              </span>
+            )}
           </button>
         </nav>
 
@@ -258,6 +299,79 @@ const AdminDashboard = () => {
                 <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
                   No users found for this filter.
                 </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'disputes' && (
+          <div>
+            <h2 style={{ marginBottom: '2rem' }}>Disputes & Complaints</h2>
+            
+            <div className="glass-panel" style={{ overflow: 'hidden' }}>
+              {complaints.length === 0 ? (
+                <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                  <MessageSquareWarning size={48} style={{ opacity: 0.5, margin: '0 auto 1rem' }} />
+                  <h3>No Disputes Yet</h3>
+                  <p>There are currently no complaints filed by buyers.</p>
+                </div>
+              ) : (
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ background: 'rgba(255,255,255,0.05)' }}>
+                      <th style={{ padding: '1.2rem 1rem' }}>ID</th>
+                      <th style={{ padding: '1.2rem 1rem' }}>Buyer Details</th>
+                      <th style={{ padding: '1.2rem 1rem' }}>Seller Details</th>
+                      <th style={{ padding: '1.2rem 1rem' }}>Reason</th>
+                      <th style={{ padding: '1.2rem 1rem' }}>Status</th>
+                      <th style={{ padding: '1.2rem 1rem', textAlign: 'center' }}>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {complaints.map(c => (
+                      <tr key={c.id} style={{ borderTop: '1px solid rgba(255,255,255,0.05)', backgroundColor: c.status === 'pending' ? 'rgba(239, 68, 68, 0.05)' : 'transparent' }}>
+                        <td style={{ padding: '1rem' }}>#{c.id}</td>
+                        <td style={{ padding: '1rem' }}>
+                          <div style={{ fontWeight: 'bold' }}>{c.buyer_name}</div>
+                          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{c.buyer_email}</div>
+                        </td>
+                        <td style={{ padding: '1rem' }}>
+                          <div style={{ fontWeight: 'bold' }}>{c.seller_name}</div>
+                          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{c.seller_email}</div>
+                        </td>
+                        <td style={{ padding: '1rem', maxWidth: '250px' }}>
+                          {c.reason}
+                        </td>
+                        <td style={{ padding: '1rem' }}>
+                          <span style={{ 
+                            padding: '0.3rem 0.6rem', 
+                            borderRadius: '20px', 
+                            fontSize: '0.8rem', 
+                            fontWeight: 'bold',
+                            textTransform: 'uppercase',
+                            background: c.status === 'pending' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)',
+                            color: c.status === 'pending' ? 'var(--danger)' : 'var(--success)'
+                          }}>
+                            {c.status}
+                          </span>
+                        </td>
+                        <td style={{ padding: '1rem', textAlign: 'center' }}>
+                          {c.status === 'pending' ? (
+                            <button 
+                              className="btn btn-primary"
+                              style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem', margin: '0 auto' }}
+                              onClick={() => handleResolveComplaint(c.id)}
+                            >
+                              <CheckCircle size={14} /> Resolve
+                            </button>
+                          ) : (
+                            <span style={{ color: 'var(--success)' }}>Resolved</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               )}
             </div>
           </div>

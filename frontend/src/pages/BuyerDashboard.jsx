@@ -7,6 +7,11 @@ const BuyerDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Complaint State
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportItem, setReportItem] = useState(null);
+  const [reportReason, setReportReason] = useState('');
 
   useEffect(() => {
     if (user && user.role === 'buyer') {
@@ -29,6 +34,35 @@ const BuyerDashboard = () => {
     if (status === 'delivered') return 'var(--success)';
     if (status === 'shipped') return 'var(--warning)';
     return 'var(--text-secondary)';
+  };
+
+  const handleReportSubmit = async (e) => {
+    e.preventDefault();
+    if (!reportReason.trim() || !reportItem) return;
+
+    try {
+      const res = await fetch('http://localhost/Spec%20Zone/backend/api/complaints.php?action=create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          buyer_id: user.id,
+          seller_id: reportItem.seller_id,
+          reason: reportReason
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert("Your issue has been reported to the admin. We will review it shortly.");
+        setReportModalOpen(false);
+        setReportReason('');
+        setReportItem(null);
+      } else {
+        alert(data.message || "Failed to submit report.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("An error occurred.");
+    }
   };
 
   return (
@@ -131,10 +165,21 @@ const BuyerDashboard = () => {
                               fontWeight: 'bold',
                               textTransform: 'uppercase',
                               background: 'rgba(255,255,255,0.1)',
-                              color: getStatusColor(item.status)
+                              color: getStatusColor(item.status),
+                              display: 'inline-block',
+                              marginBottom: '0.5rem'
                             }}>
                               {item.status}
                             </span>
+                            <div>
+                              <button 
+                                className="btn btn-outline" 
+                                style={{ padding: '0.2rem 0.6rem', fontSize: '0.75rem', color: 'var(--danger)', borderColor: 'var(--danger)' }}
+                                onClick={() => { setReportItem(item); setReportModalOpen(true); }}
+                              >
+                                Report Issue
+                              </button>
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -143,6 +188,34 @@ const BuyerDashboard = () => {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {reportModalOpen && (
+          <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 }}>
+            <div className="glass-panel" style={{ padding: '2rem', width: '90%', maxWidth: '500px' }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--danger)' }}>Report Issue</h3>
+              <p style={{ marginBottom: '1.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                Reporting item: <strong>{reportItem?.title}</strong> (Sold by {reportItem?.seller_name})
+              </p>
+              <form onSubmit={handleReportSubmit}>
+                <div className="form-group">
+                  <label className="form-label">Please describe the issue:</label>
+                  <textarea 
+                    className="form-control" 
+                    rows="4" 
+                    placeholder="e.g. Item arrived damaged, or didn't receive the item..."
+                    value={reportReason}
+                    onChange={(e) => setReportReason(e.target.value)}
+                    required
+                  ></textarea>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1.5rem' }}>
+                  <button type="button" className="btn btn-outline" onClick={() => setReportModalOpen(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary" style={{ background: 'var(--danger)' }}>Submit Report</button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
 

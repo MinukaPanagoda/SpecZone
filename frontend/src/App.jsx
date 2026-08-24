@@ -30,8 +30,8 @@ const AppLayout = () => {
 
   return (
     <>
-      {(!isSellerRoute && !isAdminRoute) && <Navbar />}
-      <div className={(isSellerRoute || isAdminRoute) ? "" : "page-content"}>
+      <Navbar />
+      <div className="page-content">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/shop" element={<Shop />} />

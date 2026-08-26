@@ -30,8 +30,8 @@ const AppLayout = () => {
 
   return (
     <>
-      <Navbar />
-      <div className="page-content">
+      {(!isSellerRoute && !isAdminRoute) && <Navbar />}
+      <div className={(isSellerRoute || isAdminRoute) ? "" : "page-content"}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/shop" element={<Shop />} />
@@ -51,7 +51,7 @@ const AppLayout = () => {
         </Routes>
       </div>
       {(!isSellerRoute && !isAdminRoute) && (
-        <div style={isBuyerRoute ? { marginLeft: '260px' } : {}}>
+        <div className={isBuyerRoute ? 'buyer-footer-offset' : ''}>
           <Footer />
         </div>
       )}

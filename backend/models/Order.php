@@ -44,7 +44,7 @@ class Order {
             }
 
             // 2. Insert into orders table
-            $order_query = "INSERT INTO " . $this->table_orders . " SET buyer_id = :buyer_id, total_amount = :total_amount, status = 'pending'";
+            $order_query = "INSERT INTO " . $this->table_orders . " SET buyer_id = :buyer_id, total_amount = :total_amount";
             $order_stmt = $this->conn->prepare($order_query);
             $order_stmt->bindParam(':buyer_id', $this->buyer_id);
             $order_stmt->bindParam(':total_amount', $total_amount);

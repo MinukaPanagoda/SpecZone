@@ -16,7 +16,7 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost/Spec%20Zone/backend/api/auth.php?action=login', {
+      const response = await fetch('http://localhost/SpecZone/backend/api/auth.php?action=login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

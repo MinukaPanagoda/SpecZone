@@ -14,7 +14,7 @@ export const CartProvider = ({ children }) => {
       return;
     }
     try {
-      const res = await fetch(`http://localhost/Spec%20Zone/backend/api/cart.php?action=get&buyer_id=${user.id}`);
+      const res = await fetch(`http://localhost/SpecZone/backend/api/cart.php?action=get&buyer_id=${user.id}`);
       const data = await res.json();
       if (Array.isArray(data)) {
         setCartItems(data);
@@ -35,7 +35,7 @@ export const CartProvider = ({ children }) => {
     }
     
     try {
-      const res = await fetch(`http://localhost/Spec%20Zone/backend/api/cart.php?action=add`, {
+      const res = await fetch(`http://localhost/SpecZone/backend/api/cart.php?action=add`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ buyer_id: user.id, product_id, quantity })
@@ -53,7 +53,7 @@ export const CartProvider = ({ children }) => {
 
   const updateQuantity = async (cart_id, quantity) => {
     try {
-      const res = await fetch(`http://localhost/Spec%20Zone/backend/api/cart.php?action=update`, {
+      const res = await fetch(`http://localhost/SpecZone/backend/api/cart.php?action=update`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ buyer_id: user.id, cart_id, quantity })
@@ -68,7 +68,7 @@ export const CartProvider = ({ children }) => {
 
   const removeFromCart = async (cart_id) => {
     try {
-      const res = await fetch(`http://localhost/Spec%20Zone/backend/api/cart.php?action=remove`, {
+      const res = await fetch(`http://localhost/SpecZone/backend/api/cart.php?action=remove`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ buyer_id: user.id, cart_id })

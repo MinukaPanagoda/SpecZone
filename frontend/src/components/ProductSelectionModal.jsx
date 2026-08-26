@@ -9,7 +9,7 @@ const ProductSelectionModal = ({ isOpen, onClose, onSelect, categoryId, category
   useEffect(() => {
     if (isOpen) {
       setLoading(true);
-      fetch('http://localhost/Spec%20Zone/backend/api/products.php?action=read')
+      fetch('http://localhost/SpecZone/backend/api/products.php?action=read')
         .then(res => res.json())
         .then(data => {
           if (Array.isArray(data)) {

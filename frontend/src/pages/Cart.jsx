@@ -24,12 +24,12 @@ const Cart = () => {
     <div className="container" style={{ padding: '2rem 1rem' }}>
       <h2 style={{ marginBottom: '2rem', fontSize: '2rem' }}>Shopping Cart</h2>
       
-      <div className="cart-layout">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '2rem' }}>
         
         {/* Cart Items */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {cartItems.map((item) => (
-            <div key={item.cart_id} className="glass-panel cart-item" style={{ padding: '1rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <div key={item.cart_id} className="glass-panel" style={{ padding: '1rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
               {item.image_url ? (
                 <img src={item.image_url} alt={item.title} style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px' }} />
               ) : (
@@ -73,7 +73,7 @@ const Cart = () => {
                 </div>
               </div>
               
-              <div className="cart-item-total" style={{ textAlign: 'right', fontWeight: 'bold', fontSize: '1.2rem' }}>
+              <div style={{ textAlign: 'right', fontWeight: 'bold', fontSize: '1.2rem' }}>
                 Rs. {(item.price * item.quantity).toLocaleString('en-IN')}
               </div>
             </div>

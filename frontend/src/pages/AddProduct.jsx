@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Save, Image as ImageIcon, Menu, ChevronDown } from 'lucide-react';
+import { Save, Image as ImageIcon } from 'lucide-react';
 import SellerSidebar from '../components/SellerSidebar';
 
 const AddProduct = () => {
@@ -9,8 +9,6 @@ const AddProduct = () => {
   const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
   const [status, setStatus] = useState({ type: '', message: '' });
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -29,7 +27,7 @@ const AddProduct = () => {
     }
 
     // Fetch categories
-    fetch('http://localhost/SpecZone/backend/api/categories.php')
+    fetch('http://localhost/Spec%20Zone/backend/api/categories.php')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -51,7 +49,7 @@ const AddProduct = () => {
     setStatus({ type: 'info', message: 'Adding product...' });
 
     try {
-      const response = await fetch('http://localhost/SpecZone/backend/api/products.php?action=create', {
+      const response = await fetch('http://localhost/Spec%20Zone/backend/api/products.php?action=create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -86,16 +84,8 @@ const AddProduct = () => {
 
   return (
     <div className="dashboard-layout" style={{ minHeight: '100vh' }}>
-      <SellerSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      {sidebarOpen && <div className="seller-dashboard-overlay" onClick={() => setSidebarOpen(false)} />}
-      <div className="dashboard-content seller-dashboard-content">
-        <div className="seller-mobile-header">
-          <button className="seller-hamburger" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
-            <Menu size={24} />
-          </button>
-          <span className="seller-mobile-title">Add Product</span>
-        </div>
-
+      <SellerSidebar />
+      <div className="dashboard-content">
         <div style={{ maxWidth: '800px', margin: '0 auto' }}>
           <h2 style={{ marginBottom: '2rem' }}>Add New Product</h2>
         
@@ -112,7 +102,7 @@ const AddProduct = () => {
               <input type="text" name="name" className="form-control" value={formData.name} onChange={handleChange} required />
             </div>
 
-            <div className="seller-two-col">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div className="form-group">
                 <label className="form-label">Price (Rs.) *</label>
                 <input type="number" name="price" className="form-control" value={formData.price} onChange={handleChange} required min="0" step="0.01" />
@@ -125,117 +115,11 @@ const AddProduct = () => {
 
             <div className="form-group">
               <label className="form-label">Category *</label>
-            
-              <div style={{ position: 'relative', width: '100%', zIndex: categoryDropdownOpen ? 100 : 1 }}>
-                <button
-                  type="button"
-                  className="form-control"
-                  aria-haspopup="listbox"
-                  aria-expanded={categoryDropdownOpen}
-                  onClick={() => setCategoryDropdownOpen(prev => !prev)}
-                  style={{
-                    minHeight: '42px',
-                    padding: '0.75rem 2.75rem 0.75rem 1rem',
-                    background: 'var(--bg-secondary)',
-                    color: formData.category_id ? 'var(--text-primary)' : 'var(--text-secondary)',
-                    border: `1px solid ${categoryDropdownOpen ? 'var(--accent-primary)' : 'var(--border-color)'}`,
-                    borderRadius: 'var(--border-radius-sm)',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    position: 'relative',
-                    transition: 'all var(--transition-fast)',
-                    boxShadow: categoryDropdownOpen ? '0 0 10px rgba(0, 240, 255, 0.1)' : 'none'
-                  }}
-                >
-                  {categories.find(cat => String(cat.id) === String(formData.category_id))?.name || 'Select Category'}
-            
-                  <ChevronDown
-                    size={18}
-                    style={{
-                      position: 'absolute',
-                      right: '1rem',
-                      top: '50%',
-                      transform: `translateY(-50%) rotate(${categoryDropdownOpen ? 180 : 0}deg)`,
-                      color: 'var(--text-secondary)',
-                      pointerEvents: 'none',
-                      transition: 'transform var(--transition-fast)'
-                    }}
-                  />
-                </button>
-            
-                {categoryDropdownOpen && (
-                  <div
-                    role="listbox"
-                    style={{
-                      position: 'absolute',
-                      top: 'calc(100% + 0.4rem)',
-                      left: 0,
-                      right: 0,
-                      background: 'var(--bg-secondary)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: 'var(--border-radius-md)',
-                      boxShadow: '0 12px 30px rgba(0, 0, 0, 0.45)',
-                      overflow: 'hidden',
-                      zIndex: 1000,
-                      maxHeight: '240px',
-                      overflowY: 'auto'
-                    }}
-                  >
-                    {categories.map((cat, index) => {
-                      const isSelected = String(cat.id) === String(formData.category_id);
-            
-                      return (
-                        <button
-                          key={cat.id}
-                          type="button"
-                          role="option"
-                          aria-selected={isSelected}
-                          onClick={() => {
-                            setFormData(prev => ({
-                              ...prev,
-                              category_id: cat.id
-                            }));
-                            setCategoryDropdownOpen(false);
-                          }}
-                          style={{
-                            width: '100%',
-                            padding: '0.75rem 1rem',
-                            background: isSelected
-                              ? 'rgba(0, 240, 255, 0.1)'
-                              : 'transparent',
-                            color: isSelected
-                              ? 'var(--accent-primary)'
-                              : 'var(--text-primary)',
-                            border: 'none',
-                            borderBottom: index < categories.length - 1
-                              ? '1px solid rgba(255, 255, 255, 0.05)'
-                              : 'none',
-                            cursor: 'pointer',
-                            textAlign: 'left',
-                            fontFamily: 'inherit',
-                            fontSize: '1rem',
-                            transition: 'background var(--transition-fast), color var(--transition-fast)'
-                          }}
-                          onMouseEnter={(e) => {
-                            if (!isSelected) {
-                              e.currentTarget.style.background = 'rgba(0, 240, 255, 0.08)';
-                              e.currentTarget.style.color = 'var(--accent-primary)';
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (!isSelected) {
-                              e.currentTarget.style.background = 'transparent';
-                              e.currentTarget.style.color = 'var(--text-primary)';
-                            }
-                          }}
-                        >
-                          {cat.name}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+              <select name="category_id" className="form-control" value={formData.category_id} onChange={handleChange} required>
+                {categories.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
             </div>
 
             <div className="form-group">

@@ -45,7 +45,7 @@ const Checkout = () => {
     setError('');
 
     try {
-      const res = await fetch(`http://localhost/SpecZone/backend/api/checkout.php`, {
+      const res = await fetch(`http://localhost/Spec%20Zone/backend/api/checkout.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ buyer_id: user.id, shipping_details: shipping })
@@ -68,13 +68,13 @@ const Checkout = () => {
 
   if (success) {
     return (
-      <div className="container checkout-success" style={{ padding: '5rem 1rem', textAlign: 'center' }}>
-        <CheckCircle className="checkout-success-icon" size={80} color="var(--success)" style={{ margin: '0 auto 1.5rem' }} />
-        <h2 className="checkout-success-heading" style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>Order Placed Successfully!</h2>
-        <p className="checkout-success-text" style={{ color: 'var(--text-secondary)', marginBottom: '2.5rem', fontSize: '1.1rem' }}>
+      <div className="container" style={{ padding: '5rem 1rem', textAlign: 'center' }}>
+        <CheckCircle size={80} color="var(--success)" style={{ margin: '0 auto 1.5rem' }} />
+        <h2 style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>Order Placed Successfully!</h2>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: '2.5rem', fontSize: '1.1rem' }}>
           Thank you for your purchase, {shipping.fullName}. Your components are getting ready to ship.
         </p>
-        <button className="btn btn-primary checkout-success-btn" onClick={() => navigate('/buyer/dashboard')} style={{ padding: '0.8rem 2rem' }}>
+        <button className="btn btn-primary" onClick={() => navigate('/buyer/dashboard')} style={{ padding: '0.8rem 2rem' }}>
           Go to My Dashboard
         </button>
       </div>
@@ -91,10 +91,10 @@ const Checkout = () => {
         </div>
       )}
       
-      <div className="checkout-layout">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: '2rem' }}>
         
         {/* Shipping Form */}
-        <div className="glass-panel checkout-shipping">
+        <div className="glass-panel" style={{ padding: '2rem' }}>
           <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.8rem' }}>
             <Truck size={20} color="var(--accent-primary)" /> Shipping Details
           </h3>
@@ -110,7 +110,7 @@ const Checkout = () => {
               <textarea name="address" className="form-control" value={shipping.address} onChange={handleChange} required rows="3"></textarea>
             </div>
             
-            <div className="checkout-city-postal">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
               <div className="form-group">
                 <label className="form-label">City</label>
                 <input type="text" name="city" className="form-control" value={shipping.city} onChange={handleChange} required />

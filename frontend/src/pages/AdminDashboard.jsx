@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Users, ShoppingBag, Package, LayoutDashboard, Trash2, LogOut, Star, AlertTriangle, ChevronDown, Menu, X, MessageSquareWarning, CheckCircle } from 'lucide-react';
+import { Users, ShoppingBag, Package, LayoutDashboard, Trash2, LogOut, Star, AlertTriangle, MessageSquareWarning, CheckCircle } from 'lucide-react';
 
 const AdminDashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   const [stats, setStats] = useState({
     total_buyers: 0,
@@ -21,10 +20,6 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [filterRole, setFilterRole] = useState('all');
 
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [filterFocused, setFilterFocused] = useState(false);
-  const [filterHovered, setFilterHovered] = useState(false);
-
   useEffect(() => {
     if (!user || user.role !== 'admin') {
       navigate('/login');
@@ -35,21 +30,21 @@ const AdminDashboard = () => {
       setLoading(true);
       try {
         // Fetch stats
-        const statsRes = await fetch(`http://localhost/SpecZone/backend/api/admin.php?action=stats&admin_id=${user.id}`);
+        const statsRes = await fetch(`http://localhost/Spec%20Zone/backend/api/admin.php?action=stats&admin_id=${user.id}`);
         const statsData = await statsRes.json();
         if (statsData.total_buyers !== undefined) {
           setStats(statsData);
         }
 
         // Fetch users
-        const usersRes = await fetch(`http://localhost/SpecZone/backend/api/admin.php?action=users&admin_id=${user.id}`);
+        const usersRes = await fetch(`http://localhost/Spec%20Zone/backend/api/admin.php?action=users&admin_id=${user.id}`);
         const usersData = await usersRes.json();
         if (Array.isArray(usersData)) {
           setUsers(usersData);
         }
 
         // Fetch complaints
-        const complaintsRes = await fetch(`http://localhost/SpecZone/backend/api/complaints.php?action=read`);
+        const complaintsRes = await fetch(`http://localhost/Spec%20Zone/backend/api/complaints.php?action=read`);
         const complaintsData = await complaintsRes.json();
         if (Array.isArray(complaintsData)) {
           setComplaints(complaintsData);
@@ -68,7 +63,7 @@ const AdminDashboard = () => {
     if (!window.confirm("Are you sure you want to delete this user? This action cannot be undone.")) return;
 
     try {
-      const res = await fetch('http://localhost/SpecZone/backend/api/admin.php?action=delete_user', {
+      const res = await fetch('http://localhost/Spec%20Zone/backend/api/admin.php?action=delete_user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ admin_id: user.id, user_id: userId })
@@ -91,23 +86,14 @@ const AdminDashboard = () => {
     if (!window.confirm("Mark this dispute as resolved?")) return;
 
     try {
-      const res = await fetch(
-        'http://localhost/SpecZone/backend/api/complaints.php?action=resolve',
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ complaint_id: complaintId })
-        }
-      );
-
+      const res = await fetch('http://localhost/Spec%20Zone/backend/api/complaints.php?action=resolve', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ complaint_id: complaintId })
+      });
+      
       if (res.ok) {
-        setComplaints(
-          complaints.map(c =>
-            c.id === complaintId
-              ? { ...c, status: 'resolved' }
-              : c
-          )
-        );
+        setComplaints(complaints.map(c => c.id === complaintId ? { ...c, status: 'resolved' } : c));
       } else {
         alert("Failed to resolve complaint");
       }
@@ -120,19 +106,10 @@ const AdminDashboard = () => {
   if (loading) return <div className="container" style={{ padding: '4rem 1rem', textAlign: 'center' }}>Loading Admin Dashboard...</div>;
 
   return (
-    <div className="container dashboard-container admin-dashboard-layout">
+    <div className="container dashboard-container" style={{ display: 'grid', gridTemplateColumns: '250px 1fr', gap: '2rem', padding: '2rem 1rem' }}>
       
-      {/* Mobile drawer overlay (tablet/mobile only) */}
-      {sidebarOpen && (
-        <div
-          className="dashboard-sidebar-overlay"
-          onClick={() => setSidebarOpen(false)}
-          aria-hidden="true"
-        />
-      )}
-
       {/* Sidebar */}
-      <aside className={`dashboard-sidebar glass-panel ${sidebarOpen ? 'open' : ''}`} style={{ padding: '2rem 1rem' }}>
+      <aside className="dashboard-sidebar glass-panel" style={{ padding: '2rem 1rem', height: 'calc(100vh - 120px)', position: 'sticky', top: '80px' }}>
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))', margin: '0 auto 1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 'bold' }}>
             {user?.first_name?.charAt(0)}
@@ -141,38 +118,29 @@ const AdminDashboard = () => {
           <span style={{ fontSize: '0.8rem', color: 'var(--accent-primary)', textTransform: 'uppercase', letterSpacing: '1px' }}>Administrator</span>
         </div>
 
-<nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           <button 
             className={`btn ${activeTab === 'overview' ? 'btn-primary' : 'btn-outline'}`}
             style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.8rem', justifyContent: 'flex-start', padding: '0.8rem 1rem', border: activeTab !== 'overview' ? 'none' : '' }}
-            onClick={() => { setActiveTab('overview'); setSidebarOpen(false); }}
-           >
+            onClick={() => setActiveTab('overview')}
+          >
             <LayoutDashboard size={20} /> Overview
           </button>
           <button 
             className={`btn ${activeTab === 'users' ? 'btn-primary' : 'btn-outline'}`}
             style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.8rem', justifyContent: 'flex-start', padding: '0.8rem 1rem', border: activeTab !== 'users' ? 'none' : '' }}
-            onClick={() => { setActiveTab('users'); setSidebarOpen(false); }}
-           >
+            onClick={() => setActiveTab('users')}
+          >
             <Users size={20} /> Manage Users
           </button>
           <button 
             className={`btn ${activeTab === 'disputes' ? 'btn-primary' : 'btn-outline'}`}
             style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.8rem', justifyContent: 'flex-start', padding: '0.8rem 1rem', border: activeTab !== 'disputes' ? 'none' : '' }}
-            onClick={() => { setActiveTab('disputes'); setSidebarOpen(false); }}
-           >
+            onClick={() => setActiveTab('disputes')}
+          >
             <MessageSquareWarning size={20} /> Disputes & Complaints
             {complaints.filter(c => c.status === 'pending').length > 0 && (
-              <span
-                style={{
-                  background: 'var(--danger)',
-                  color: 'white',
-                  padding: '0.1rem 0.5rem',
-                  borderRadius: '10px',
-                  fontSize: '0.7rem',
-                  marginLeft: 'auto'
-                }}
-              >
+              <span style={{ background: 'var(--danger)', color: 'white', padding: '0.1rem 0.5rem', borderRadius: '10px', fontSize: '0.7rem', marginLeft: 'auto' }}>
                 {complaints.filter(c => c.status === 'pending').length}
               </span>
             )}
@@ -186,7 +154,6 @@ const AdminDashboard = () => {
             onClick={() => {
               logout();
               navigate('/');
-              setSidebarOpen(false);
             }}
           >
             <LogOut size={20} /> Logout
@@ -196,19 +163,7 @@ const AdminDashboard = () => {
 
       {/* Main Content */}
       <main>
-        {/* Mobile/tablet top bar with hamburger (hidden on desktop) */}
-        <div className="dashboard-mobile-header">
-          <button
-            className="dashboard-hamburger"
-            aria-label={sidebarOpen ? 'Close menu' : 'Open menu'}
-            aria-expanded={sidebarOpen}
-            onClick={() => setSidebarOpen((o) => !o)}
-          >
-            {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
-          </button>
-          <span className="dashboard-mobile-title">Admin Dashboard</span>
-        </div>
-
+        
         {activeTab === 'overview' && (
           <div>
             <h2 style={{ marginBottom: '2rem' }}>Platform Overview</h2>
@@ -246,161 +201,21 @@ const AdminDashboard = () => {
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
               <h2 style={{ margin: 0 }}>User Management</h2>
-              <div
-                style={{
-                  position: 'relative',
-                  width: '250px',
-                  zIndex: filterOpen ? 1000 : 'auto',
-                }}
+              <select 
+                className="form-control" 
+                style={{ width: '250px' }} 
+                value={filterRole} 
+                onChange={(e) => setFilterRole(e.target.value)}
               >
-                {/* Dropdown Trigger */}
-                <button
-                  type="button"
-                  aria-haspopup="listbox"
-                  aria-expanded={filterOpen}
-                  className="form-control"
-                  onMouseEnter={() => setFilterHovered(true)}
-                  onMouseLeave={() => setFilterHovered(false)}
-                  onFocus={() => setFilterFocused(true)}
-                  onBlur={() => {
-                    if (!filterOpen) {
-                      setFilterFocused(false);
-                    }
-                  }}
-                  onClick={() => {
-                    setFilterOpen(prev => !prev);
-                    setFilterFocused(true);
-                  }}
-                  style={{
-                    width: '100%',
-                    minHeight: '42px',
-                    padding: '0.75rem 2.75rem 0.75rem 1rem',
-                    backgroundColor: 'var(--bg-secondary)',
-                    color: 'var(--text-primary)',
-                    cursor: 'pointer',
-                    fontSize: '0.95rem',
-                    textAlign: 'left',
-                    position: 'relative',
-                    border: `1px solid ${
-                      filterFocused
-                        ? 'var(--accent-primary)'
-                        : filterHovered
-                          ? 'var(--border-highlight)'
-                          : 'var(--border-color)'
-                    }`,
-                    transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
-                  }}
-                >
-                  <span>
-                    {filterRole === 'all'
-                      ? 'All Users'
-                      : filterRole === 'buyer'
-                        ? 'Buyers Only'
-                        : filterRole === 'seller'
-                          ? 'Sellers Only'
-                          : 'Critical Sellers (Rating ≤ 4)'}
-                  </span>
-              
-                  <ChevronDown
-                    size={16}
-                    aria-hidden="true"
-                    style={{
-                      position: 'absolute',
-                      right: '1rem',
-                      top: '50%',
-                      transform: `translateY(-50%) rotate(${filterOpen ? 180 : 0}deg)`,
-                      color: 'var(--text-secondary)',
-                      pointerEvents: 'none',
-                      transition: 'transform 0.2s ease',
-                    }}
-                  />
-                </button>
-              
-                {/* React-rendered Dropdown Menu */}
-                {filterOpen && (
-                  <div
-                    role="listbox"
-                    aria-label="Filter users"
-                    style={{
-                      position: 'absolute',
-                      top: 'calc(100% + 0.4rem)',
-                      left: 0,
-                      width: '100%',
-                      backgroundColor: 'var(--bg-secondary)',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: 'var(--border-radius-sm)',
-                      boxShadow: '0 10px 30px rgba(0, 0, 0, 0.35)',
-                      overflow: 'hidden',
-                      zIndex: 1001,
-                    }}
-                  >
-                    {[
-                      { value: 'all', label: 'All Users' },
-                      { value: 'buyer', label: 'Buyers Only' },
-                      { value: 'seller', label: 'Sellers Only' },
-                      {
-                        value: 'critical_seller',
-                        label: 'Critical Sellers (Rating ≤ 4)',
-                      },
-                    ].map(option => {
-                      const isSelected = filterRole === option.value;
-              
-                      return (
-                        <div
-                          key={option.value}
-                          role="option"
-                          aria-selected={isSelected}
-                          onMouseDown={(event) => {
-                            event.preventDefault();
-                            setFilterRole(option.value);
-                            setFilterOpen(false);
-                            setFilterFocused(false);
-                          }}
-                          style={{
-                            padding: '0.8rem 1rem',
-                            backgroundColor: isSelected
-                              ? 'rgba(0, 240, 255, 0.12)'
-                              : 'transparent',
-                            color: isSelected
-                              ? 'var(--accent-primary)'
-                              : 'var(--text-primary)',
-                            cursor: 'pointer',
-                            fontSize: '0.95rem',
-                            transition: 'background-color 0.15s ease, color 0.15s ease',
-                            borderBottom:
-                              option.value !== 'critical_seller'
-                                ? '1px solid var(--border-color)'
-                                : 'none',
-                          }}
-                          onMouseEnter={(event) => {
-                            event.currentTarget.style.backgroundColor =
-                              'rgba(0, 240, 255, 0.1)';
-                            event.currentTarget.style.color =
-                              'var(--accent-primary)';
-                          }}
-                          onMouseLeave={(event) => {
-                            event.currentTarget.style.backgroundColor =
-                              isSelected
-                                ? 'rgba(0, 240, 255, 0.12)'
-                                : 'transparent';
-                            event.currentTarget.style.color =
-                              isSelected
-                                ? 'var(--accent-primary)'
-                                : 'var(--text-primary)';
-                          }}
-                        >
-                          {option.label}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+                <option value="all">All Users</option>
+                <option value="buyer">Buyers Only</option>
+                <option value="seller">Sellers Only</option>
+                <option value="critical_seller">Critical Sellers (Rating ≤ 4)</option>
+              </select>
             </div>
             
             <div className="glass-panel" style={{ overflow: 'hidden' }}>
-              <div style={{ overflowX: 'auto', width: '100%' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '760px' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ background: 'rgba(255,255,255,0.05)', textAlign: 'left' }}>
                     <th style={{ padding: '1.2rem 1rem' }}>ID</th>
@@ -476,7 +291,6 @@ const AdminDashboard = () => {
                   ))}
                 </tbody>
               </table>
-              </div>
               {users.filter(u => {
                 if (filterRole === 'all') return true;
                 if (filterRole === 'critical_seller') return u.role === 'seller' && u.avg_rating !== null && u.avg_rating <= 4;
@@ -493,18 +307,18 @@ const AdminDashboard = () => {
         {activeTab === 'disputes' && (
           <div>
             <h2 style={{ marginBottom: '2rem' }}>Disputes & Complaints</h2>
-            {complaints.length === 0 ? (
-              <div className="glass-panel" style={{ padding: '4rem 2rem', textAlign: 'center' }}>
-                <MessageSquareWarning size={48} color="var(--text-secondary)" style={{ margin: '0 auto 1.5rem', opacity: 0.5 }} />
-                <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.5rem' }}>No Disputes Yet</h3>
-                <p style={{ color: 'var(--text-secondary)', margin: 0 }}>There are currently no complaints filed by buyers.</p>
-              </div>
-            ) : (
-              <div className="glass-panel" style={{ overflow: 'hidden' }}>
-                <div style={{ overflowX: 'auto', width: '100%' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '760px' }}>
+            
+            <div className="glass-panel" style={{ overflow: 'hidden' }}>
+              {complaints.length === 0 ? (
+                <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                  <MessageSquareWarning size={48} style={{ opacity: 0.5, margin: '0 auto 1rem' }} />
+                  <h3>No Disputes Yet</h3>
+                  <p>There are currently no complaints filed by buyers.</p>
+                </div>
+              ) : (
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                   <thead>
-                    <tr style={{ background: 'rgba(255,255,255,0.05)', textAlign: 'left' }}>
+                    <tr style={{ background: 'rgba(255,255,255,0.05)' }}>
                       <th style={{ padding: '1.2rem 1rem' }}>ID</th>
                       <th style={{ padding: '1.2rem 1rem' }}>Buyer Details</th>
                       <th style={{ padding: '1.2rem 1rem' }}>Seller Details</th>
@@ -515,26 +329,26 @@ const AdminDashboard = () => {
                   </thead>
                   <tbody>
                     {complaints.map(c => (
-                      <tr key={c.id} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                      <tr key={c.id} style={{ borderTop: '1px solid rgba(255,255,255,0.05)', backgroundColor: c.status === 'pending' ? 'rgba(239, 68, 68, 0.05)' : 'transparent' }}>
                         <td style={{ padding: '1rem' }}>#{c.id}</td>
                         <td style={{ padding: '1rem' }}>
-                          <div>{c.buyer_name}</div>
-                          <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{c.buyer_email}</div>
+                          <div style={{ fontWeight: 'bold' }}>{c.buyer_name}</div>
+                          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{c.buyer_email}</div>
                         </td>
                         <td style={{ padding: '1rem' }}>
-                          <div>{c.seller_name}</div>
-                          <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{c.seller_email}</div>
+                          <div style={{ fontWeight: 'bold' }}>{c.seller_name}</div>
+                          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{c.seller_email}</div>
                         </td>
-                        <td style={{ padding: '1rem', maxWidth: '300px' }}>
-                          <div style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{c.reason}</div>
+                        <td style={{ padding: '1rem', maxWidth: '250px' }}>
+                          {c.reason}
                         </td>
                         <td style={{ padding: '1rem' }}>
-                          <span style={{
-                            padding: '0.3rem 0.6rem',
-                            borderRadius: '20px',
-                            fontSize: '0.8rem',
+                          <span style={{ 
+                            padding: '0.3rem 0.6rem', 
+                            borderRadius: '20px', 
+                            fontSize: '0.8rem', 
                             fontWeight: 'bold',
-                            textTransform: 'capitalize',
+                            textTransform: 'uppercase',
                             background: c.status === 'pending' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)',
                             color: c.status === 'pending' ? 'var(--danger)' : 'var(--success)'
                           }}>
@@ -543,39 +357,23 @@ const AdminDashboard = () => {
                         </td>
                         <td style={{ padding: '1rem', textAlign: 'center' }}>
                           {c.status === 'pending' ? (
-                            <button
+                            <button 
+                              className="btn btn-primary"
+                              style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem', margin: '0 auto' }}
                               onClick={() => handleResolveComplaint(c.id)}
-                              style={{
-                                background: 'none',
-                                border: 'none',
-                                color: 'var(--success)',
-                                cursor: 'pointer',
-                                padding: '0.5rem',
-                                borderRadius: '4px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '0.4rem',
-                                fontSize: '0.85rem',
-                                fontWeight: '500',
-                                transition: 'background 0.2s'
-                              }}
-                              onMouseOver={(e) => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)'}
-                              onMouseOut={(e) => e.currentTarget.style.background = 'none'}
-                              title="Resolve Complaint"
                             >
                               <CheckCircle size={14} /> Resolve
                             </button>
                           ) : (
-                            <span style={{ color: 'var(--success)', fontWeight: '500', fontSize: '0.9rem' }}>Resolved</span>
+                            <span style={{ color: 'var(--success)' }}>Resolved</span>
                           )}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         )}
 

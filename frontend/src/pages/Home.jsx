@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Cpu, Monitor, HardDrive, Zap, Star, ShieldCheck, Truck, Headphones, ChevronRight } from 'lucide-react';
+import { Cpu, Monitor, HardDrive, Zap, Star } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
 const Home = () => {
@@ -9,40 +9,45 @@ const Home = () => {
   const { addToCart } = useCart();
 
   useEffect(() => {
-    // Fetch latest products
-    fetch('http://localhost/Spec%20Zone/backend/api/products.php?action=read')
-      .then(res => res.json())
-      .then(data => {
+    const fetchTrendingProducts = async () => {
+      try {
+        const res = await fetch('http://localhost/SpecZone/backend/api/products.php?action=read');
+        const data = await res.json();
         if (Array.isArray(data)) {
-          // Get top 4 products
           setTrendingProducts(data.slice(0, 4));
         }
-      })
-      .catch(err => console.error("Error fetching trending products:", err));
+      } catch (err) {
+        console.error('Error fetching trending products:', err);
+      }
+    };
+    fetchTrendingProducts();
   }, []);
+
+  const handleAddToCart = (e, product) => {
+    e.stopPropagation();
+    addToCart(product.id);
+  };
+
+  const handleCardClick = (product) => {
+    navigate(`/product/${product.id}`);
+  };
+
   return (
     <div>
       {/* Hero Section */}
-      <section className="hero-section">
+      <section className="hero-section" style={{ padding: '20px 0 40px 0' }}>
         <div className="hero-bg"></div>
-        <div className="container" style={{ position: 'relative', zIndex: 10 }}>
-          <div style={{ padding: '4rem 2rem', maxWidth: '900px', margin: '0 auto', background: '#1a1a24', border: '1px solid var(--border-color)', borderRadius: 'var(--border-radius-md)' }}>
-            <div style={{ display: 'inline-block', padding: '0.4rem 1rem', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', fontSize: '0.9rem', fontWeight: 'bold', marginBottom: '1.5rem' }}>
-              THE ULTIMATE PC BUILDER PLATFORM
-            </div>
-            <h1 style={{ fontSize: '4.5rem', marginBottom: '1.5rem', lineHeight: '1.1', letterSpacing: '-1px', color: 'var(--text-primary)' }}>
-              Your Vision. <br/><span style={{ color: 'var(--accent-primary)' }}>Your Dream Build.</span>
+        <div className="container">
+          <div className="glass-panel" style={{ padding: '2rem 1rem', maxWidth: '800px', margin: '0 auto' }}>
+            <h1 style={{ fontSize: '4rem', marginBottom: '1rem', lineHeight: '1.1' }}>
+              Your Vision. <br/><span className="text-gradient">Your Build.</span>
             </h1>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '1.25rem', marginBottom: '2.5rem', padding: '0 2rem', maxWidth: '700px', margin: '0 auto 2.5rem' }}>
-              SpecZone is the premium marketplace for PC enthusiasts. Discover elite components, compare performance, and assemble your masterpiece today.
+            <p style={{ color: 'var(--text-secondary)', fontSize: '1.2rem', marginBottom: '2rem', padding: '0 2rem' }}>
+              SpecZone is the ultimate marketplace for PC enthusiasts. Discover premium components, compare benchmarks, and build your dream rig today.
             </p>
-            <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center' }}>
-              <Link to="/shop" className="btn btn-primary" style={{ fontSize: '1.1rem', padding: '1rem 2.5rem', borderRadius: '4px' }}>
-                Explore Shop <ChevronRight size={18} />
-              </Link>
-              <Link to="/builder" className="btn btn-outline" style={{ fontSize: '1.1rem', padding: '1rem 2.5rem', borderRadius: '4px' }}>
-                PC Builder Tool
-              </Link>
+            <div className="hero-actions" style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+              <Link to="/shop" className="btn btn-primary" style={{ fontSize: '1.1rem', padding: '1rem 2rem' }}>Shop Now</Link>
+              <Link to="/builder" className="btn btn-outline" style={{ fontSize: '1.1rem', padding: '1rem 2rem' }}>PC Builder</Link>
             </div>
           </div>
         </div>
@@ -74,91 +79,49 @@ const Home = () => {
           </Link>
         </div>
 
-        {/* Featured Build Section */}
-        <div style={{ marginTop: '4rem', marginBottom: '4rem' }}>
-          <div style={{ padding: '3rem', background: '#1a1a24', border: '1px solid var(--border-color)', borderRadius: 'var(--border-radius-md)' }}>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '3rem', alignItems: 'center' }}>
-              <div>
-                <div style={{ display: 'inline-block', padding: '0.4rem 1rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '4px', fontSize: '0.85rem', fontWeight: 'bold', marginBottom: '1rem' }}>
-                  BUILD OF THE MONTH
-                </div>
-                <h2 style={{ fontSize: '2.5rem', marginBottom: '1rem', lineHeight: '1.2' }}>The "Neon Beast" <br/>4K Gaming Rig</h2>
-                <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', fontSize: '1.1rem' }}>
-                  Dominate any game at 4K resolution with our hand-picked build of the month. Perfectly balanced for maximum performance and stunning aesthetics.
-                </p>
-                <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--accent-primary)' }}>Rs. 450,000</span>
-                  <Link to="/builder" className="btn btn-primary" style={{ padding: '0.8rem 2rem', borderRadius: '4px' }}>Customize Build</Link>
-                </div>
-              </div>
-              
-              <div style={{ background: '#121217', padding: '2rem', borderRadius: 'var(--border-radius-md)', border: '1px solid var(--border-color)' }}>
-                <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '1.5rem', margin: 0, padding: 0 }}>
-                  <li style={{ display: 'flex', alignItems: 'center', gap: '1.2rem' }}>
-                    <div style={{ padding: '0.8rem', color: 'var(--accent-primary)' }}><Cpu size={24} /></div>
-                    <div><span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', display: 'block', textTransform: 'uppercase', letterSpacing: '1px' }}>Processor</span><strong style={{ fontSize: '1.1rem' }}>AMD Ryzen 7 7800X3D</strong></div>
-                  </li>
-                  <li style={{ display: 'flex', alignItems: 'center', gap: '1.2rem' }}>
-                    <div style={{ padding: '0.8rem', color: 'var(--accent-primary)' }}><Monitor size={24} /></div>
-                    <div><span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', display: 'block', textTransform: 'uppercase', letterSpacing: '1px' }}>Graphics Card</span><strong style={{ fontSize: '1.1rem' }}>NVIDIA GeForce RTX 4080</strong></div>
-                  </li>
-                  <li style={{ display: 'flex', alignItems: 'center', gap: '1.2rem' }}>
-                    <div style={{ padding: '0.8rem', color: 'var(--accent-primary)' }}><Zap size={24} /></div>
-                    <div><span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', display: 'block', textTransform: 'uppercase', letterSpacing: '1px' }}>Memory</span><strong style={{ fontSize: '1.1rem' }}>32GB Corsair DDR5 6000MHz</strong></div>
-                  </li>
-                  <li style={{ display: 'flex', alignItems: 'center', gap: '1.2rem' }}>
-                    <div style={{ padding: '0.8rem', color: 'var(--accent-primary)' }}><HardDrive size={24} /></div>
-                    <div><span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', display: 'block', textTransform: 'uppercase', letterSpacing: '1px' }}>Storage</span><strong style={{ fontSize: '1.1rem' }}>2TB Samsung 990 PRO NVMe</strong></div>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Featured Products */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem' }}>
-          <h2 className="section-title" style={{ margin: 0 }}>Trending Components</h2>
-          <Link to="/shop" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontWeight: 'bold' }}>
-            View All <ChevronRight size={16} />
-          </Link>
-        </div>
-        
+        <h2 className="section-title">Trending Components</h2>
         <div className="product-grid">
           {trendingProducts.length > 0 ? (
-            trendingProducts.map(product => (
-              <div key={product.id} className="product-card" onClick={() => navigate(`/product/${product.id}`)} style={{ cursor: 'pointer' }}>
-                <div style={{ height: '220px', backgroundColor: 'rgba(0,0,0,0.4)', borderRadius: 'var(--border-radius-sm)', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+            trendingProducts.map((product) => (
+              <div
+                key={product.id}
+                className="product-card"
+                onClick={() => handleCardClick(product)}
+                style={{ cursor: 'pointer' }}
+              >
+                <div style={{ height: '200px', backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 'var(--border-radius-sm)', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {product.image_url ? (
-                    <img src={product.image_url} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                    <img
+                      src={product.image_url}
+                      alt={product.name}
+                      style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 'var(--border-radius-sm)' }}
+                    />
                   ) : (
                     <Monitor size={64} color="var(--text-muted)" />
                   )}
                 </div>
-                <h4 style={{ fontSize: '1.2rem', marginBottom: '0.5rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{product.title}</h4>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
+                <h4 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>{product.name}</h4>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
                   <Star size={16} color="var(--warning)" fill="var(--warning)" />
-                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>4.8 (Verified)</span>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>4.5 (0 Reviews)</span>
                 </div>
                 <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'var(--accent-primary)' }}>Rs. {parseFloat(product.price).toLocaleString('en-IN')}</span>
-                  <button 
-                    className="btn btn-outline" 
-                    style={{ padding: '0.4rem 0.8rem', borderRadius: '4px' }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      addToCart(product);
-                      alert('Added to cart!');
-                    }}
+                  <span style={{ fontSize: '1.3rem', fontWeight: 'bold', color: 'var(--accent-primary)' }}>
+                    Rs. {parseFloat(product.price).toLocaleString('en-IN')}
+                  </span>
+                  <button
+                    className="btn btn-outline"
+                    style={{ padding: '0.4rem 0.8rem' }}
+                    onClick={(e) => handleAddToCart(e, product)}
                   >
-                    Add
+                    Add to Cart
                   </button>
                 </div>
               </div>
             ))
           ) : (
-            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem', color: 'var(--text-secondary)', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--border-radius-lg)' }}>
+            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)' }}>
               No products available right now.
             </div>
           )}

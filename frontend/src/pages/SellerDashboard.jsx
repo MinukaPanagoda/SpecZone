@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Package, ShoppingCart, BarChart2, Star } from 'lucide-react';
+import { Package, ShoppingCart, BarChart2, Star, Menu } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import SellerSidebar from '../components/SellerSidebar';
 
@@ -8,6 +8,7 @@ const SellerDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState({ avg_rating: 0, total_reviews: 0, active_listings: 0 });
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (!user || user.role !== 'seller') {
@@ -15,7 +16,7 @@ const SellerDashboard = () => {
       return;
     }
 
-    fetch(`http://localhost/Spec%20Zone/backend/api/seller_stats.php?seller_id=${user.id}`)
+    fetch(`http://localhost/SpecZone/backend/api/seller_stats.php?seller_id=${user.id}`)
       .then(res => res.json())
       .then(data => {
         if (data && !data.message) {
@@ -43,10 +44,18 @@ const SellerDashboard = () => {
 
   return (
     <div className="dashboard-layout" style={{ minHeight: '100vh' }}>
-      <SellerSidebar />
+      <SellerSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      {sidebarOpen && <div className="seller-dashboard-overlay" onClick={() => setSidebarOpen(false)} />}
 
       {/* Main Content */}
-      <main className="dashboard-content">
+      <main className="dashboard-content seller-dashboard-content">
+        <div className="seller-mobile-header">
+          <button className="seller-hamburger" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
+            <Menu size={24} />
+          </button>
+          <span className="seller-mobile-title">Seller Dashboard</span>
+        </div>
+
         <h2 style={{ fontSize: '2rem', marginBottom: '2rem' }}>Seller Dashboard</h2>
         
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
@@ -81,6 +90,7 @@ const SellerDashboard = () => {
             <button className="btn btn-outline" style={{ padding: '0.5rem 1rem' }}>View All</button>
           </div>
           
+          <div style={{ overflowX: 'auto', width: '100%' }}>
           <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>
@@ -105,6 +115,7 @@ const SellerDashboard = () => {
               </tr>
             </tbody>
           </table>
+          </div>
         </div>
       </main>
     </div>

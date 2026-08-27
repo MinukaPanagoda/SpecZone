@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import SellerSidebar from '../components/SellerSidebar';
-import { Package, Truck, CheckCircle } from 'lucide-react';
+import { Package, Truck, CheckCircle, Menu } from 'lucide-react';
 
 const SellerOrders = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (!user || user.role !== 'seller') {
@@ -20,7 +21,7 @@ const SellerOrders = () => {
 
   const fetchOrders = () => {
     setLoading(true);
-    fetch(`http://localhost/Spec%20Zone/backend/api/orders.php?action=read_seller&seller_id=${user.id}`)
+    fetch(`http://localhost/SpecZone/backend/api/orders.php?action=read_seller&seller_id=${user.id}`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -36,7 +37,7 @@ const SellerOrders = () => {
 
   const handleStatusChange = async (itemId, newStatus) => {
     try {
-      const res = await fetch(`http://localhost/Spec%20Zone/backend/api/orders.php?action=update_item_status`, {
+      const res = await fetch(`http://localhost/SpecZone/backend/api/orders.php?action=update_item_status`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -66,8 +67,16 @@ const SellerOrders = () => {
 
   return (
     <div className="dashboard-layout" style={{ minHeight: '100vh' }}>
-      <SellerSidebar />
-      <main className="dashboard-content">
+      <SellerSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      {sidebarOpen && <div className="seller-dashboard-overlay" onClick={() => setSidebarOpen(false)} />}
+      <main className="dashboard-content seller-dashboard-content">
+        <div className="seller-mobile-header">
+          <button className="seller-hamburger" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
+            <Menu size={24} />
+          </button>
+          <span className="seller-mobile-title">Manage Orders</span>
+        </div>
+
         <h2 style={{ fontSize: '2rem', marginBottom: '2rem' }}>Manage Orders</h2>
         
         <div className="glass-panel" style={{ overflow: 'hidden' }}>
@@ -80,6 +89,7 @@ const SellerOrders = () => {
               <p>You don't have any items to fulfill right now.</p>
             </div>
           ) : (
+            <div style={{ overflowX: 'auto', width: '100%' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
               <thead>
                 <tr style={{ background: 'rgba(255,255,255,0.05)' }}>
@@ -153,9 +163,10 @@ const SellerOrders = () => {
                       )}
                     </td>
                   </tr>
-                ))}
+                )                )}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       </main>

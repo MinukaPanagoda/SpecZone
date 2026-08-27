@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { ChevronDown } from 'lucide-react';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -14,6 +15,23 @@ const Register = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
+  const [roleOpen, setRoleOpen] = useState(false);
+  const [roleFocused, setRoleFocused] = useState(false);
+  const [roleHovered, setRoleHovered] = useState(false);
+
+  const roleSelectStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: '42px',
+    padding: '0.75rem 2.75rem 0.75rem 1rem',
+    backgroundColor: 'var(--bg-secondary)',
+    color: 'var(--text-primary)',
+    cursor: 'pointer',
+    fontSize: '0.95rem',
+    transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+  };
+
   const handleChange = (e) => {
     setFormData({...formData, [e.target.name]: e.target.value});
   };
@@ -24,7 +42,7 @@ const Register = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost/Spec%20Zone/backend/api/auth.php?action=register', {
+      const response = await fetch('http://localhost/SpecZone/backend/api/auth.php?action=register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -104,10 +122,156 @@ const Register = () => {
 
           <div className="form-group">
             <label className="form-label">I am a...</label>
-            <select name="role" className="form-control" value={formData.role} onChange={handleChange} style={{ cursor: 'pointer' }}>
-              <option value="buyer">Buyer (Looking to buy parts or build PCs)</option>
-              <option value="seller">Seller (Looking to sell components)</option>
-            </select>
+          
+            {/* Custom React Role Dropdown */}
+            <div
+              style={{
+                position: 'relative',
+                width: '100%',
+                zIndex: roleOpen ? 1000 : 'auto',
+              }}
+            >
+              {/* Dropdown Trigger */}
+              <button
+                type="button"
+                aria-haspopup="listbox"
+                aria-expanded={roleOpen}
+                className="form-control"
+                onMouseEnter={() => setRoleHovered(true)}
+                onMouseLeave={() => setRoleHovered(false)}
+                onFocus={() => setRoleFocused(true)}
+                onBlur={() => {
+                  if (!roleOpen) {
+                    setRoleFocused(false);
+                  }
+                }}
+                onClick={() => {
+                  setRoleOpen(prev => !prev);
+                  setRoleFocused(true);
+                }}
+                style={{
+                  ...roleSelectStyle,
+                  width: '100%',
+                  textAlign: 'left',
+                  position: 'relative',
+                  border: `1px solid ${
+                    roleFocused
+                      ? 'var(--accent-primary)'
+                      : roleHovered
+                        ? 'var(--border-highlight)'
+                        : 'var(--border-color)'
+                  }`,
+                }}
+              >
+                <span>
+                  {formData.role === 'buyer'
+                    ? 'Buyer (Looking to buy parts or build PCs)'
+                    : 'Seller (Looking to sell components)'}
+                </span>
+          
+                <ChevronDown
+                  size={16}
+                  aria-hidden="true"
+                  style={{
+                    position: 'absolute',
+                    right: '1rem',
+                    top: '50%',
+                    transform: `translateY(-50%) rotate(${roleOpen ? 180 : 0}deg)`,
+                    color: 'var(--text-secondary)',
+                    pointerEvents: 'none',
+                    transition: 'transform 0.2s ease',
+                  }}
+                />
+              </button>
+          
+              {/* React-rendered Dropdown Menu */}
+              {roleOpen && (
+                <div
+                  role="listbox"
+                  aria-label="Select account role"
+                  style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 0.4rem)',
+                    left: 0,
+                    width: '100%',
+                    backgroundColor: 'var(--bg-secondary)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 'var(--border-radius-sm)',
+                    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.35)',
+                    overflow: 'hidden',
+                    zIndex: 1001,
+                  }}
+                >
+                  {[
+                    {
+                      value: 'buyer',
+                      label: 'Buyer (Looking to buy parts or build PCs)',
+                    },
+                    {
+                      value: 'seller',
+                      label: 'Seller (Looking to sell components)',
+                    },
+                  ].map(option => {
+                    const isSelected = formData.role === option.value;
+          
+                    return (
+                      <div
+                        key={option.value}
+                        role="option"
+                        aria-selected={isSelected}
+                        onMouseDown={(event) => {
+                          event.preventDefault();
+          
+                          handleChange({
+                            target: {
+                              name: 'role',
+                              value: option.value,
+                            },
+                          });
+          
+                          setRoleOpen(false);
+                          setRoleFocused(false);
+                        }}
+                        style={{
+                          padding: '0.8rem 1rem',
+                          backgroundColor: isSelected
+                            ? 'rgba(0, 240, 255, 0.12)'
+                            : 'transparent',
+                          color: isSelected
+                            ? 'var(--accent-primary)'
+                            : 'var(--text-primary)',
+                          cursor: 'pointer',
+                          fontSize: '0.95rem',
+                          transition: 'background-color 0.15s ease, color 0.15s ease',
+                          borderBottom:
+                            option.value !== 'seller'
+                              ? '1px solid var(--border-color)'
+                              : 'none',
+                        }}
+                        onMouseEnter={(event) => {
+                          event.currentTarget.style.backgroundColor =
+                            'rgba(0, 240, 255, 0.1)';
+                          event.currentTarget.style.color =
+                            'var(--accent-primary)';
+                        }}
+                        onMouseLeave={(event) => {
+                          event.currentTarget.style.backgroundColor =
+                            isSelected
+                              ? 'rgba(0, 240, 255, 0.12)'
+                              : 'transparent';
+                          event.currentTarget.style.color =
+                            isSelected
+                              ? 'var(--accent-primary)'
+                              : 'var(--text-primary)';
+                        }}
+                      >
+                        {option.label}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
           
           <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }} disabled={isLoading}>

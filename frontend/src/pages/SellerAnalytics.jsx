@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import SellerSidebar from '../components/SellerSidebar';
-import { BarChart2, TrendingUp, Package, Award } from 'lucide-react';
+import { BarChart2, TrendingUp, Package, Award, Menu } from 'lucide-react';
 
 const SellerAnalytics = () => {
   const { user } = useAuth();
@@ -15,6 +15,7 @@ const SellerAnalytics = () => {
     top_products: []
   });
   const [loading, setLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (!user || user.role !== 'seller') {
@@ -24,7 +25,7 @@ const SellerAnalytics = () => {
 
     const fetchAnalytics = async () => {
       try {
-        const res = await fetch(`http://localhost/Spec%20Zone/backend/api/seller_analytics.php?seller_id=${user.id}`);
+        const res = await fetch(`http://localhost/SpecZone/backend/api/seller_analytics.php?seller_id=${user.id}`);
         const data = await res.json();
         if (!data.message) {
           setAnalytics(data);
@@ -46,8 +47,16 @@ const SellerAnalytics = () => {
 
   return (
     <div className="dashboard-layout" style={{ minHeight: '100vh' }}>
-      <SellerSidebar />
-      <main className="dashboard-content">
+      <SellerSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      {sidebarOpen && <div className="seller-dashboard-overlay" onClick={() => setSidebarOpen(false)} />}
+      <main className="dashboard-content seller-dashboard-content">
+        <div className="seller-mobile-header">
+          <button className="seller-hamburger" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
+            <Menu size={24} />
+          </button>
+          <span className="seller-mobile-title">Sales Analytics</span>
+        </div>
+
         <h2 style={{ fontSize: '2rem', marginBottom: '2rem' }}>Sales Analytics</h2>
         
         {loading ? (
@@ -79,7 +88,7 @@ const SellerAnalytics = () => {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem', alignItems: 'start' }}>
+            <div className="analytics-main-grid">
               
               {/* Bar Chart Section */}
               <div className="glass-panel" style={{ padding: '2rem' }}>
@@ -145,13 +154,13 @@ const SellerAnalytics = () => {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     {analytics.top_products.map((prod, index) => (
                       <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', minWidth: 0 }}>
                           <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: index === 0 ? 'var(--warning)' : index === 1 ? '#e2e8f0' : index === 2 ? '#b45309' : 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold', color: index < 3 ? '#000' : '#fff' }}>
                             {index + 1}
                           </div>
-                          <span style={{ fontWeight: 'bold' }}>{prod.name}</span>
+                          <span style={{ fontWeight: 'bold', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{prod.name}</span>
                         </div>
-                        <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                        <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
                           {prod.sold} sold
                         </span>
                       </div>

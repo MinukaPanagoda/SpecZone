@@ -20,9 +20,11 @@ const ProductDetails = () => {
   const [newReview, setNewReview] = useState({ rating: 10, comment: '' });
   const [reviewLoading, setReviewLoading] = useState(false);
 
+  const [isResponsive, setIsResponsive] = useState(() => window.innerWidth <= 900);
+
   const fetchReviews = async () => {
     try {
-      const res = await fetch(`http://localhost/Spec%20Zone/backend/api/reviews.php?action=read&product_id=${id}`);
+      const res = await fetch(`http://localhost/SpecZone/backend/api/reviews.php?action=read&product_id=${id}`);
       const data = await res.json();
       if (Array.isArray(data)) {
         setReviews(data);
@@ -33,7 +35,7 @@ const ProductDetails = () => {
   };
 
   useEffect(() => {
-    fetch(`http://localhost/Spec%20Zone/backend/api/products.php?action=read_single&id=${id}`)
+    fetch(`http://localhost/SpecZone/backend/api/products.php?action=read_single&id=${id}`)
       .then(res => res.json())
       .then(data => {
         if (data.id) {
@@ -50,6 +52,14 @@ const ProductDetails = () => {
         setLoading(false);
       });
   }, [id]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsResponsive(window.innerWidth <= 900);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   if (loading) return <div className="container" style={{ padding: '4rem 1rem', textAlign: 'center' }}>Loading product details...</div>;
   if (error || !product) return <div className="container" style={{ padding: '4rem 1rem', textAlign: 'center', color: 'var(--danger)' }}>{error}</div>;
@@ -69,7 +79,7 @@ const ProductDetails = () => {
     
     setReviewLoading(true);
     try {
-      const res = await fetch('http://localhost/Spec%20Zone/backend/api/reviews.php?action=create', {
+      const res = await fetch('http://localhost/SpecZone/backend/api/reviews.php?action=create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -111,12 +121,12 @@ const ProductDetails = () => {
         <ArrowLeft size={20} /> Back to Shop
       </button>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4rem', marginBottom: '4rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isResponsive ? '1fr' : '1fr 1fr', gap: isResponsive ? '2rem' : '4rem', marginBottom: '4rem' }}>
         
         {/* Left: Image Gallery */}
-        <div className="glass-panel" style={{ padding: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '400px' }}>
+        <div className="glass-panel" style={{ padding: isResponsive ? '1rem' : '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: isResponsive ? '260px' : '400px' }}>
           {product.image_url ? (
-            <img src={product.image_url} alt={product.name} style={{ maxWidth: '100%', maxHeight: '400px', objectFit: 'contain', borderRadius: '8px' }} />
+            <img src={product.image_url} alt={product.name} style={{ maxWidth: '100%', maxHeight: isResponsive ? '260px' : '400px', width: '100%', height: 'auto', objectFit: 'contain', borderRadius: '8px' }} />
           ) : (
             <div style={{ color: 'var(--text-secondary)' }}>No Image Available</div>
           )}
@@ -127,9 +137,9 @@ const ProductDetails = () => {
           <div style={{ color: 'var(--accent-primary)', fontWeight: 'bold', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.9rem' }}>
             {product.category_name}
           </div>
-          <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem', lineHeight: '1.2' }}>{product.name}</h1>
+          <h1 style={{ fontSize: isResponsive ? '1.8rem' : '2.5rem', marginBottom: '1rem', lineHeight: '1.2' }}>{product.name}</h1>
           
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: reviews.length > 0 ? getRatingColor(avgRating) : 'var(--text-secondary)' }}>
               <Star size={18} fill="currentColor" />
               <span style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
@@ -142,7 +152,7 @@ const ProductDetails = () => {
             <span>Seller: {product.seller_name}</span>
           </div>
 
-          <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: 'var(--accent-primary)', marginBottom: '1.5rem' }}>
+          <div style={{ fontSize: isResponsive ? '1.8rem' : '2.5rem', fontWeight: 'bold', color: 'var(--accent-primary)', marginBottom: '1.5rem' }}>
             Rs. {parseFloat(product.price).toLocaleString('en-IN')}
           </div>
 
@@ -150,7 +160,7 @@ const ProductDetails = () => {
             {product.description || "No description provided for this product."}
           </p>
 
-          <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '2.5rem', padding: '1.5rem 0', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: isResponsive ? '1rem' : '1.5rem', marginBottom: '2.5rem', padding: '1.5rem 0', borderTop: '1px solid var(--border-color)', borderBottom: '1px solid var(--border-color)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}>
               <Package size={20} color="var(--accent-primary)" />
               {product.stock > 0 ? <span style={{ color: 'var(--success)' }}>In Stock ({product.stock})</span> : <span style={{ color: 'var(--danger)' }}>Out of Stock</span>}
@@ -166,7 +176,7 @@ const ProductDetails = () => {
           </div>
 
           {(!user || user.role === 'buyer') && (
-            <div style={{ display: 'flex', gap: '1rem' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', padding: '0.2rem' }}>
                 <button 
                   style={{ background: 'none', border: 'none', color: 'white', padding: '0.8rem 1rem', cursor: 'pointer' }}
@@ -180,7 +190,7 @@ const ProductDetails = () => {
               </div>
               <button 
                 className="btn btn-primary" 
-                style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontSize: '1.1rem' }}
+                style={{ flex: isResponsive ? '1 1 100%' : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontSize: '1.1rem' }}
                 disabled={product.stock <= 0}
                 onClick={handleAddToCart}
               >
@@ -200,16 +210,16 @@ const ProductDetails = () => {
         </h2>
         <div className="glass-panel" style={{ padding: '2rem' }}>
           {product.specs && Object.keys(product.specs).length > 0 ? (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isResponsive ? '1fr' : '1fr 1fr', gap: '0' }}>
               {Object.entries(product.specs).map(([key, value], index) => (
                 <div key={key} style={{ 
-                  display: 'flex', 
+                  display: isResponsive ? 'block' : 'flex', 
                   padding: '1rem', 
                   borderBottom: '1px solid rgba(255,255,255,0.05)',
                   background: index % 4 === 0 || index % 4 === 3 ? 'rgba(0,0,0,0.2)' : 'transparent'
                 }}>
-                  <div style={{ width: '40%', color: 'var(--text-secondary)', fontWeight: 'bold' }}>{key}</div>
-                  <div style={{ width: '60%' }}>{value}</div>
+                  <div style={{ width: isResponsive ? '100%' : '40%', color: 'var(--text-secondary)', fontWeight: 'bold', marginBottom: isResponsive ? '0.3rem' : 0 }}>{key}</div>
+                  <div style={{ width: isResponsive ? '100%' : '60%' }}>{value}</div>
                 </div>
               ))}
             </div>
@@ -245,7 +255,7 @@ const ProductDetails = () => {
             
             {reviews.map(review => (
               <div key={review.id} className="glass-panel" style={{ padding: '1.5rem', backgroundColor: 'rgba(0,0,0,0.2)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '1rem' }}>
                   <div>
                     <h4 style={{ margin: '0 0 0.3rem 0' }}>{review.buyer_name}</h4>
                     <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
@@ -296,9 +306,9 @@ const ProductDetails = () => {
                     required
                   ></textarea>
                 </div>
-                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
-                  <button type="button" className="btn btn-outline" onClick={() => setShowReviewForm(false)}>Cancel</button>
-                  <button type="submit" className="btn btn-primary" disabled={reviewLoading}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', justifyContent: 'flex-end' }}>
+                  <button type="button" className="btn btn-outline" style={isResponsive ? { flex: '1 1 100%' } : undefined} onClick={() => setShowReviewForm(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary" style={isResponsive ? { flex: '1 1 100%' } : undefined} disabled={reviewLoading}>
                     {reviewLoading ? 'Submitting...' : 'Submit Review'}
                   </button>
                 </div>

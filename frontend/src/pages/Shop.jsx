@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Filter, Star, Search, Image as ImageIcon } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Filter, Star, Search, Image as ImageIcon, ChevronDown } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
@@ -10,10 +10,26 @@ const Shop = () => {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [isResponsive, setIsResponsive] = useState(() => window.innerWidth <= 900);
+  const [sortFocused, setSortFocused] = useState(false);
+  const [sortHovered, setSortHovered] = useState(false);
+
+  // Custom React dropdown state
+  const [sortOpen, setSortOpen] = useState(false);
+  const [selectedSort, setSelectedSort] = useState('Popularity');
+  const sortRef = useRef(null);
+
+  const sortOptions = [
+    'Popularity',
+    'Low to High',
+    'High to Low',
+    'Newest Arrivals',
+  ];
 
   useEffect(() => {
     // Fetch products
-    fetch('http://localhost/Spec%20Zone/backend/api/products.php?action=read')
+    fetch('http://localhost/SpecZone/backend/api/products.php?action=read')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -27,7 +43,7 @@ const Shop = () => {
       });
 
     // Fetch categories
-    fetch('http://localhost/Spec%20Zone/backend/api/categories.php')
+    fetch('http://localhost/SpecZone/backend/api/categories.php')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {
@@ -36,11 +52,77 @@ const Shop = () => {
       })
       .catch(err => console.error("Error fetching categories:", err));
   }, []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsResponsive(window.innerWidth <= 900);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Close custom dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (sortRef.current && !sortRef.current.contains(event.target)) {
+        setSortOpen(false);
+        setSortFocused(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const sortSelectStyle = {
+    width: isResponsive ? '100%' : 'auto',
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    color: 'var(--text-primary)',
+    border: `1px solid ${
+      sortFocused
+        ? 'var(--accent-primary)'
+        : sortHovered
+          ? 'var(--border-highlight)'
+          : 'var(--border-color)'
+    }`,
+    borderRadius: 'var(--border-radius-sm)',
+    padding: '0.8rem 2.5rem 0.8rem 1rem',
+    fontFamily: 'inherit',
+    fontSize: '0.95rem',
+    cursor: 'pointer',
+    outline: 'none',
+    boxShadow: sortFocused ? '0 0 10px rgba(0, 240, 255, 0.1)' : 'none',
+    transition: 'all var(--transition-fast)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    position: 'relative',
+    userSelect: 'none',
+  };
+
   return (
-    <div className="container">
+    <div className="container shop-page">
       <div className="shop-layout">
         {/* Sidebar Filters */}
-        <aside className="shop-sidebar glass-panel" style={{ padding: '2rem', height: 'fit-content' }}>
+        <aside
+          id="filter-panel"
+          className={`shop-sidebar glass-panel${filtersOpen ? ' filters-open' : ''}`}
+          style={{
+            padding: '2rem',
+            height: 'fit-content',
+            ...(isResponsive
+              ? {
+                  display: filtersOpen ? 'block' : 'none',
+                  width: '100%',
+                  order: 2,
+                }
+              : {}),
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '2rem' }}>
             <Filter size={20} />
             <h3 style={{ margin: 0 }}>Filters</h3>
@@ -50,37 +132,237 @@ const Shop = () => {
             <h4>Categories</h4>
             {categories.map(cat => (
               <label key={cat.id} className="filter-label">
-                <input type="checkbox" value={cat.id} /> {cat.name}
+                <input type="checkbox" value={cat.id} className="speczone-control" /> {cat.name}
               </label>
             ))}
           </div>
 
           <div className="filter-group">
             <h4>Price Range</h4>
-            <label className="filter-label"><input type="radio" name="price" /> Under Rs. 50,000</label>
-            <label className="filter-label"><input type="radio" name="price" /> Rs. 50,000 - 100,000</label>
-            <label className="filter-label"><input type="radio" name="price" /> Rs. 100,000 - 200,000</label>
-            <label className="filter-label"><input type="radio" name="price" /> Over Rs. 200,000</label>
+            <label className="filter-label"><input type="radio" name="price" className="speczone-control" /> Under Rs. 50,000</label>
+            <label className="filter-label"><input type="radio" name="price" className="speczone-control" /> Rs. 50,000 - 100,000</label>
+            <label className="filter-label"><input type="radio" name="price" className="speczone-control" /> Rs. 100,000 - 200,000</label>
+            <label className="filter-label"><input type="radio" name="price" className="speczone-control" /> Over Rs. 200,000</label>
           </div>
-          
+
           <button className="btn btn-primary" style={{ width: '100%' }}>Apply Filters</button>
         </aside>
 
+        {isResponsive && (
+          <button
+            type="button"
+            className="btn btn-outline"
+            aria-expanded={filtersOpen}
+            aria-controls="filter-panel"
+            onClick={() => setFiltersOpen(prev => !prev)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              marginBottom: '1.5rem',
+              order: 1,
+            }}
+          >
+            <Filter size={18} />
+            Filters
+          </button>
+        )}
+
         {/* Main Content */}
-        <main className="shop-main">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <main
+          className="shop-main"
+          style={isResponsive ? { order: 3 } : undefined}
+        >
+          <div
+            className="shop-header"
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: isResponsive ? 'stretch' : 'center',
+              marginBottom: '2rem',
+              ...(isResponsive
+                ? {
+                    flexDirection: 'column',
+                    gap: '1rem',
+                  }
+                : {}),
+            }}
+          >
             <h2 style={{ margin: 0 }}>All Components</h2>
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <div style={{ position: 'relative' }}>
-                <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-                <input type="text" placeholder="Search..." className="form-control" style={{ paddingLeft: '2.5rem', width: '250px' }} />
+
+            <div
+              className="shop-header-controls"
+              style={{
+                display: 'flex',
+                gap: '1rem',
+                ...(isResponsive
+                  ? {
+                      width: '100%',
+                      flexDirection: 'column',
+                      alignItems: 'stretch',
+                    }
+                  : {}),
+              }}
+            >
+              <div
+                className="shop-search"
+                style={{
+                  position: 'relative',
+                  ...(isResponsive ? { width: '100%' } : {}),
+                }}
+              >
+                <Search
+                  size={18}
+                  style={{
+                    position: 'absolute',
+                    left: '1rem',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: 'var(--text-secondary)',
+                  }}
+                />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  className="form-control shop-search-input"
+                  style={{
+                    paddingLeft: '2.5rem',
+                    ...(isResponsive ? { width: '100%' } : {}),
+                  }}
+                />
               </div>
-              <select className="form-control" style={{ width: 'auto' }}>
-                <option>Sort by: Popularity</option>
-                <option>Price: Low to High</option>
-                <option>Price: High to Low</option>
-                <option>Newest Arrivals</option>
-              </select>
+
+              {/* Custom React Sort Dropdown */}
+              <div
+                ref={sortRef}
+                style={{
+                  position: 'relative',
+                  width: isResponsive ? '100%' : 'auto',
+                  zIndex: sortOpen ? 1000 : 'auto',
+                }}
+              >
+                {/* Dropdown Trigger */}
+                <button
+                  type="button"
+                  aria-haspopup="listbox"
+                  aria-expanded={sortOpen}
+                  className="form-control shop-sort"
+                  onMouseEnter={() => setSortHovered(true)}
+                  onMouseLeave={() => setSortHovered(false)}
+                  onFocus={() => setSortFocused(true)}
+                  onBlur={() => {
+                    // Keep focus styling while the dropdown is open
+                    if (!sortOpen) {
+                      setSortFocused(false);
+                    }
+                  }}
+                  onClick={() => {
+                    setSortOpen(prev => !prev);
+                    setSortFocused(true);
+                  }}
+                  style={{
+                    ...sortSelectStyle,
+                    width: '100%',
+                    textAlign: 'left',
+                    border: `1px solid ${
+                      sortFocused
+                        ? 'var(--accent-primary)'
+                        : sortHovered
+                          ? 'var(--border-highlight)'
+                          : 'var(--border-color)'
+                    }`,
+                  }}
+                >
+                  <span>{selectedSort}</span>
+
+                  <ChevronDown
+                    size={16}
+                    aria-hidden="true"
+                    style={{
+                      position: 'absolute',
+                      right: '1rem',
+                      top: '50%',
+                      transform: `translateY(-50%) rotate(${sortOpen ? 180 : 0}deg)`,
+                      color: 'var(--text-secondary)',
+                      pointerEvents: 'none',
+                      transition: 'transform 0.2s ease',
+                    }}
+                  />
+                </button>
+
+                {/* React-rendered Dropdown Menu */}
+                {sortOpen && (
+                  <div
+                    role="listbox"
+                    aria-label="Sort products"
+                    style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 0.4rem)',
+                      left: 0,
+                      width: '100%',
+                      minWidth: isResponsive ? '100%' : '180px',
+                      backgroundColor: 'var(--bg-secondary)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: 'var(--border-radius-sm)',
+                      boxShadow: '0 10px 30px rgba(0, 0, 0, 0.35)',
+                      overflow: 'hidden',
+                      zIndex: 1001,
+                    }}
+                  >
+                    {sortOptions.map(option => {
+                      const isSelected = selectedSort === option;
+
+                      return (
+                        <div
+                          key={option}
+                          role="option"
+                          aria-selected={isSelected}
+                          onMouseDown={(event) => {
+                            event.preventDefault();
+                            setSelectedSort(option);
+                            setSortOpen(false);
+                            setSortFocused(false);
+                          }}
+                          style={{
+                            padding: '0.8rem 1rem',
+                            backgroundColor: isSelected
+                              ? 'rgba(0, 240, 255, 0.12)'
+                              : 'transparent',
+                            color: isSelected
+                              ? 'var(--accent-primary)'
+                              : 'var(--text-primary)',
+                            cursor: 'pointer',
+                            fontSize: '0.95rem',
+                            transition: 'background-color 0.15s ease, color 0.15s ease',
+                            borderBottom:
+                              option !== sortOptions[sortOptions.length - 1]
+                                ? '1px solid var(--border-color)'
+                                : 'none',
+                          }}
+                          onMouseEnter={(event) => {
+                            event.currentTarget.style.backgroundColor =
+                              'rgba(0, 240, 255, 0.1)';
+                            event.currentTarget.style.color =
+                              'var(--accent-primary)';
+                          }}
+                          onMouseLeave={(event) => {
+                            event.currentTarget.style.backgroundColor =
+                              isSelected
+                                ? 'rgba(0, 240, 255, 0.12)'
+                                : 'transparent';
+                            event.currentTarget.style.color =
+                              isSelected
+                                ? 'var(--accent-primary)'
+                                : 'var(--text-primary)';
+                          }}
+                        >
+                          {option}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -108,36 +390,39 @@ const Shop = () => {
                       )}
                     </div>
                   </Link>
-                  
+
                   <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', flex: 1 }}>
                     <div style={{ fontSize: '0.8rem', color: 'var(--accent-primary)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
                       {product.category_name}
                     </div>
-                    
+
                     <Link to={`/product/${product.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                       <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem', lineHeight: '1.3' }}>{product.name}</h3>
                     </Link>
-                    
+
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '1rem' }}>
-                    <Star size={16} color="var(--warning)" fill="var(--warning)" />
-                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>--</span>
-                  </div>
-                  
-                  <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--accent-primary)' }}>Rs. {parseFloat(product.price).toLocaleString('en-IN')}</span>
-                    {(!user || user.role === 'buyer') && (
-                      <button 
-                        className="btn btn-outline" 
-                        style={{ padding: '0.4rem 0.8rem' }}
-                        onClick={() => {
-                          if(!user) alert("Please login first to add to cart!");
-                          else addToCart(product.id, 1);
-                        }}
-                      >
-                        Cart
-                      </button>
-                    )}
-                  </div>
+                      <Star size={16} color="var(--warning)" fill="var(--warning)" />
+                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>--</span>
+                    </div>
+
+                    <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--accent-primary)' }}>
+                        Rs. {parseFloat(product.price).toLocaleString('en-IN')}
+                      </span>
+
+                      {(!user || user.role === 'buyer') && (
+                        <button
+                          className="btn btn-outline"
+                          style={{ padding: '0.4rem 0.8rem' }}
+                          onClick={() => {
+                            if (!user) alert("Please login first to add to cart!");
+                            else addToCart(product.id, 1);
+                          }}
+                        >
+                          Cart
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))

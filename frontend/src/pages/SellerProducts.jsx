@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import SellerSidebar from '../components/SellerSidebar';
-import { Package, Edit, Trash2, Plus } from 'lucide-react';
+import { Package, Edit, Trash2, Plus, Menu } from 'lucide-react';
 
 const SellerProducts = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (!user || user.role !== 'seller') {
@@ -18,7 +19,7 @@ const SellerProducts = () => {
 
     const fetchProducts = async () => {
       try {
-        const res = await fetch(`http://localhost/Spec%20Zone/backend/api/products.php?action=read&seller_id=${user.id}`);
+        const res = await fetch(`http://localhost/SpecZone/backend/api/products.php?action=read&seller_id=${user.id}`);
         const data = await res.json();
         if (Array.isArray(data)) {
           setProducts(data);
@@ -35,9 +36,17 @@ const SellerProducts = () => {
 
   return (
     <div className="dashboard-layout" style={{ minHeight: '100vh' }}>
-      <SellerSidebar />
-      <main className="dashboard-content">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+      <SellerSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      {sidebarOpen && <div className="seller-dashboard-overlay" onClick={() => setSidebarOpen(false)} />}
+      <main className="dashboard-content seller-dashboard-content">
+        <div className="seller-mobile-header">
+          <button className="seller-hamburger" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
+            <Menu size={24} />
+          </button>
+          <span className="seller-mobile-title">My Products</span>
+        </div>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
           <h2 style={{ fontSize: '2rem', margin: 0 }}>My Products</h2>
           <Link to="/seller/add-product" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Plus size={20} /> Add New Product
@@ -57,7 +66,8 @@ const SellerProducts = () => {
               </Link>
             </div>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <div style={{ overflowX: 'auto', width: '100%' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '760px', textAlign: 'left' }}>
               <thead>
                 <tr style={{ background: 'rgba(255,255,255,0.05)' }}>
                   <th style={{ padding: '1.2rem 1rem' }}>Product</th>
@@ -113,9 +123,10 @@ const SellerProducts = () => {
                       </div>
                     </td>
                   </tr>
-                ))}
+                )                )}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       </main>

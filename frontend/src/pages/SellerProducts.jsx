@@ -83,9 +83,9 @@ const SellerProducts = () => {
                   <tr key={product.id} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                     <td style={{ padding: '1rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <img src={product.image_url || 'https://via.placeholder.com/50'} alt={product.name} style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }} />
+                        <img src={product.image_url || 'https://via.placeholder.com/50'} alt={product.title} style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px' }} />
                         <div>
-                          <div style={{ fontWeight: 'bold' }}>{product.name}</div>
+                          <div style={{ fontWeight: 'bold' }}>{product.title}</div>
                           <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>ID: #{product.id}</div>
                         </div>
                       </div>

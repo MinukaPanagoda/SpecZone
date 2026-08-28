@@ -94,14 +94,14 @@ const Home = () => {
                   {product.image_url ? (
                     <img
                       src={product.image_url}
-                      alt={product.name}
+                      alt={product.title}
                       style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 'var(--border-radius-sm)' }}
                     />
                   ) : (
                     <Monitor size={64} color="var(--text-muted)" />
                   )}
                 </div>
-                <h4 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>{product.name}</h4>
+                <h4 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>{product.title}</h4>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
                   <Star size={16} color="var(--warning)" fill="var(--warning)" />
                   <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>4.5 (0 Reviews)</span>

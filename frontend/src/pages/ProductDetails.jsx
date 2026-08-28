@@ -126,7 +126,7 @@ const ProductDetails = () => {
         {/* Left: Image Gallery */}
         <div className="glass-panel" style={{ padding: isResponsive ? '1rem' : '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: isResponsive ? '260px' : '400px' }}>
           {product.image_url ? (
-            <img src={product.image_url} alt={product.name} style={{ maxWidth: '100%', maxHeight: isResponsive ? '260px' : '400px', width: '100%', height: 'auto', objectFit: 'contain', borderRadius: '8px' }} />
+            <img src={product.image_url} alt={product.title} style={{ maxWidth: '100%', maxHeight: isResponsive ? '260px' : '400px', width: '100%', height: 'auto', objectFit: 'contain', borderRadius: '8px' }} />
           ) : (
             <div style={{ color: 'var(--text-secondary)' }}>No Image Available</div>
           )}
@@ -137,7 +137,7 @@ const ProductDetails = () => {
           <div style={{ color: 'var(--accent-primary)', fontWeight: 'bold', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.9rem' }}>
             {product.category_name}
           </div>
-          <h1 style={{ fontSize: isResponsive ? '1.8rem' : '2.5rem', marginBottom: '1rem', lineHeight: '1.2' }}>{product.name}</h1>
+          <h1 style={{ fontSize: isResponsive ? '1.8rem' : '2.5rem', marginBottom: '1rem', lineHeight: '1.2' }}>{product.title}</h1>
           
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: reviews.length > 0 ? getRatingColor(avgRating) : 'var(--text-secondary)' }}>

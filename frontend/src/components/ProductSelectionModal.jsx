@@ -34,7 +34,7 @@ const ProductSelectionModal = ({ isOpen, onClose, onSelect, categoryId, category
   if (!isOpen) return null;
 
   const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(searchQuery.toLowerCase())
+    p.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -87,7 +87,7 @@ const ProductSelectionModal = ({ isOpen, onClose, onSelect, categoryId, category
                   alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.2)'
                 }}>
                   {product.image_url ? (
-                    <img src={product.image_url} alt={product.name} style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '4px' }} />
+                    <img src={product.image_url} alt={product.title} style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '4px' }} />
                   ) : (
                     <div style={{ width: '80px', height: '80px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <ImageIcon size={24} color="var(--text-secondary)" />
@@ -95,7 +95,7 @@ const ProductSelectionModal = ({ isOpen, onClose, onSelect, categoryId, category
                   )}
                   
                   <div style={{ flex: 1 }}>
-                    <h4 style={{ fontSize: '1.1rem', marginBottom: '0.3rem' }}>{product.name}</h4>
+                    <h4 style={{ fontSize: '1.1rem', marginBottom: '0.3rem' }}>{product.title}</h4>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
                       {product.stock > 0 ? <span style={{ color: 'var(--success)' }}>In Stock ({product.stock})</span> : <span style={{ color: 'var(--danger)' }}>Out of Stock</span>}
                     </p>

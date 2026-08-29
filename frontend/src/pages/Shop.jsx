@@ -15,6 +15,12 @@ const Shop = () => {
   const [sortFocused, setSortFocused] = useState(false);
   const [sortHovered, setSortHovered] = useState(false);
 
+  // Filter state
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [selectedPriceRange, setSelectedPriceRange] = useState(null);
+  const [appliedCategories, setAppliedCategories] = useState([]);
+  const [appliedPriceRange, setAppliedPriceRange] = useState(null);
+
   // Custom React dropdown state
   const [sortOpen, setSortOpen] = useState(false);
   const [selectedSort, setSelectedSort] = useState('Popularity');
@@ -78,6 +84,44 @@ const Shop = () => {
     };
   }, []);
 
+  const handleCategoryChange = (categoryId, checked) => {
+    setSelectedCategories(prev =>
+      checked ? [...prev, categoryId] : prev.filter(id => id !== categoryId)
+    );
+  };
+
+  const handlePriceRangeChange = (range) => {
+    setSelectedPriceRange(range);
+  };
+
+  const handleApplyFilters = () => {
+    setAppliedCategories(selectedCategories);
+    setAppliedPriceRange(selectedPriceRange);
+    if (isResponsive) setFiltersOpen(false);
+  };
+
+  const matchesPriceRange = (price, range) => {
+    const p = parseFloat(price);
+    switch (range) {
+      case 'under-50k':
+        return p < 50000;
+      case '50k-100k':
+        return p >= 50000 && p <= 100000;
+      case '100k-200k':
+        return p > 100000 && p <= 200000;
+      case 'over-200k':
+        return p > 200000;
+      default:
+        return true;
+    }
+  };
+
+  const filteredProducts = products.filter(product => {
+    const categoryMatch = appliedCategories.length === 0 || appliedCategories.includes(product.category_id);
+    const priceMatch = appliedPriceRange === null || matchesPriceRange(product.price, appliedPriceRange);
+    return categoryMatch && priceMatch;
+  });
+
   const sortSelectStyle = {
     width: isResponsive ? '100%' : 'auto',
     backgroundColor: 'rgba(0, 0, 0, 0.2)',
@@ -132,20 +176,67 @@ const Shop = () => {
             <h4>Categories</h4>
             {categories.map(cat => (
               <label key={cat.id} className="filter-label">
-                <input type="checkbox" value={cat.id} className="speczone-control" /> {cat.name}
+                <input
+                  type="checkbox"
+                  value={cat.id}
+                  className="speczone-control"
+                  checked={selectedCategories.includes(cat.id)}
+                  onChange={(e) => handleCategoryChange(cat.id, e.target.checked)}
+                />
+                {cat.name}
               </label>
             ))}
           </div>
 
           <div className="filter-group">
             <h4>Price Range</h4>
-            <label className="filter-label"><input type="radio" name="price" className="speczone-control" /> Under Rs. 50,000</label>
-            <label className="filter-label"><input type="radio" name="price" className="speczone-control" /> Rs. 50,000 - 100,000</label>
-            <label className="filter-label"><input type="radio" name="price" className="speczone-control" /> Rs. 100,000 - 200,000</label>
-            <label className="filter-label"><input type="radio" name="price" className="speczone-control" /> Over Rs. 200,000</label>
+            <label className="filter-label">
+              <input
+                type="radio"
+                name="price"
+                className="speczone-control"
+                value="under-50k"
+                checked={selectedPriceRange === 'under-50k'}
+                onChange={(e) => handlePriceRangeChange(e.target.value)}
+              />
+              Under Rs. 50,000
+            </label>
+            <label className="filter-label">
+              <input
+                type="radio"
+                name="price"
+                className="speczone-control"
+                value="50k-100k"
+                checked={selectedPriceRange === '50k-100k'}
+                onChange={(e) => handlePriceRangeChange(e.target.value)}
+              />
+              Rs. 50,000 - 100,000
+            </label>
+            <label className="filter-label">
+              <input
+                type="radio"
+                name="price"
+                className="speczone-control"
+                value="100k-200k"
+                checked={selectedPriceRange === '100k-200k'}
+                onChange={(e) => handlePriceRangeChange(e.target.value)}
+              />
+              Rs. 100,000 - 200,000
+            </label>
+            <label className="filter-label">
+              <input
+                type="radio"
+                name="price"
+                className="speczone-control"
+                value="over-200k"
+                checked={selectedPriceRange === 'over-200k'}
+                onChange={(e) => handlePriceRangeChange(e.target.value)}
+              />
+              Over Rs. 200,000
+            </label>
           </div>
 
-          <button className="btn btn-primary" style={{ width: '100%' }}>Apply Filters</button>
+          <button className="btn btn-primary" style={{ width: '100%' }} onClick={handleApplyFilters}>Apply Filters</button>
         </aside>
 
         {isResponsive && (
@@ -371,8 +462,10 @@ const Shop = () => {
               <p>Loading products...</p>
             ) : products.length === 0 ? (
               <p>No products available yet.</p>
+            ) : filteredProducts.length === 0 ? (
+              <p>No products match the selected filters.</p>
             ) : (
-              products.map((product) => (
+              filteredProducts.map((product) => (
                 <div className="product-card" key={product.id}>
                   <Link to={`/product/${product.id}`} style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
                     <div style={{ position: 'relative', height: '200px', backgroundColor: 'rgba(0,0,0,0.3)', borderTopLeftRadius: '10px', borderTopRightRadius: '10px', overflow: 'hidden' }}>

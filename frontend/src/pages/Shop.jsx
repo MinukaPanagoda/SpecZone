@@ -18,8 +18,6 @@ const Shop = () => {
   // Filter state
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [selectedPriceRange, setSelectedPriceRange] = useState(null);
-  const [appliedCategories, setAppliedCategories] = useState([]);
-  const [appliedPriceRange, setAppliedPriceRange] = useState(null);
 
   // Custom React dropdown state
   const [sortOpen, setSortOpen] = useState(false);
@@ -94,10 +92,9 @@ const Shop = () => {
     setSelectedPriceRange(range);
   };
 
-  const handleApplyFilters = () => {
-    setAppliedCategories(selectedCategories);
-    setAppliedPriceRange(selectedPriceRange);
-    if (isResponsive) setFiltersOpen(false);
+  const handleClearFilters = () => {
+    setSelectedCategories([]);
+    setSelectedPriceRange(null);
   };
 
   const matchesPriceRange = (price, range) => {
@@ -117,8 +114,8 @@ const Shop = () => {
   };
 
   const filteredProducts = products.filter(product => {
-    const categoryMatch = appliedCategories.length === 0 || appliedCategories.includes(product.category_id);
-    const priceMatch = appliedPriceRange === null || matchesPriceRange(product.price, appliedPriceRange);
+    const categoryMatch = selectedCategories.length === 0 || selectedCategories.includes(product.category_id);
+    const priceMatch = selectedPriceRange === null || matchesPriceRange(product.price, selectedPriceRange);
     return categoryMatch && priceMatch;
   });
 
@@ -236,7 +233,7 @@ const Shop = () => {
             </label>
           </div>
 
-          <button className="btn btn-primary" style={{ width: '100%' }} onClick={handleApplyFilters}>Apply Filters</button>
+          <button className="btn btn-primary" style={{ width: '100%' }} onClick={handleClearFilters}>Clear Filters</button>
         </aside>
 
         {isResponsive && (

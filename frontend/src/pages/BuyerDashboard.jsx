@@ -2,25 +2,34 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
-import { Link } from 'react-router-dom';
-import { LayoutDashboard, ShoppingBag, Heart, Wrench, Settings, Menu, X, Trash2, ShoppingCart, Star } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { LayoutDashboard, ShoppingBag, Heart, Wrench, Settings, Menu, X, Trash2, ShoppingCart, Star, Printer } from 'lucide-react';
 
 const BuyerDashboard = () => {
   const { user } = useAuth();
+  const location = useLocation();
   const { wishlistItems, removeFromWishlist, wishlistCount } = useWishlist();
   const { addToCart } = useCart();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState(location.state?.tab || 'overview');
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [reportItem, setReportItem] = useState(null);
   const [reportReason, setReportReason] = useState('');
+  const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
+  const [selectedOrderForInvoice, setSelectedOrderForInvoice] = useState(null);
 
   const handleTab = (tab) => {
     setActiveTab(tab);
     setSidebarOpen(false);
   };
+
+  useEffect(() => {
+    if (location.state?.tab) {
+      setActiveTab(location.state.tab);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     if (user && user.role === 'buyer') {
@@ -41,8 +50,23 @@ const BuyerDashboard = () => {
 
   const getStatusColor = (status) => {
     if (status === 'delivered') return 'var(--success)';
-    if (status === 'shipped') return 'var(--warning)';
-    return 'var(--text-secondary)';
+    if (status === 'shipped') return 'var(--accent-primary)';
+    return 'var(--warning)';
+  };
+
+  const getOrderPaymentStatus = (order) => {
+    if (!order || !order.items || order.items.length === 0) {
+      return { text: 'PAYMENT DUE ON DELIVERY (COD)', color: 'var(--warning)', bg: 'rgba(255, 180, 0, 0.15)' };
+    }
+    const allDelivered = order.items.every(i => i.status === 'delivered');
+    if (allDelivered) {
+      return { text: 'PAID / COMPLETED', color: 'var(--success)', bg: 'rgba(0, 255, 150, 0.15)' };
+    }
+    const hasShipped = order.items.some(i => i.status === 'shipped');
+    if (hasShipped) {
+      return { text: 'DISPATCHED - PAYMENT DUE ON DELIVERY', color: 'var(--accent-primary)', bg: 'rgba(0, 240, 255, 0.15)' };
+    }
+    return { text: 'PAYMENT DUE ON DELIVERY (COD)', color: 'var(--warning)', bg: 'rgba(255, 180, 0, 0.15)' };
   };
 
   const handleReportSubmit = async (e) => {
@@ -212,14 +236,27 @@ const BuyerDashboard = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 {orders.map(order => (
                   <div key={order.id} className="glass-panel" style={{ overflow: 'hidden' }}>
-                    <div style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', flexWrap: 'wrap', gap: '1rem' }}>
                       <div>
-                        <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Order Placed: {new Date(order.created_at).toLocaleDateString()}</span>
-                        <h4 style={{ margin: '0.3rem 0 0 0' }}>Order #{order.id}</h4>
+                        <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Order Placed: {new Date(order.created_at).toLocaleDateString()}</span>
+                        <h4 style={{ margin: '0.2rem 0 0 0', fontSize: '1.15rem' }}>Order #{order.id}</h4>
                       </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Total Amount</span>
-                        <h4 style={{ margin: '0.3rem 0 0 0', color: 'var(--accent-primary)' }}>Rs. {parseFloat(order.total_amount).toLocaleString('en-IN')}</h4>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <button
+                          type="button"
+                          className="btn btn-outline"
+                          style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                          onClick={() => {
+                            setSelectedOrderForInvoice(order);
+                            setInvoiceModalOpen(true);
+                          }}
+                        >
+                          <Printer size={15} /> Print Invoice
+                        </button>
+                        <div style={{ textAlign: 'right' }}>
+                          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Total Amount</span>
+                          <h4 style={{ margin: '0.2rem 0 0 0', color: 'var(--accent-primary)' }}>Rs. {parseFloat(order.total_amount).toLocaleString('en-IN')}</h4>
+                        </div>
                       </div>
                     </div>
                     <div style={{ padding: '1.5rem' }}>
@@ -430,6 +467,135 @@ const BuyerDashboard = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Printable Invoice Modal */}
+      {invoiceModalOpen && selectedOrderForInvoice && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0, 0, 0, 0.75)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1100,
+            padding: '1rem'
+          }}
+          onClick={() => {
+            setInvoiceModalOpen(false);
+            setSelectedOrderForInvoice(null);
+          }}
+        >
+          <div
+            className="glass-panel"
+            style={{
+              width: '95%',
+              maxWidth: '650px',
+              padding: '2.5rem',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              border: '1px solid rgba(0, 240, 255, 0.3)',
+              background: '#0e1117'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid rgba(255,255,255,0.1)', paddingBottom: '1.2rem', marginBottom: '1.5rem' }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: '1.8rem', color: 'var(--accent-primary)' }}>SpecZone</h2>
+                <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Official Order Receipt & Tax Invoice</p>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <h3 style={{ margin: 0, fontSize: '1.2rem' }}>INVOICE #{selectedOrderForInvoice.id}</h3>
+                <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                  Date: {new Date(selectedOrderForInvoice.created_at).toLocaleDateString()}
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+              <div>
+                <strong style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', display: 'block', textTransform: 'uppercase' }}>Billed To:</strong>
+                <p style={{ margin: '0.3rem 0 0 0', fontWeight: 'bold' }}>{user?.first_name} {user?.last_name}</p>
+                <p style={{ margin: 0, color: 'var(--text-secondary)' }}>{user?.email}</p>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <strong style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', display: 'block', textTransform: 'uppercase' }}>Payment Status:</strong>
+                {(() => {
+                  const payStatus = getOrderPaymentStatus(selectedOrderForInvoice);
+                  return (
+                    <span style={{ display: 'inline-block', marginTop: '0.3rem', padding: '0.25rem 0.6rem', borderRadius: '4px', background: payStatus.bg, color: payStatus.color, fontWeight: 'bold', fontSize: '0.8rem' }}>
+                      {payStatus.text}
+                    </span>
+                  );
+                })()}
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', textAlign: 'left', color: 'var(--text-secondary)' }}>
+                    <th style={{ padding: '0.6rem 0' }}>Item Description</th>
+                    <th style={{ padding: '0.6rem', textAlign: 'center' }}>Qty</th>
+                    <th style={{ padding: '0.6rem', textAlign: 'right' }}>Unit Price</th>
+                    <th style={{ padding: '0.6rem 0', textAlign: 'right' }}>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedOrderForInvoice.items && selectedOrderForInvoice.items.map((item, i) => (
+                    <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                      <td style={{ padding: '0.8rem 0' }}>
+                        <div style={{ fontWeight: 'bold' }}>{item.title}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Seller: {item.seller_name}</div>
+                      </td>
+                      <td style={{ padding: '0.8rem', textAlign: 'center' }}>{item.quantity}</td>
+                      <td style={{ padding: '0.8rem', textAlign: 'right' }}>Rs. {parseFloat(item.unit_price).toLocaleString('en-IN')}</td>
+                      <td style={{ padding: '0.8rem 0', textAlign: 'right', fontWeight: 'bold' }}>
+                        Rs. {(item.quantity * parseFloat(item.unit_price)).toLocaleString('en-IN')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <div style={{ marginTop: '1rem', borderTop: '2px solid rgba(255,255,255,0.1)', paddingTop: '0.8rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                  <span>Subtotal</span>
+                  <span>Rs. {parseFloat(selectedOrderForInvoice.total_amount).toLocaleString('en-IN')}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.6rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                  <span>Shipping & Handling</span>
+                  <span style={{ color: 'var(--success)' }}>FREE</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--accent-primary)' }}>
+                  <span>Grand Total</span>
+                  <span>Rs. {parseFloat(selectedOrderForInvoice.total_amount).toLocaleString('en-IN')}</span>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '2rem' }}>
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={() => {
+                  setInvoiceModalOpen(false);
+                  setSelectedOrderForInvoice(null);
+                }}
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                onClick={() => window.print()}
+              >
+                <Printer size={16} /> Print / Save PDF
+              </button>
+            </div>
           </div>
         </div>
       )}

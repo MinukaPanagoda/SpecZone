@@ -17,7 +17,7 @@ class Order {
             $this->conn->beginTransaction();
 
             // 1. Calculate total from cart and get items
-            $cart_query = "SELECT c.product_id, c.quantity, p.price, p.stock_quantity 
+            $cart_query = "SELECT c.product_id, c.quantity, p.title, p.price, p.stock_quantity 
                            FROM " . $this->table_cart . " c
                            JOIN products p ON c.product_id = p.id
                            WHERE c.buyer_id = :buyer_id";
@@ -36,10 +36,10 @@ class Order {
             foreach ($items as $item) {
                 $total_amount += ($item['price'] * $item['quantity']);
                 
-                // Optional: Check stock limits here
+                // Check stock limits
                 if ($item['stock_quantity'] < $item['quantity']) {
                     $this->conn->rollBack();
-                    return "INSUFFICIENT_STOCK_" . $item['product_id'];
+                    return "INSUFFICIENT_STOCK_" . ($item['title'] ?: ('Product #' . $item['product_id']));
                 }
             }
 

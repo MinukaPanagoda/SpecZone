@@ -34,7 +34,9 @@ const Login = () => {
 
         // Redirect based on role
         setTimeout(() => {
-          if (data.user.role === 'seller') {
+          if (data.user.role === 'admin') {
+            navigate('/admin/dashboard');
+          } else if (data.user.role === 'seller') {
             navigate('/seller/dashboard');
           } else {
             navigate('/buyer/dashboard');

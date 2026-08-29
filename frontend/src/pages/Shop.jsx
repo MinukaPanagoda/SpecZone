@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Filter, Star, Search, Image as ImageIcon, ChevronDown } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 const Shop = () => {
   const { user } = useAuth();
@@ -14,6 +14,9 @@ const Shop = () => {
   const [isResponsive, setIsResponsive] = useState(() => window.innerWidth <= 900);
   const [sortFocused, setSortFocused] = useState(false);
   const [sortHovered, setSortHovered] = useState(false);
+
+  const [searchParams] = useSearchParams();
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
 
   // Filter state
   const [selectedCategories, setSelectedCategories] = useState([]);
@@ -57,6 +60,29 @@ const Shop = () => {
       .catch(err => console.error("Error fetching categories:", err));
   }, []);
 
+  // Sync category or search query parameter from URL (e.g. from Home page links)
+  useEffect(() => {
+    const categoryParam = searchParams.get('category');
+    if (categoryParam && categories.length > 0) {
+      const lower = categoryParam.toLowerCase();
+      const matchedCat = categories.find(c => {
+        const catName = c.name.toLowerCase();
+        if (lower === 'cpu') return catName.includes('processor') || catName.includes('cpu');
+        if (lower === 'gpu') return catName.includes('graphics') || catName.includes('gpu');
+        if (lower === 'ram') return catName.includes('memory') || catName.includes('ram');
+        if (lower === 'storage') return catName.includes('storage') || catName.includes('ssd') || catName.includes('hdd');
+        return catName.includes(lower);
+      });
+      if (matchedCat) {
+        setSelectedCategories([matchedCat.id]);
+      }
+    }
+    const searchParam = searchParams.get('search');
+    if (searchParam) {
+      setSearchQuery(searchParam);
+    }
+  }, [searchParams, categories]);
+
   useEffect(() => {
     const handleResize = () => {
       setIsResponsive(window.innerWidth <= 900);
@@ -95,6 +121,7 @@ const Shop = () => {
   const handleClearFilters = () => {
     setSelectedCategories([]);
     setSelectedPriceRange(null);
+    setSearchQuery('');
   };
 
   const matchesPriceRange = (price, range) => {
@@ -113,11 +140,29 @@ const Shop = () => {
     }
   };
 
-  const filteredProducts = products.filter(product => {
-    const categoryMatch = selectedCategories.length === 0 || selectedCategories.includes(product.category_id);
-    const priceMatch = selectedPriceRange === null || matchesPriceRange(product.price, selectedPriceRange);
-    return categoryMatch && priceMatch;
-  });
+  const filteredProducts = products
+    .filter(product => {
+      const categoryMatch = selectedCategories.length === 0 || selectedCategories.includes(product.category_id);
+      const priceMatch = selectedPriceRange === null || matchesPriceRange(product.price, selectedPriceRange);
+      const query = searchQuery.trim().toLowerCase();
+      const searchMatch = !query || 
+        product.title?.toLowerCase().includes(query) ||
+        product.description?.toLowerCase().includes(query) ||
+        product.category_name?.toLowerCase().includes(query);
+      return categoryMatch && priceMatch && searchMatch;
+    })
+    .sort((a, b) => {
+      if (selectedSort === 'Low to High') {
+        return parseFloat(a.price) - parseFloat(b.price);
+      }
+      if (selectedSort === 'High to Low') {
+        return parseFloat(b.price) - parseFloat(a.price);
+      }
+      if (selectedSort === 'Newest Arrivals') {
+        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+      }
+      return 0; // Popularity / Default
+    });
 
   const sortSelectStyle = {
     width: isResponsive ? '100%' : 'auto',
@@ -312,6 +357,8 @@ const Shop = () => {
                 <input
                   type="text"
                   placeholder="Search..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className="form-control shop-search-input"
                   style={{
                     paddingLeft: '2.5rem',

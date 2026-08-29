@@ -123,7 +123,7 @@ const Builder = () => {
                     <h4 style={{ margin: '0 0 0.3rem 0', fontSize: '1.1rem' }}>{slot.name}</h4>
                     {part ? (
                       <div>
-                        <p style={{ margin: 0, color: 'var(--accent-primary)', fontWeight: 'bold' }}>{part.name}</p>
+                        <p style={{ margin: 0, color: 'var(--accent-primary)', fontWeight: 'bold' }}>{part.title || part.name}</p>
                         <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Rs. {parseFloat(part.price).toLocaleString('en-IN')}</p>
                       </div>
                     ) : (

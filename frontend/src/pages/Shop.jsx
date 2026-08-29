@@ -21,6 +21,7 @@ const Shop = () => {
   // Filter state
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [selectedPriceRange, setSelectedPriceRange] = useState(null);
+  const [selectedUseCase, setSelectedUseCase] = useState(null);
 
   // Custom React dropdown state
   const [sortOpen, setSortOpen] = useState(false);
@@ -122,7 +123,51 @@ const Shop = () => {
   const handleClearFilters = () => {
     setSelectedCategories([]);
     setSelectedPriceRange(null);
+    setSelectedUseCase(null);
     setSearchQuery('');
+  };
+
+  const matchesUseCase = (product, useCase) => {
+    if (!useCase) return true;
+    const cat = (product.category_name || '').toLowerCase();
+    const title = (product.title || '').toLowerCase();
+    const desc = (product.description || '').toLowerCase();
+    const specsStr = JSON.stringify(product.specs || {}).toLowerCase();
+    const price = parseFloat(product.price || 0);
+
+    if (useCase === 'gaming') {
+      if (cat.includes('graphics') || cat.includes('gpu')) return true;
+      if (cat.includes('cooling')) return true;
+      if (title.includes('gaming') || desc.includes('gaming') || specsStr.includes('gaming')) return true;
+      if (title.includes('rtx') || title.includes('gtx') || title.includes('radeon')) return true;
+      if (title.includes('ryzen 5') || title.includes('ryzen 7') || title.includes('i5') || title.includes('i7') || title.includes('i9')) return true;
+      if (cat.includes('memory') || cat.includes('ram')) return title.includes('16gb') || title.includes('32gb') || title.includes('ddr5') || title.includes('rgb');
+      if (cat.includes('case')) return true;
+      return false;
+    }
+
+    if (useCase === 'office') {
+      if (title.includes('i3') || title.includes('i5') || title.includes('ryzen 3') || title.includes('ryzen 5')) return true;
+      if (cat.includes('storage') || cat.includes('ssd')) return true;
+      if ((cat.includes('memory') || cat.includes('ram')) && (title.includes('8gb') || title.includes('16gb'))) return true;
+      if (cat.includes('motherboard') && price <= 80000) return true;
+      if (cat.includes('case') && price <= 30000) return true;
+      if (cat.includes('power') && price <= 35000) return true;
+      if (price <= 60000 && !title.includes('rtx') && !title.includes('4090')) return true;
+      return false;
+    }
+
+    if (useCase === 'design') {
+      if (title.includes('i7') || title.includes('i9') || title.includes('ryzen 7') || title.includes('ryzen 9')) return true;
+      if (title.includes('rtx') || title.includes('radeon') || title.includes('ti')) return true;
+      if ((cat.includes('memory') || cat.includes('ram')) && (title.includes('32gb') || title.includes('64gb') || title.includes('ddr5'))) return true;
+      if (cat.includes('storage') || cat.includes('ssd')) return true;
+      if (cat.includes('cooling')) return true;
+      if (desc.includes('render') || desc.includes('edit') || desc.includes('3d') || desc.includes('creator')) return true;
+      return false;
+    }
+
+    return true;
   };
 
   const matchesPriceRange = (price, range) => {
@@ -145,12 +190,13 @@ const Shop = () => {
     .filter(product => {
       const categoryMatch = selectedCategories.length === 0 || selectedCategories.includes(product.category_id);
       const priceMatch = selectedPriceRange === null || matchesPriceRange(product.price, selectedPriceRange);
+      const useCaseMatch = selectedUseCase === null || matchesUseCase(product, selectedUseCase);
       const query = searchQuery.trim().toLowerCase();
       const searchMatch = !query || 
         product.title?.toLowerCase().includes(query) ||
         product.description?.toLowerCase().includes(query) ||
         product.category_name?.toLowerCase().includes(query);
-      return categoryMatch && priceMatch && searchMatch;
+      return categoryMatch && priceMatch && useCaseMatch && searchMatch;
     })
     .sort((a, b) => {
       if (selectedSort === 'Price: Low to High' || selectedSort === 'Low to High') {
@@ -234,6 +280,43 @@ const Shop = () => {
                 {cat.name}
               </label>
             ))}
+          </div>
+
+          <div className="filter-group">
+            <h4>Recommended For</h4>
+            <label className="filter-label">
+              <input
+                type="radio"
+                name="usecase"
+                className="speczone-control"
+                value="gaming"
+                checked={selectedUseCase === 'gaming'}
+                onChange={() => setSelectedUseCase(prev => prev === 'gaming' ? null : 'gaming')}
+              />
+              🎮 Gaming & Streaming
+            </label>
+            <label className="filter-label">
+              <input
+                type="radio"
+                name="usecase"
+                className="speczone-control"
+                value="office"
+                checked={selectedUseCase === 'office'}
+                onChange={() => setSelectedUseCase(prev => prev === 'office' ? null : 'office')}
+              />
+              💼 Office & Study
+            </label>
+            <label className="filter-label">
+              <input
+                type="radio"
+                name="usecase"
+                className="speczone-control"
+                value="design"
+                checked={selectedUseCase === 'design'}
+                onChange={() => setSelectedUseCase(prev => prev === 'design' ? null : 'design')}
+              />
+              🎨 Graphic Design & Editing
+            </label>
           </div>
 
           <div className="filter-group">

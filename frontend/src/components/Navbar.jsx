@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingCart, User, LogOut, Cpu, Menu, X } from 'lucide-react';
+import { ShoppingCart, Heart, User, LogOut, Cpu, Menu, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { useWishlist } from '../context/WishlistContext';
 
 const Navbar = () => {
   const location = useLocation();
   const { user, logout } = useAuth();
   const { getCartCount } = useCart();
+  const { wishlistCount } = useWishlist();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navLinks = [
@@ -22,6 +24,20 @@ const Navbar = () => {
       : user?.role === 'seller'
       ? '/seller/dashboard'
       : '/buyer/dashboard';
+
+  const renderWishlist = (variant) => {
+    if (user && user.role !== 'buyer') return null;
+    return (
+      <Link to="/wishlist" className="icon-link" aria-label="Wishlist" style={{ position: 'relative' }}>
+        <Heart size={variant === 'mobile' ? 22 : 24} />
+        {wishlistCount > 0 && (
+          <span className="cart-badge" style={{ backgroundColor: 'var(--danger)', borderColor: 'rgba(0,0,0,0.5)' }}>
+            {wishlistCount}
+          </span>
+        )}
+      </Link>
+    );
+  };
 
   const renderCart = (variant) => {
     if (user && user.role !== 'buyer') return null;
@@ -255,7 +271,8 @@ const Navbar = () => {
 
           {/* Desktop actions */}
           <div className="nav-actions">
-            <div className="nav-icons" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div className="nav-icons" style={{ display: 'flex', alignItems: 'center', gap: '1.2rem' }}>
+              {renderWishlist('desktop')}
               {renderCart('desktop')}
               {renderAuthBlock('desktop')}
             </div>
@@ -289,7 +306,10 @@ const Navbar = () => {
               ))}
             </ul>
             <div className="mobile-nav-actions">
-              {renderCart('mobile')}
+              <div style={{ display: 'flex', gap: '1.2rem', alignItems: 'center' }}>
+                {renderWishlist('mobile')}
+                {renderCart('mobile')}
+              </div>
               {renderAuthBlock('mobile')}
             </div>
           </div>

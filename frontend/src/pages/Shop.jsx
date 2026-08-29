@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Filter, Star, Search, Image as ImageIcon, ChevronDown } from 'lucide-react';
+import { Filter, Star, Search, Image as ImageIcon, ChevronDown, Heart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useWishlist } from '../context/WishlistContext';
 import { Link, useSearchParams } from 'react-router-dom';
 
 const Shop = () => {
   const { user } = useAuth();
   const { addToCart } = useCart();
+  const { isInWishlist, toggleWishlist } = useWishlist();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -609,8 +611,40 @@ const Shop = () => {
                           <ImageIcon size={48} color="var(--text-secondary)" />
                         </div>
                       )}
+
+                      {(!user || user.role === 'buyer') && (
+                        <button
+                          type="button"
+                          aria-label="Wishlist"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            toggleWishlist(product.id);
+                          }}
+                          style={{
+                            position: 'absolute',
+                            top: '10px',
+                            right: '10px',
+                            background: 'rgba(0,0,0,0.6)',
+                            border: '1px solid rgba(255,255,255,0.15)',
+                            color: isInWishlist(product.id) ? 'var(--danger)' : 'var(--text-primary)',
+                            borderRadius: '50%',
+                            width: '34px',
+                            height: '34px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            transition: 'transform 0.2s ease, background 0.2s ease',
+                            zIndex: 5
+                          }}
+                        >
+                          <Heart size={16} fill={isInWishlist(product.id) ? 'var(--danger)' : 'none'} />
+                        </button>
+                      )}
+
                       {product.stock <= 0 && (
-                        <div style={{ position: 'absolute', top: '10px', right: '10px', background: 'var(--danger)', color: 'white', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                        <div style={{ position: 'absolute', bottom: '10px', left: '10px', background: 'var(--danger)', color: 'white', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold' }}>
                           Out of Stock
                         </div>
                       )}

@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
+import { WishlistProvider } from './context/WishlistContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
@@ -16,6 +17,7 @@ import SellerProducts from './pages/SellerProducts';
 import SellerAnalytics from './pages/SellerAnalytics';
 import AddProduct from './pages/AddProduct';
 import Cart from './pages/Cart';
+import Wishlist from './pages/Wishlist';
 import Checkout from './pages/Checkout';
 import ProductDetails from './pages/ProductDetails';
 import AdminDashboard from './pages/AdminDashboard';
@@ -40,6 +42,7 @@ const AppLayout = () => {
           <Route path="/register" element={<Register />} />
           <Route path="/product/:id" element={<ProductDetails />} />
           <Route path="/cart" element={<Cart />} />
+          <Route path="/wishlist" element={<Wishlist />} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/buyer/dashboard" element={<BuyerDashboard />} />
           <Route path="/seller/dashboard" element={<SellerDashboard />} />
@@ -62,11 +65,13 @@ const AppLayout = () => {
 const App = () => {
   return (
     <AuthProvider>
-      <CartProvider>
-        <Router>
-          <AppLayout />
-        </Router>
-      </CartProvider>
+      <WishlistProvider>
+        <CartProvider>
+          <Router>
+            <AppLayout />
+          </Router>
+        </CartProvider>
+      </WishlistProvider>
     </AuthProvider>
   );
 };

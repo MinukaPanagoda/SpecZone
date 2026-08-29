@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { ShoppingCart, Star, ShieldCheck, Truck, Package, ArrowLeft } from 'lucide-react';
+import { ShoppingCart, Star, ShieldCheck, Truck, Package, ArrowLeft, Heart } from 'lucide-react';
+import { useWishlist } from '../context/WishlistContext';
 
 const ProductDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { addToCart } = useCart();
+  const { isInWishlist, toggleWishlist } = useWishlist();
   
   const [product, setProduct] = useState(null);
   const [reviews, setReviews] = useState([]);
@@ -195,6 +197,24 @@ const ProductDetails = () => {
                 onClick={handleAddToCart}
               >
                 <ShoppingCart size={20} /> Add to Cart
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-outline"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '0.8rem 1.2rem',
+                  color: isInWishlist(product.id) ? 'var(--danger)' : 'var(--text-primary)',
+                  borderColor: isInWishlist(product.id) ? 'var(--danger)' : 'var(--border-color)',
+                  backgroundColor: isInWishlist(product.id) ? 'rgba(255, 51, 102, 0.1)' : 'transparent'
+                }}
+                onClick={() => toggleWishlist(product.id)}
+                title={isInWishlist(product.id) ? "In Wishlist" : "Add to Wishlist"}
+              >
+                <Heart size={20} fill={isInWishlist(product.id) ? 'var(--danger)' : 'none'} />
               </button>
             </div>
           )}

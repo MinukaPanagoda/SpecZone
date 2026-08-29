@@ -29,8 +29,9 @@ const Shop = () => {
 
   const sortOptions = [
     'Popularity',
-    'Low to High',
-    'High to Low',
+    'Price: Low to High',
+    'Price: High to Low',
+    'Customer Rating',
     'Newest Arrivals',
   ];
 
@@ -152,11 +153,16 @@ const Shop = () => {
       return categoryMatch && priceMatch && searchMatch;
     })
     .sort((a, b) => {
-      if (selectedSort === 'Low to High') {
+      if (selectedSort === 'Price: Low to High' || selectedSort === 'Low to High') {
         return parseFloat(a.price) - parseFloat(b.price);
       }
-      if (selectedSort === 'High to Low') {
+      if (selectedSort === 'Price: High to Low' || selectedSort === 'High to Low') {
         return parseFloat(b.price) - parseFloat(a.price);
+      }
+      if (selectedSort === 'Customer Rating') {
+        const ratingDiff = parseFloat(b.avg_rating || 0) - parseFloat(a.avg_rating || 0);
+        if (ratingDiff !== 0) return ratingDiff;
+        return parseInt(b.review_count || 0) - parseInt(a.review_count || 0);
       }
       if (selectedSort === 'Newest Arrivals') {
         return new Date(b.created_at || 0) - new Date(a.created_at || 0);
@@ -539,7 +545,9 @@ const Shop = () => {
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '1rem' }}>
                       <Star size={16} color="var(--warning)" fill="var(--warning)" />
-                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>--</span>
+                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                        {product.review_count > 0 ? `${product.avg_rating} (${product.review_count})` : 'No reviews'}
+                      </span>
                     </div>
 
                     <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

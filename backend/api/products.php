@@ -77,6 +77,8 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
                 "price" => $price,
                 "stock" => $stock_quantity,
                 "image_url" => $image_url,
+                "avg_rating" => (float)($avg_rating ?? 0),
+                "review_count" => (int)($review_count ?? 0),
                 "specs" => json_decode($specifications ?? "{}"),
                 "created_at" => $created_at
             );
@@ -107,6 +109,8 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             "price" => $row['price'],
             "stock" => $row['stock_quantity'],
             "image_url" => $row['image_url'],
+            "avg_rating" => (float)($row['avg_rating'] ?? 0),
+            "review_count" => (int)($row['review_count'] ?? 0),
             "specs" => json_decode($row['specifications'] ?? "{}"),
             "created_at" => $row['created_at']
         );

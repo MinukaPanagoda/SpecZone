@@ -68,7 +68,9 @@ class Product {
     // Get all products
     public function read() {
         $query = "SELECT p.*, c.name as category_name, u.first_name as seller_name,
-                         (SELECT image_url FROM product_images WHERE product_id = p.id LIMIT 1) as image_url
+                         (SELECT image_url FROM product_images WHERE product_id = p.id LIMIT 1) as image_url,
+                         COALESCE((SELECT ROUND(AVG(rating), 1) FROM reviews WHERE product_id = p.id), 0) as avg_rating,
+                         (SELECT COUNT(id) FROM reviews WHERE product_id = p.id) as review_count
                   FROM " . $this->table_name . " p
                   LEFT JOIN categories c ON p.category_id = c.id
                   LEFT JOIN users u ON p.seller_id = u.id";
@@ -92,7 +94,9 @@ class Product {
     // Get single product
     public function readSingle() {
         $query = "SELECT p.*, c.name as category_name, u.first_name as seller_name,
-                         (SELECT image_url FROM product_images WHERE product_id = p.id LIMIT 1) as image_url
+                         (SELECT image_url FROM product_images WHERE product_id = p.id LIMIT 1) as image_url,
+                         COALESCE((SELECT ROUND(AVG(rating), 1) FROM reviews WHERE product_id = p.id), 0) as avg_rating,
+                         (SELECT COUNT(id) FROM reviews WHERE product_id = p.id) as review_count
                   FROM " . $this->table_name . " p
                   LEFT JOIN categories c ON p.category_id = c.id
                   LEFT JOIN users u ON p.seller_id = u.id

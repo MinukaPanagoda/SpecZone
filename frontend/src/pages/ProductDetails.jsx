@@ -408,22 +408,25 @@ const ProductDetails = () => {
         <div
           style={{
             position: 'fixed',
-            top: '20px',
-            right: '20px',
+            top: '24px',
+            left: '50%',
+            transform: 'translateX(-50%)',
             background: 'rgba(10, 25, 20, 0.95)',
             border: '1px solid var(--success)',
             color: 'var(--success)',
-            padding: '0.9rem 1.4rem',
-            borderRadius: '8px',
+            padding: '0.9rem 1.6rem',
+            borderRadius: '10px',
             backdropFilter: 'blur(10px)',
-            boxShadow: '0 8px 30px rgba(0, 0, 0, 0.6)',
+            boxShadow: '0 8px 30px rgba(0, 0, 0, 0.6), 0 0 15px rgba(0, 230, 118, 0.2)',
             display: 'flex',
             alignItems: 'center',
             gap: '0.6rem',
             zIndex: 1300,
             fontWeight: 'bold',
             fontSize: '0.95rem',
-            animation: 'fadeIn 0.2s ease-out'
+            animation: 'fadeIn 0.2s ease-out',
+            maxWidth: '90vw',
+            textAlign: 'center'
           }}
         >
           <Check size={18} /> {toastMessage}

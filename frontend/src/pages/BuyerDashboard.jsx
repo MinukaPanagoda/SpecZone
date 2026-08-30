@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, ShoppingBag, Heart, Wrench, Settings, Menu, X, Trash2, ShoppingCart, Star, Printer } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Heart, Wrench, Menu, X, Trash2, ShoppingCart, Printer, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 const BuyerDashboard = () => {
   const { user } = useAuth();
@@ -19,6 +19,13 @@ const BuyerDashboard = () => {
   const [reportReason, setReportReason] = useState('');
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
   const [selectedOrderForInvoice, setSelectedOrderForInvoice] = useState(null);
+  const [reportStatusModal, setReportStatusModal] = useState({
+    isOpen: false,
+    type: 'success',
+    title: '',
+    message: ''
+  });
+  const [submittingReport, setSubmittingReport] = useState(false);
 
   const handleTab = (tab) => {
     setActiveTab(tab);
@@ -74,6 +81,8 @@ const BuyerDashboard = () => {
 
     if (!reportReason.trim() || !reportItem) return;
 
+    setSubmittingReport(true);
+
     try {
       const res = await fetch(
         'http://localhost/SpecZone/backend/api/complaints.php?action=create',
@@ -93,16 +102,32 @@ const BuyerDashboard = () => {
       const data = await res.json();
 
       if (res.ok) {
-        alert('Your issue has been reported to the admin. We will review it shortly.');
         setReportModalOpen(false);
         setReportReason('');
         setReportItem(null);
+        setReportStatusModal({
+          isOpen: true,
+          type: 'success',
+          title: 'Issue Reported Successfully!',
+          message: 'Your issue has been reported to the admin. We will review it shortly.'
+        });
       } else {
-        alert(data.message || 'Failed to submit report.');
+        setReportStatusModal({
+          isOpen: true,
+          type: 'error',
+          title: 'Report Submission Failed',
+          message: data.message || 'Failed to submit report. Please try again.'
+        });
       }
-    } catch (err) {
-      console.error(err);
-      alert('An error occurred.');
+    } catch {
+      setReportStatusModal({
+        isOpen: true,
+        type: 'error',
+        title: 'Connection Error',
+        message: 'An error occurred while submitting your report. Please try again.'
+      });
+    } finally {
+      setSubmittingReport(false);
     }
   };
 
@@ -461,9 +486,10 @@ const BuyerDashboard = () => {
                 <button
                   type="submit"
                   className="btn"
-                  style={{ background: 'var(--danger)', borderColor: 'var(--danger)' }}
+                  style={{ background: 'var(--danger)', borderColor: 'var(--danger)', opacity: submittingReport ? 0.7 : 1, cursor: submittingReport ? 'not-allowed' : 'pointer' }}
+                  disabled={submittingReport}
                 >
-                  Submit Report
+                  {submittingReport ? 'Submitting Report...' : 'Submit Report'}
                 </button>
               </div>
             </form>
@@ -596,6 +622,93 @@ const BuyerDashboard = () => {
                 <Printer size={16} /> Print / Save PDF
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Small React Feedback Popup (Success / Error for Report Issue) */}
+      {reportStatusModal.isOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.78)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2000,
+            padding: '1.2rem',
+            animation: 'fadeIn 0.2s ease-out'
+          }}
+          onClick={() => setReportStatusModal(prev => ({ ...prev, isOpen: false }))}
+        >
+          <div
+            className="glass-panel"
+            style={{
+              width: '100%',
+              maxWidth: '420px',
+              padding: '2.2rem 1.8rem',
+              borderRadius: '16px',
+              border: `1px solid ${reportStatusModal.type === 'success' ? 'rgba(0, 230, 118, 0.35)' : 'rgba(255, 51, 102, 0.4)'}`,
+              boxShadow: `0 0 35px ${reportStatusModal.type === 'success' ? 'rgba(0, 230, 118, 0.2)' : 'rgba(255, 51, 102, 0.2)'}`,
+              background: 'linear-gradient(145deg, rgba(18, 22, 34, 0.98), rgba(10, 14, 22, 0.98))',
+              textAlign: 'center',
+              position: 'relative',
+              animation: 'popupScaleIn 0.25s ease-out'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Animated Status Badge Icon */}
+            <div
+              style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '50%',
+                background: reportStatusModal.type === 'success' ? 'rgba(0, 230, 118, 0.15)' : 'rgba(255, 51, 102, 0.15)',
+                border: `2px solid ${reportStatusModal.type === 'success' ? 'var(--success)' : 'var(--danger)'}`,
+                color: reportStatusModal.type === 'success' ? 'var(--success)' : 'var(--danger)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 1.2rem',
+                boxShadow: `0 0 25px ${reportStatusModal.type === 'success' ? 'rgba(0, 230, 118, 0.3)' : 'rgba(255, 51, 102, 0.3)'}`
+              }}
+            >
+              {reportStatusModal.type === 'success' ? (
+                <CheckCircle2 size={36} />
+              ) : (
+                <AlertTriangle size={36} />
+              )}
+            </div>
+
+            <h3 style={{ fontSize: '1.35rem', fontWeight: 'bold', margin: '0 0 0.5rem 0', color: '#ffffff' }}>
+              {reportStatusModal.title}
+            </h3>
+
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.92rem', lineHeight: '1.5', margin: '0 0 1.5rem 0' }}>
+              {reportStatusModal.message}
+            </p>
+
+            <button
+              type="button"
+              className={reportStatusModal.type === 'success' ? 'btn btn-primary' : 'btn'}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                fontSize: '0.95rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                cursor: 'pointer',
+                borderRadius: '8px',
+                ...(reportStatusModal.type !== 'success' ? { background: 'var(--danger)', borderColor: 'var(--danger)', color: '#ffffff' } : {})
+              }}
+              onClick={() => setReportStatusModal(prev => ({ ...prev, isOpen: false }))}
+            >
+              {reportStatusModal.type === 'success' ? 'Understood & Close' : 'Dismiss'}
+            </button>
           </div>
         </div>
       )}

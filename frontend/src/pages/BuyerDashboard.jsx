@@ -2,17 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
-import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, ShoppingBag, Heart, Wrench, Menu, X, Trash2, ShoppingCart, Printer, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, ShoppingBag, Heart, Wrench, Menu, X, Trash2, ShoppingCart, Printer, CheckCircle2, AlertTriangle, Plus, Play, ArrowRight } from 'lucide-react';
 
 const BuyerDashboard = () => {
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const { wishlistItems, removeFromWishlist, wishlistCount } = useWishlist();
   const { addToCart } = useCart();
   const [activeTab, setActiveTab] = useState(location.state?.tab || 'overview');
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [savedBuilds, setSavedBuilds] = useState([]);
+  const [loadingBuilds, setLoadingBuilds] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [reportItem, setReportItem] = useState(null);
@@ -38,7 +41,7 @@ const BuyerDashboard = () => {
     }
   }, [location.state]);
 
-  useEffect(() => {
+  const fetchOrders = () => {
     if (user && user.role === 'buyer') {
       fetch(`http://localhost/SpecZone/backend/api/orders.php?action=read_buyer&buyer_id=${user.id}`)
         .then(res => res.json())
@@ -53,7 +56,102 @@ const BuyerDashboard = () => {
           setLoading(false);
         });
     }
+  };
+
+  const fetchBuilds = async () => {
+    if (user && user.role === 'buyer') {
+      setLoadingBuilds(true);
+      try {
+        const res = await fetch(`http://localhost/SpecZone/backend/api/builds.php?action=read&buyer_id=${user.id}`);
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setSavedBuilds(data);
+        }
+      } catch (err) {
+        console.error("Error fetching saved builds:", err);
+      } finally {
+        setLoadingBuilds(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (user && user.role === 'buyer') {
+      fetchOrders();
+      fetchBuilds();
+    }
   }, [user]);
+
+  const handleDeleteBuild = async (buildId) => {
+    if (!window.confirm("Are you sure you want to delete this saved build configuration?")) return;
+    try {
+      const res = await fetch(`http://localhost/SpecZone/backend/api/builds.php?action=delete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          buyer_id: user.id,
+          build_id: buildId
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSavedBuilds(prev => prev.filter(b => b.id !== buildId));
+      } else {
+        alert(data.message || "Failed to delete build.");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleLoadBuild = (build) => {
+    const parts = {
+      'Processors (CPU)': null,
+      'Motherboards': null,
+      'Memory (RAM)': null,
+      'Graphics Cards (GPU)': null,
+      'Storage (SSD/HDD)': null,
+      'Power Supplies (PSU)': null,
+      'Cases': null
+    };
+
+    if (build.items && Array.isArray(build.items)) {
+      build.items.forEach(item => {
+        const cat = (item.category_name || '').toLowerCase();
+        for (const slot of Object.keys(parts)) {
+          const slotLower = slot.toLowerCase();
+          if (
+            ((cat.includes('processor') || cat.includes('cpu')) && slotLower.includes('cpu')) ||
+            ((cat.includes('motherboard') || cat.includes('board')) && slotLower.includes('motherboard')) ||
+            ((cat.includes('memory') || cat.includes('ram')) && slotLower.includes('ram')) ||
+            ((cat.includes('graphic') || cat.includes('gpu')) && slotLower.includes('gpu')) ||
+            ((cat.includes('storage') || cat.includes('ssd') || cat.includes('hdd')) && slotLower.includes('storage')) ||
+            ((cat.includes('power') || cat.includes('psu')) && slotLower.includes('psu')) ||
+            (cat.includes('case') && slotLower.includes('case'))
+          ) {
+            parts[slot] = {
+              id: item.product_id,
+              title: item.title,
+              price: item.price,
+              specs: item.specs,
+              image_url: item.image_url
+            };
+            break;
+          }
+        }
+      });
+    }
+
+    navigate('/builder', { state: { loadBuildParts: parts } });
+  };
+
+  const handleAddAllBuildToCart = async (build) => {
+    if (!build.items || build.items.length === 0) return;
+    for (const item of build.items) {
+      await addToCart(item.product_id, 1);
+    }
+    navigate('/cart');
+  };
 
   const getStatusColor = (status) => {
     if (status === 'delivered') return 'var(--success)';
@@ -167,8 +265,12 @@ const BuyerDashboard = () => {
           >
             <Heart size={20} /> My Wishlist ({wishlistCount})
           </button>
-          <button className="btn btn-outline" style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.8rem', justifyContent: 'flex-start', padding: '0.8rem 1rem', border: 'none', color: 'var(--text-secondary)' }}>
-            <Wrench size={20} /> My PC Builds
+          <button 
+            className={`btn ${activeTab === 'builds' ? 'btn-primary' : 'btn-outline'}`}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.8rem', justifyContent: 'flex-start', padding: '0.8rem 1rem', border: activeTab !== 'builds' ? 'none' : '' }}
+            onClick={() => handleTab('builds')}
+          >
+            <Wrench size={20} /> My PC Builds ({savedBuilds.length})
           </button>
         </nav>
       </aside>
@@ -192,8 +294,8 @@ const BuyerDashboard = () => {
           <div>
             <h2 style={{ fontSize: '2rem', marginBottom: '2rem' }}>Welcome back, {user?.first_name}!</h2>
             
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
-              <div className="glass-panel stat-card">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+              <div className="glass-panel stat-card" onClick={() => handleTab('orders')} style={{ cursor: 'pointer' }}>
                 <div
                   className="stat-icon"
                   style={{
@@ -236,11 +338,35 @@ const BuyerDashboard = () => {
                   <p>Saved in Wishlist</p>
                 </div>
               </div>
+              <div className="glass-panel stat-card" onClick={() => handleTab('builds')} style={{ cursor: 'pointer' }}>
+                <div
+                  className="stat-icon"
+                  style={{
+                    flexShrink: 0,
+                    width: '48px',
+                    height: '48px',
+                    minWidth: '48px',
+                    minHeight: '48px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--accent-primary)'
+                  }}
+                >
+                  <Wrench size={24} />
+                </div>
+                <div className="stat-info">
+                  <h3>{savedBuilds.length}</h3>
+                  <p>Saved PC Builds</p>
+                </div>
+              </div>
             </div>
 
             <div className="glass-panel" style={{ padding: '2rem' }}>
               <h3 style={{ marginBottom: '1rem' }}>Recent Activity</h3>
-              <p style={{ color: 'var(--text-secondary)' }}>You recently placed {orders.length} orders.</p>
+              <p style={{ color: 'var(--text-secondary)' }}>
+                You have <strong>{orders.length}</strong> active orders, <strong>{wishlistCount}</strong> saved wishlist items, and <strong>{savedBuilds.length}</strong> custom PC configurations.
+              </p>
             </div>
           </div>
         )}
@@ -341,40 +467,37 @@ const BuyerDashboard = () => {
 
         {activeTab === 'wishlist' && (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
-              <h2 style={{ fontSize: '2rem', margin: 0 }}>My Wishlist</h2>
-              <Link to="/shop" className="btn btn-outline" style={{ padding: '0.5rem 1rem' }}>
-                Browse Shop
-              </Link>
-            </div>
-
+            <h2 style={{ fontSize: '2rem', marginBottom: '2rem' }}>My Wishlist</h2>
+            
             {wishlistItems.length === 0 ? (
               <div className="glass-panel" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
                 <Heart size={48} style={{ margin: '0 auto 1rem', opacity: 0.5, color: 'var(--danger)' }} />
                 <h3>Your Wishlist is Empty</h3>
-                <p style={{ marginBottom: '1.5rem' }}>You haven't saved any components yet. Save products to track them here!</p>
-                <Link to="/shop" className="btn btn-primary" style={{ display: 'inline-flex', padding: '0.6rem 1.5rem' }}>
+                <p>Save components you're interested in while browsing the shop.</p>
+                <Link to="/shop" className="btn btn-primary" style={{ marginTop: '1rem', display: 'inline-block' }}>
                   Explore Products
                 </Link>
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.5rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
                 {wishlistItems.map(item => (
-                  <div key={item.product_id} className="glass-panel" style={{ padding: '1.2rem', display: 'flex', flexDirection: 'column', position: 'relative' }}>
+                  <div key={item.product_id} className="glass-panel product-card" style={{ display: 'flex', flexDirection: 'column', padding: '1rem', position: 'relative' }}>
+                    
+                    {/* Delete Icon Button */}
                     <button
                       type="button"
                       onClick={() => removeFromWishlist(item.product_id)}
-                      aria-label="Remove"
+                      title="Remove from wishlist"
                       style={{
                         position: 'absolute',
-                        top: '10px',
-                        right: '10px',
-                        background: 'rgba(0,0,0,0.5)',
-                        border: 'none',
-                        color: 'var(--danger)',
+                        top: '0.75rem',
+                        right: '0.75rem',
+                        background: 'rgba(255, 51, 102, 0.15)',
+                        border: '1px solid rgba(255, 51, 102, 0.3)',
                         borderRadius: '50%',
                         width: '32px',
                         height: '32px',
+                        color: 'var(--danger)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -405,13 +528,141 @@ const BuyerDashboard = () => {
                         className="btn btn-primary"
                         style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
                         disabled={item.stock <= 0}
-                        onClick={() => {
-                          addToCart(item.product_id, 1);
-                          alert("Added to Cart!");
-                        }}
+                        onClick={() => addToCart(item.product_id, 1)}
                       >
                         <ShoppingCart size={14} /> Add to Cart
                       </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* My PC Builds Tab */}
+        {activeTab === 'builds' && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+              <h2 style={{ fontSize: '2rem', margin: 0 }}>My Saved PC Builds</h2>
+              <button 
+                type="button" 
+                className="btn btn-primary" 
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                onClick={() => navigate('/builder')}
+              >
+                <Plus size={18} /> New PC Build
+              </button>
+            </div>
+
+            {loadingBuilds ? (
+              <p>Loading your saved configurations...</p>
+            ) : savedBuilds.length === 0 ? (
+              <div className="glass-panel" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                <Wrench size={48} style={{ margin: '0 auto 1rem', opacity: 0.5, color: 'var(--accent-primary)' }} />
+                <h3 style={{ color: '#ffffff', marginBottom: '0.5rem' }}>No Saved PC Builds Yet</h3>
+                <p style={{ maxWidth: '460px', margin: '0 auto 1.5rem', lineHeight: '1.5' }}>
+                  Use our Custom PC Builder to choose compatible processors, motherboards, GPUs, and parts, then save your build here.
+                </p>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+                  onClick={() => navigate('/builder')}
+                >
+                  <Wrench size={18} /> Launch Custom PC Builder
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.8rem' }}>
+                {savedBuilds.map(build => (
+                  <div key={build.id} className="glass-panel" style={{ overflow: 'hidden', border: '1px solid rgba(0, 240, 255, 0.2)' }}>
+                    {/* Header */}
+                    <div style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.03)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', flexWrap: 'wrap', gap: '1rem' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.2rem' }}>
+                          <h3 style={{ margin: 0, fontSize: '1.3rem', color: '#ffffff' }}>{build.build_name}</h3>
+                          <span style={{ fontSize: '0.75rem', background: 'rgba(0, 240, 255, 0.1)', color: 'var(--accent-primary)', padding: '0.15rem 0.5rem', borderRadius: '4px', border: '1px solid rgba(0, 240, 255, 0.2)' }}>
+                            {build.item_count} Components
+                          </span>
+                        </div>
+                        <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                          Saved on: {new Date(build.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem', flexWrap: 'wrap' }}>
+                        <div style={{ textAlign: 'right' }}>
+                          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block' }}>Estimated Build Total</span>
+                          <span style={{ fontSize: '1.35rem', fontWeight: 'bold', color: 'var(--accent-primary)' }}>
+                            Rs. {parseFloat(build.total_price).toLocaleString('en-IN')}
+                          </span>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '0.6rem' }}>
+                          <button
+                            type="button"
+                            className="btn btn-outline"
+                            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.9rem', fontSize: '0.85rem' }}
+                            onClick={() => handleLoadBuild(build)}
+                            title="Load parts in Builder"
+                          >
+                            <Play size={15} color="var(--accent-primary)" /> Edit in Builder
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-primary"
+                            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.9rem', fontSize: '0.85rem' }}
+                            onClick={() => handleAddAllBuildToCart(build)}
+                          >
+                            <ShoppingCart size={15} /> Add All to Cart
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-outline"
+                            style={{ padding: '0.5rem', borderColor: 'var(--danger)', color: 'var(--danger)' }}
+                            onClick={() => handleDeleteBuild(build.id)}
+                            title="Delete Build"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Components List */}
+                    <div style={{ padding: '1.2rem 1.5rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1rem' }}>
+                      {build.items && build.items.map((item, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.8rem',
+                            background: 'rgba(0, 0, 0, 0.25)',
+                            padding: '0.8rem',
+                            borderRadius: '8px',
+                            border: '1px solid rgba(255, 255, 255, 0.04)'
+                          }}
+                        >
+                          <img
+                            src={item.image_url || 'https://via.placeholder.com/50'}
+                            alt={item.title}
+                            style={{ width: '48px', height: '48px', objectFit: 'contain', borderRadius: '4px', background: 'rgba(0,0,0,0.3)', flexShrink: 0 }}
+                          />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <span style={{ fontSize: '0.72rem', color: 'var(--accent-primary)', display: 'block', textTransform: 'uppercase', fontWeight: '600' }}>
+                              {item.category_name}
+                            </span>
+                            <span style={{ fontSize: '0.88rem', fontWeight: '500', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={item.title}>
+                              {item.title}
+                            </span>
+                            <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                              Rs. {parseFloat(item.price).toLocaleString('en-IN')}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 ))}

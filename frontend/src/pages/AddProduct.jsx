@@ -436,10 +436,6 @@ const AddProduct = () => {
                     </div>
                   ))}
                 </div>
-
-                <small style={{ display: 'block', marginTop: '1rem', color: 'var(--text-secondary)', fontSize: '0.78rem' }}>
-                  💡 Empty fields will be automatically skipped. No need to write manual JSON code!
-                </small>
               </div>
 
               <button type="submit" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.8rem 1.8rem', fontSize: '1.05rem', cursor: 'pointer' }}>

@@ -16,6 +16,7 @@ const Navbar = () => {
     { name: 'Home', path: '/' },
     { name: 'Shop', path: '/shop' },
     { name: 'PC Builder', path: '/builder' },
+    { name: 'Compare', path: '/compare' },
   ];
 
   const dashboardPath =

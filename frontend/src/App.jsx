@@ -20,6 +20,7 @@ import Cart from './pages/Cart';
 import Wishlist from './pages/Wishlist';
 import Checkout from './pages/Checkout';
 import ProductDetails from './pages/ProductDetails';
+import Compare from './pages/Compare';
 import AdminDashboard from './pages/AdminDashboard';
 
 // App Component
@@ -38,6 +39,7 @@ const AppLayout = () => {
           <Route path="/" element={<Home />} />
           <Route path="/shop" element={<Shop />} />
           <Route path="/builder" element={<Builder />} />
+          <Route path="/compare" element={<Compare />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/product/:id" element={<ProductDetails />} />

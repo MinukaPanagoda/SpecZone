@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Filter, Star, Search, Image as ImageIcon, ChevronDown, Heart } from 'lucide-react';
+import { Filter, Star, Search, Image as ImageIcon, ChevronDown, Heart, AlertTriangle } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
 import { Link, useSearchParams } from 'react-router-dom';
+import SellerWarningModal from '../components/SellerWarningModal';
 
 const Shop = () => {
   const { user } = useAuth();
@@ -29,6 +30,36 @@ const Shop = () => {
   const [sortOpen, setSortOpen] = useState(false);
   const [selectedSort, setSelectedSort] = useState('Popularity');
   const sortRef = useRef(null);
+
+  const [warningModalOpen, setWarningModalOpen] = useState(false);
+  const [pendingWarningProduct, setPendingWarningProduct] = useState(null);
+  const [toastMessage, setToastMessage] = useState('');
+
+  const isSellerFlagged = (product) => {
+    const sRating = parseFloat(product.avg_rating || product.seller_avg_rating || 0);
+    const sWarn = parseInt(product.seller_warning_count || 0);
+    const sComp = parseInt(product.seller_complaint_count || 0);
+    return (sRating > 0 && sRating < 5) || sWarn > 0 || sComp >= 2;
+  };
+
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(''), 3000);
+  };
+
+  const handleQuickAdd = (product) => {
+    if (!user) {
+      showToast('Please login to add components to cart.');
+      return;
+    }
+    if (isSellerFlagged(product)) {
+      setPendingWarningProduct(product);
+      setWarningModalOpen(true);
+      return;
+    }
+    addToCart(product.id, 1);
+    showToast(`✓ Added "${product.title}" to cart!`);
+  };
 
   const sortOptions = [
     'Popularity',
@@ -660,12 +691,18 @@ const Shop = () => {
                       <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem', lineHeight: '1.3' }}>{product.title}</h3>
                     </Link>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.5rem' }}>
                       <Star size={16} color="var(--warning)" fill="var(--warning)" />
                       <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
                         {product.review_count > 0 ? `${product.avg_rating} (${product.review_count})` : 'No reviews'}
                       </span>
                     </div>
+
+                    {isSellerFlagged(product) && (
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', color: 'var(--warning)', background: 'rgba(255, 180, 0, 0.12)', border: '1px solid rgba(255, 180, 0, 0.25)', padding: '0.15rem 0.5rem', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 'bold', marginBottom: '0.8rem', width: 'fit-content' }}>
+                        <AlertTriangle size={12} /> Low rated seller ({product.seller_avg_rating ? `${product.seller_avg_rating}★` : 'Notice'})
+                      </div>
+                    )}
 
                     <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--accent-primary)' }}>
@@ -676,10 +713,7 @@ const Shop = () => {
                         <button
                           className="btn btn-outline"
                           style={{ padding: '0.4rem 0.8rem' }}
-                          onClick={() => {
-                            if (!user) alert("Please login first to add to cart!");
-                            else addToCart(product.id, 1);
-                          }}
+                          onClick={() => handleQuickAdd(product)}
                         >
                           Cart
                         </button>
@@ -692,6 +726,50 @@ const Shop = () => {
           </div>
         </main>
       </div>
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div
+          style={{
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            background: 'rgba(10, 25, 20, 0.95)',
+            border: '1px solid var(--success)',
+            color: 'var(--success)',
+            padding: '0.9rem 1.4rem',
+            borderRadius: '8px',
+            backdropFilter: 'blur(10px)',
+            boxShadow: '0 8px 30px rgba(0, 0, 0, 0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.6rem',
+            zIndex: 1300,
+            fontWeight: 'bold',
+            fontSize: '0.95rem',
+            animation: 'fadeIn 0.2s ease-out'
+          }}
+        >
+          {toastMessage}
+        </div>
+      )}
+
+      {/* Seller Warning Modal */}
+      <SellerWarningModal
+        isOpen={warningModalOpen}
+        onClose={() => {
+          setWarningModalOpen(false);
+          setPendingWarningProduct(null);
+        }}
+        onConfirm={() => {
+          if (pendingWarningProduct) {
+            addToCart(pendingWarningProduct.id, 1);
+            showToast(`✓ Added "${pendingWarningProduct.title}" to cart!`);
+            setPendingWarningProduct(null);
+          }
+        }}
+        product={pendingWarningProduct}
+      />
     </div>
   );
 };

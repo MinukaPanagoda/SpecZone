@@ -13,10 +13,16 @@ class Cart {
     }
 
     public function getItems($buyer_id) {
-        $query = "SELECT c.id as cart_id, c.quantity, p.id as product_id, p.title, p.price, p.stock_quantity,
+        $query = "SELECT c.id as cart_id, c.quantity, p.id as product_id, p.title, p.price, p.stock_quantity, p.seller_id,
+                         u.first_name as seller_name, s.shop_name,
+                         COALESCE(s.warning_count, 0) as seller_warning_count,
+                         COALESCE((SELECT ROUND(AVG(r.rating), 1) FROM reviews r JOIN products pr ON r.product_id = pr.id WHERE pr.seller_id = p.seller_id), 0) as seller_avg_rating,
+                         (SELECT COUNT(c.id) FROM complaints c WHERE c.seller_id = p.seller_id AND c.status = 'pending') as seller_complaint_count,
                          (SELECT image_url FROM product_images WHERE product_id = p.id LIMIT 1) as image_url
                   FROM " . $this->table_name . " c
                   JOIN products p ON c.product_id = p.id
+                  LEFT JOIN users u ON p.seller_id = u.id
+                  LEFT JOIN sellers_info s ON p.seller_id = s.user_id
                   WHERE c.buyer_id = :buyer_id";
 
         $stmt = $this->conn->prepare($query);

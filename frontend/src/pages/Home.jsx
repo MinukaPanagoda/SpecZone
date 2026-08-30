@@ -1,14 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Cpu, Monitor, HardDrive, Zap, Star, Heart } from 'lucide-react';
+import { Cpu, Monitor, HardDrive, Zap, Star, Heart, AlertTriangle } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
+import SellerWarningModal from '../components/SellerWarningModal';
 
 const Home = () => {
   const [trendingProducts, setTrendingProducts] = useState([]);
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
+
+  const [warningModalOpen, setWarningModalOpen] = useState(false);
+  const [pendingWarningProduct, setPendingWarningProduct] = useState(null);
 
   useEffect(() => {
     const fetchTrendingProducts = async () => {
@@ -25,9 +31,27 @@ const Home = () => {
     fetchTrendingProducts();
   }, []);
 
+  const isSellerFlagged = (product) => {
+    const sRating = parseFloat(product.seller_avg_rating || 0);
+    const sWarn = parseInt(product.seller_warning_count || 0);
+    const sComp = parseInt(product.seller_complaint_count || 0);
+    return (sRating > 0 && sRating < 3.0) || sWarn > 0 || sComp >= 2;
+  };
+
   const handleAddToCart = (e, product) => {
     e.stopPropagation();
+    if (!user) {
+      alert("Please login first to add to cart!");
+      navigate('/login');
+      return;
+    }
+    if (isSellerFlagged(product)) {
+      setPendingWarningProduct(product);
+      setWarningModalOpen(true);
+      return;
+    }
     addToCart(product.id);
+    alert('Added to cart successfully!');
   };
 
   const handleCardClick = (product) => {
@@ -157,6 +181,23 @@ const Home = () => {
             </div>
           )}
         </div>
+
+        {/* Seller Warning Modal */}
+        <SellerWarningModal
+          isOpen={warningModalOpen}
+          onClose={() => {
+            setWarningModalOpen(false);
+            setPendingWarningProduct(null);
+          }}
+          onConfirm={() => {
+            if (pendingWarningProduct) {
+              addToCart(pendingWarningProduct.id);
+              alert("Added to cart successfully!");
+              setPendingWarningProduct(null);
+            }
+          }}
+          product={pendingWarningProduct}
+        />
       </div>
     </div>
   );

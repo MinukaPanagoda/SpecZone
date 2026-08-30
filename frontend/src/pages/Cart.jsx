@@ -1,7 +1,7 @@
 import React from 'react';
 import { useCart } from '../context/CartContext';
 import { Link, useNavigate } from 'react-router-dom';
-import { Trash2, ShoppingBag, Plus, Minus, Image as ImageIcon } from 'lucide-react';
+import { Trash2, ShoppingBag, Plus, Minus, Image as ImageIcon, AlertTriangle } from 'lucide-react';
 
 const Cart = () => {
   const { cartItems, updateQuantity, removeFromCart, getCartTotal } = useCart();
@@ -21,6 +21,7 @@ const Cart = () => {
   }
 
   const hasOutOfStock = cartItems.some(item => parseInt(item.stock_quantity) <= 0 || parseInt(item.quantity) > parseInt(item.stock_quantity));
+  const hasFlaggedSellers = cartItems.some(item => (parseFloat(item.seller_avg_rating) > 0 && parseFloat(item.seller_avg_rating) < 3.0) || parseInt(item.seller_warning_count) > 0);
 
   return (
     <div className="container" style={{ padding: '2rem 1rem' }}>
@@ -32,6 +33,9 @@ const Cart = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {cartItems.map((item) => {
             const isOutOfStock = parseInt(item.stock_quantity) <= 0;
+            const sRating = parseFloat(item.seller_avg_rating || 0);
+            const isSellerWarned = (sRating > 0 && sRating < 3.0) || parseInt(item.seller_warning_count || 0) > 0;
+
             return (
               <div key={item.cart_id} className="glass-panel cart-item" style={{ padding: '1rem', display: 'flex', gap: '1rem', alignItems: 'center', border: isOutOfStock ? '1px solid rgba(255, 51, 102, 0.4)' : undefined }}>
                 {item.image_url ? (
@@ -51,6 +55,17 @@ const Cart = () => {
                       </span>
                     )}
                   </div>
+
+                  {item.seller_name && (
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.3rem', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                      <span>Sold by: <strong>{item.shop_name || item.seller_name}</strong></span>
+                      {isSellerWarned && (
+                        <span style={{ color: 'var(--warning)', display: 'inline-flex', alignItems: 'center', gap: '0.2rem', background: 'rgba(255,180,0,0.1)', padding: '0.1rem 0.4rem', borderRadius: '3px', fontSize: '0.75rem' }}>
+                          <AlertTriangle size={11} /> Low rated merchant ({sRating > 0 ? `${sRating}★` : 'Notice'})
+                        </span>
+                      )}
+                    </div>
+                  )}
 
                   <p style={{ color: 'var(--accent-primary)', fontWeight: 'bold', fontSize: '1.1rem', marginBottom: '0.5rem' }}>
                     Rs. {parseFloat(item.price).toLocaleString('en-IN')}
@@ -127,6 +142,13 @@ const Cart = () => {
               <p style={{ color: 'var(--danger)', fontSize: '0.85rem', marginTop: '0.8rem', textAlign: 'center', margin: '0.8rem 0 0 0' }}>
                 Please remove Out of Stock item(s) to proceed.
               </p>
+            )}
+
+            {hasFlaggedSellers && (
+              <div style={{ background: 'rgba(255, 180, 0, 0.08)', border: '1px solid rgba(255, 180, 0, 0.25)', padding: '0.6rem 0.8rem', borderRadius: '6px', marginTop: '1rem', fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'flex-start', gap: '0.4rem' }}>
+                <AlertTriangle size={14} color="var(--warning)" style={{ flexShrink: 0, marginTop: '0.1rem' }} />
+                <span>Notice: 1 or more items are from low-rated merchants. SpecZone Buyer Protection applies.</span>
+              </div>
             )}
           </div>
         </div>

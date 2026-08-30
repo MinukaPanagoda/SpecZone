@@ -120,6 +120,62 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         http_response_code(404);
         echo json_encode(array("message" => "Product not found."));
     }
+} else if ($action === 'update' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $data = json_decode(file_get_contents("php://input"));
+
+    if (!empty($data->id) && isset($data->price) && isset($data->stock)) {
+        $product->id = intval($data->id);
+        $product->seller_id = !empty($data->seller_id) ? intval($data->seller_id) : null;
+        $product->price = floatval($data->price);
+        $product->stock_quantity = intval($data->stock);
+
+        if (!empty($data->title) || !empty($data->name)) {
+            $product->title = !empty($data->title) ? $data->title : $data->name;
+        }
+        if (!empty($data->category_id)) {
+            $product->category_id = intval($data->category_id);
+        }
+        if (isset($data->description)) {
+            $product->description = $data->description;
+        }
+        if (isset($data->image_url)) {
+            $product->image_url = $data->image_url;
+        }
+        if (isset($data->specs)) {
+            $specs = $data->specs;
+            if (is_object($specs) || is_array($specs)) {
+                $specs = json_encode($specs);
+            }
+            $product->specifications = $specs;
+        }
+
+        if ($product->update()) {
+            http_response_code(200);
+            echo json_encode(array("message" => "Product updated successfully."));
+        } else {
+            http_response_code(503);
+            echo json_encode(array("message" => "Unable to update product."));
+        }
+    } else {
+        http_response_code(400);
+        echo json_encode(array("message" => "Unable to update product. Incomplete data."));
+    }
+} else if ($action === 'delete' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $data = json_decode(file_get_contents("php://input"));
+    if (!empty($data->id)) {
+        $product->id = intval($data->id);
+        $product->seller_id = !empty($data->seller_id) ? intval($data->seller_id) : null;
+        if ($product->delete()) {
+            http_response_code(200);
+            echo json_encode(array("message" => "Product deleted successfully."));
+        } else {
+            http_response_code(503);
+            echo json_encode(array("message" => "Unable to delete product."));
+        }
+    } else {
+        http_response_code(400);
+        echo json_encode(array("message" => "Product ID required."));
+    }
 } else {
     http_response_code(404);
     echo json_encode(array("message" => "Action not found."));

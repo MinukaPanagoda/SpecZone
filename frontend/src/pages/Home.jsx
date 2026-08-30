@@ -1,12 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Cpu, Monitor, HardDrive, Zap, Star } from 'lucide-react';
+import { Cpu, Monitor, HardDrive, Zap, Star, Heart, AlertTriangle } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
+import { useWishlist } from '../context/WishlistContext';
+import SellerWarningModal from '../components/SellerWarningModal';
 
 const Home = () => {
   const [trendingProducts, setTrendingProducts] = useState([]);
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { addToCart } = useCart();
+  const { isInWishlist, toggleWishlist } = useWishlist();
+
+  const [warningModalOpen, setWarningModalOpen] = useState(false);
+  const [pendingWarningProduct, setPendingWarningProduct] = useState(null);
 
   useEffect(() => {
     const fetchTrendingProducts = async () => {
@@ -23,9 +31,27 @@ const Home = () => {
     fetchTrendingProducts();
   }, []);
 
+  const isSellerFlagged = (product) => {
+    const sRating = parseFloat(product.seller_avg_rating || 0);
+    const sWarn = parseInt(product.seller_warning_count || 0);
+    const sComp = parseInt(product.seller_complaint_count || 0);
+    return (sRating > 0 && sRating < 3.0) || sWarn > 0 || sComp >= 2;
+  };
+
   const handleAddToCart = (e, product) => {
     e.stopPropagation();
+    if (!user) {
+      alert("Please login first to add to cart!");
+      navigate('/login');
+      return;
+    }
+    if (isSellerFlagged(product)) {
+      setPendingWarningProduct(product);
+      setWarningModalOpen(true);
+      return;
+    }
     addToCart(product.id);
+    alert('Added to cart successfully!');
   };
 
   const handleCardClick = (product) => {
@@ -90,21 +116,50 @@ const Home = () => {
                 onClick={() => handleCardClick(product)}
                 style={{ cursor: 'pointer' }}
               >
-                <div style={{ height: '200px', backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 'var(--border-radius-sm)', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ position: 'relative', height: '200px', backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 'var(--border-radius-sm)', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {product.image_url ? (
                     <img
                       src={product.image_url}
-                      alt={product.name}
+                      alt={product.title}
                       style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 'var(--border-radius-sm)' }}
                     />
                   ) : (
                     <Monitor size={64} color="var(--text-muted)" />
                   )}
+
+                  <button
+                    type="button"
+                    aria-label="Wishlist"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleWishlist(product.id);
+                    }}
+                    style={{
+                      position: 'absolute',
+                      top: '10px',
+                      right: '10px',
+                      background: 'rgba(0,0,0,0.6)',
+                      border: '1px solid rgba(255,255,255,0.15)',
+                      color: isInWishlist(product.id) ? 'var(--danger)' : 'var(--text-primary)',
+                      borderRadius: '50%',
+                      width: '34px',
+                      height: '34px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      zIndex: 5
+                    }}
+                  >
+                    <Heart size={16} fill={isInWishlist(product.id) ? 'var(--danger)' : 'none'} />
+                  </button>
                 </div>
-                <h4 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>{product.name}</h4>
+                <h4 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>{product.title}</h4>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
                   <Star size={16} color="var(--warning)" fill="var(--warning)" />
-                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>4.5 (0 Reviews)</span>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                    {product.review_count > 0 ? `${product.avg_rating} (${product.review_count} Reviews)` : 'No reviews'}
+                  </span>
                 </div>
                 <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '1.3rem', fontWeight: 'bold', color: 'var(--accent-primary)' }}>
@@ -126,6 +181,23 @@ const Home = () => {
             </div>
           )}
         </div>
+
+        {/* Seller Warning Modal */}
+        <SellerWarningModal
+          isOpen={warningModalOpen}
+          onClose={() => {
+            setWarningModalOpen(false);
+            setPendingWarningProduct(null);
+          }}
+          onConfirm={() => {
+            if (pendingWarningProduct) {
+              addToCart(pendingWarningProduct.id);
+              alert("Added to cart successfully!");
+              setPendingWarningProduct(null);
+            }
+          }}
+          product={pendingWarningProduct}
+        />
       </div>
     </div>
   );

@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Filter, Star, Search, Image as ImageIcon, ChevronDown } from 'lucide-react';
+import { Filter, Star, Search, Image as ImageIcon, ChevronDown, Heart, AlertTriangle } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { Link } from 'react-router-dom';
+import { useWishlist } from '../context/WishlistContext';
+import { Link, useSearchParams } from 'react-router-dom';
+import SellerWarningModal from '../components/SellerWarningModal';
 
 const Shop = () => {
   const { user } = useAuth();
   const { addToCart } = useCart();
+  const { isInWishlist, toggleWishlist } = useWishlist();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,15 +18,54 @@ const Shop = () => {
   const [sortFocused, setSortFocused] = useState(false);
   const [sortHovered, setSortHovered] = useState(false);
 
+  const [searchParams] = useSearchParams();
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
+
+  // Filter state
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [selectedPriceRange, setSelectedPriceRange] = useState(null);
+  const [selectedUseCase, setSelectedUseCase] = useState(null);
+
   // Custom React dropdown state
   const [sortOpen, setSortOpen] = useState(false);
   const [selectedSort, setSelectedSort] = useState('Popularity');
   const sortRef = useRef(null);
 
+  const [warningModalOpen, setWarningModalOpen] = useState(false);
+  const [pendingWarningProduct, setPendingWarningProduct] = useState(null);
+  const [toastMessage, setToastMessage] = useState('');
+
+  const isSellerFlagged = (product) => {
+    const sRating = parseFloat(product.avg_rating || product.seller_avg_rating || 0);
+    const sWarn = parseInt(product.seller_warning_count || 0);
+    const sComp = parseInt(product.seller_complaint_count || 0);
+    return (sRating > 0 && sRating < 5) || sWarn > 0 || sComp >= 2;
+  };
+
+  const showToast = (msg) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(''), 3000);
+  };
+
+  const handleQuickAdd = (product) => {
+    if (!user) {
+      showToast('Please login to add components to cart.');
+      return;
+    }
+    if (isSellerFlagged(product)) {
+      setPendingWarningProduct(product);
+      setWarningModalOpen(true);
+      return;
+    }
+    addToCart(product.id, 1);
+    showToast(`✓ Added "${product.title}" to cart!`);
+  };
+
   const sortOptions = [
     'Popularity',
-    'Low to High',
-    'High to Low',
+    'Price: Low to High',
+    'Price: High to Low',
+    'Customer Rating',
     'Newest Arrivals',
   ];
 
@@ -53,6 +95,29 @@ const Shop = () => {
       .catch(err => console.error("Error fetching categories:", err));
   }, []);
 
+  // Sync category or search query parameter from URL (e.g. from Home page links)
+  useEffect(() => {
+    const categoryParam = searchParams.get('category');
+    if (categoryParam && categories.length > 0) {
+      const lower = categoryParam.toLowerCase();
+      const matchedCat = categories.find(c => {
+        const catName = c.name.toLowerCase();
+        if (lower === 'cpu') return catName.includes('processor') || catName.includes('cpu');
+        if (lower === 'gpu') return catName.includes('graphics') || catName.includes('gpu');
+        if (lower === 'ram') return catName.includes('memory') || catName.includes('ram');
+        if (lower === 'storage') return catName.includes('storage') || catName.includes('ssd') || catName.includes('hdd');
+        return catName.includes(lower);
+      });
+      if (matchedCat) {
+        setSelectedCategories([matchedCat.id]);
+      }
+    }
+    const searchParam = searchParams.get('search');
+    if (searchParam) {
+      setSearchQuery(searchParam);
+    }
+  }, [searchParams, categories]);
+
   useEffect(() => {
     const handleResize = () => {
       setIsResponsive(window.innerWidth <= 900);
@@ -77,6 +142,112 @@ const Shop = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  const handleCategoryChange = (categoryId, checked) => {
+    setSelectedCategories(prev =>
+      checked ? [...prev, categoryId] : prev.filter(id => id !== categoryId)
+    );
+  };
+
+  const handlePriceRangeChange = (range) => {
+    setSelectedPriceRange(range);
+  };
+
+  const handleClearFilters = () => {
+    setSelectedCategories([]);
+    setSelectedPriceRange(null);
+    setSelectedUseCase(null);
+    setSearchQuery('');
+  };
+
+  const matchesUseCase = (product, useCase) => {
+    if (!useCase) return true;
+    const cat = (product.category_name || '').toLowerCase();
+    const title = (product.title || '').toLowerCase();
+    const desc = (product.description || '').toLowerCase();
+    const specsStr = JSON.stringify(product.specs || {}).toLowerCase();
+    const price = parseFloat(product.price || 0);
+
+    if (useCase === 'gaming') {
+      if (cat.includes('graphics') || cat.includes('gpu')) return true;
+      if (cat.includes('cooling')) return true;
+      if (title.includes('gaming') || desc.includes('gaming') || specsStr.includes('gaming')) return true;
+      if (title.includes('rtx') || title.includes('gtx') || title.includes('radeon')) return true;
+      if (title.includes('ryzen 5') || title.includes('ryzen 7') || title.includes('i5') || title.includes('i7') || title.includes('i9')) return true;
+      if (cat.includes('memory') || cat.includes('ram')) return title.includes('16gb') || title.includes('32gb') || title.includes('ddr5') || title.includes('rgb');
+      if (cat.includes('case')) return true;
+      return false;
+    }
+
+    if (useCase === 'office') {
+      if (title.includes('i3') || title.includes('i5') || title.includes('ryzen 3') || title.includes('ryzen 5')) return true;
+      if (cat.includes('storage') || cat.includes('ssd')) return true;
+      if ((cat.includes('memory') || cat.includes('ram')) && (title.includes('8gb') || title.includes('16gb'))) return true;
+      if (cat.includes('motherboard') && price <= 80000) return true;
+      if (cat.includes('case') && price <= 30000) return true;
+      if (cat.includes('power') && price <= 35000) return true;
+      if (price <= 60000 && !title.includes('rtx') && !title.includes('4090')) return true;
+      return false;
+    }
+
+    if (useCase === 'design') {
+      if (title.includes('i7') || title.includes('i9') || title.includes('ryzen 7') || title.includes('ryzen 9')) return true;
+      if (title.includes('rtx') || title.includes('radeon') || title.includes('ti')) return true;
+      if ((cat.includes('memory') || cat.includes('ram')) && (title.includes('32gb') || title.includes('64gb') || title.includes('ddr5'))) return true;
+      if (cat.includes('storage') || cat.includes('ssd')) return true;
+      if (cat.includes('cooling')) return true;
+      if (desc.includes('render') || desc.includes('edit') || desc.includes('3d') || desc.includes('creator')) return true;
+      return false;
+    }
+
+    return true;
+  };
+
+  const matchesPriceRange = (price, range) => {
+    const p = parseFloat(price);
+    switch (range) {
+      case 'under-50k':
+        return p < 50000;
+      case '50k-100k':
+        return p >= 50000 && p <= 100000;
+      case '100k-200k':
+        return p > 100000 && p <= 200000;
+      case 'over-200k':
+        return p > 200000;
+      default:
+        return true;
+    }
+  };
+
+  const filteredProducts = products
+    .filter(product => {
+      const categoryMatch = selectedCategories.length === 0 || selectedCategories.includes(product.category_id);
+      const priceMatch = selectedPriceRange === null || matchesPriceRange(product.price, selectedPriceRange);
+      const useCaseMatch = selectedUseCase === null || matchesUseCase(product, selectedUseCase);
+      const query = searchQuery.trim().toLowerCase();
+      const searchMatch = !query || 
+        product.title?.toLowerCase().includes(query) ||
+        product.description?.toLowerCase().includes(query) ||
+        product.category_name?.toLowerCase().includes(query);
+      return categoryMatch && priceMatch && useCaseMatch && searchMatch;
+    })
+    .sort((a, b) => {
+      if (selectedSort === 'Price: Low to High' || selectedSort === 'Low to High') {
+        return parseFloat(a.price) - parseFloat(b.price);
+      }
+      if (selectedSort === 'Price: High to Low' || selectedSort === 'High to Low') {
+        return parseFloat(b.price) - parseFloat(a.price);
+      }
+      if (selectedSort === 'Customer Rating') {
+        const ratingDiff = parseFloat(b.avg_rating || 0) - parseFloat(a.avg_rating || 0);
+        if (ratingDiff !== 0) return ratingDiff;
+        return parseInt(b.review_count || 0) - parseInt(a.review_count || 0);
+      }
+      if (selectedSort === 'Newest Arrivals') {
+        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+      }
+      return 0; // Popularity / Default
+    });
 
   const sortSelectStyle = {
     width: isResponsive ? '100%' : 'auto',
@@ -132,20 +303,104 @@ const Shop = () => {
             <h4>Categories</h4>
             {categories.map(cat => (
               <label key={cat.id} className="filter-label">
-                <input type="checkbox" value={cat.id} className="speczone-control" /> {cat.name}
+                <input
+                  type="checkbox"
+                  value={cat.id}
+                  className="speczone-control"
+                  checked={selectedCategories.includes(cat.id)}
+                  onChange={(e) => handleCategoryChange(cat.id, e.target.checked)}
+                />
+                {cat.name}
               </label>
             ))}
           </div>
 
           <div className="filter-group">
-            <h4>Price Range</h4>
-            <label className="filter-label"><input type="radio" name="price" className="speczone-control" /> Under Rs. 50,000</label>
-            <label className="filter-label"><input type="radio" name="price" className="speczone-control" /> Rs. 50,000 - 100,000</label>
-            <label className="filter-label"><input type="radio" name="price" className="speczone-control" /> Rs. 100,000 - 200,000</label>
-            <label className="filter-label"><input type="radio" name="price" className="speczone-control" /> Over Rs. 200,000</label>
+            <h4>Recommended For</h4>
+            <label className="filter-label">
+              <input
+                type="radio"
+                name="usecase"
+                className="speczone-control"
+                value="gaming"
+                checked={selectedUseCase === 'gaming'}
+                onChange={() => setSelectedUseCase(prev => prev === 'gaming' ? null : 'gaming')}
+              />
+              🎮 Gaming & Streaming
+            </label>
+            <label className="filter-label">
+              <input
+                type="radio"
+                name="usecase"
+                className="speczone-control"
+                value="office"
+                checked={selectedUseCase === 'office'}
+                onChange={() => setSelectedUseCase(prev => prev === 'office' ? null : 'office')}
+              />
+              💼 Office & Study
+            </label>
+            <label className="filter-label">
+              <input
+                type="radio"
+                name="usecase"
+                className="speczone-control"
+                value="design"
+                checked={selectedUseCase === 'design'}
+                onChange={() => setSelectedUseCase(prev => prev === 'design' ? null : 'design')}
+              />
+              🎨 Graphic Design & Editing
+            </label>
           </div>
 
-          <button className="btn btn-primary" style={{ width: '100%' }}>Apply Filters</button>
+          <div className="filter-group">
+            <h4>Price Range</h4>
+            <label className="filter-label">
+              <input
+                type="radio"
+                name="price"
+                className="speczone-control"
+                value="under-50k"
+                checked={selectedPriceRange === 'under-50k'}
+                onChange={(e) => handlePriceRangeChange(e.target.value)}
+              />
+              Under Rs. 50,000
+            </label>
+            <label className="filter-label">
+              <input
+                type="radio"
+                name="price"
+                className="speczone-control"
+                value="50k-100k"
+                checked={selectedPriceRange === '50k-100k'}
+                onChange={(e) => handlePriceRangeChange(e.target.value)}
+              />
+              Rs. 50,000 - 100,000
+            </label>
+            <label className="filter-label">
+              <input
+                type="radio"
+                name="price"
+                className="speczone-control"
+                value="100k-200k"
+                checked={selectedPriceRange === '100k-200k'}
+                onChange={(e) => handlePriceRangeChange(e.target.value)}
+              />
+              Rs. 100,000 - 200,000
+            </label>
+            <label className="filter-label">
+              <input
+                type="radio"
+                name="price"
+                className="speczone-control"
+                value="over-200k"
+                checked={selectedPriceRange === 'over-200k'}
+                onChange={(e) => handlePriceRangeChange(e.target.value)}
+              />
+              Over Rs. 200,000
+            </label>
+          </div>
+
+          <button className="btn btn-primary" style={{ width: '100%' }} onClick={handleClearFilters}>Clear Filters</button>
         </aside>
 
         {isResponsive && (
@@ -224,6 +479,8 @@ const Shop = () => {
                 <input
                   type="text"
                   placeholder="Search..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className="form-control shop-search-input"
                   style={{
                     paddingLeft: '2.5rem',
@@ -371,20 +628,54 @@ const Shop = () => {
               <p>Loading products...</p>
             ) : products.length === 0 ? (
               <p>No products available yet.</p>
+            ) : filteredProducts.length === 0 ? (
+              <p>No products match the selected filters.</p>
             ) : (
-              products.map((product) => (
+              filteredProducts.map((product) => (
                 <div className="product-card" key={product.id}>
                   <Link to={`/product/${product.id}`} style={{ display: 'block', textDecoration: 'none', color: 'inherit' }}>
                     <div style={{ position: 'relative', height: '200px', backgroundColor: 'rgba(0,0,0,0.3)', borderTopLeftRadius: '10px', borderTopRightRadius: '10px', overflow: 'hidden' }}>
                       {product.image_url ? (
-                        <img src={product.image_url} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s ease' }} />
+                        <img src={product.image_url} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s ease' }} />
                       ) : (
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
                           <ImageIcon size={48} color="var(--text-secondary)" />
                         </div>
                       )}
+
+                      {(!user || user.role === 'buyer') && (
+                        <button
+                          type="button"
+                          aria-label="Wishlist"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            toggleWishlist(product.id);
+                          }}
+                          style={{
+                            position: 'absolute',
+                            top: '10px',
+                            right: '10px',
+                            background: 'rgba(0,0,0,0.6)',
+                            border: '1px solid rgba(255,255,255,0.15)',
+                            color: isInWishlist(product.id) ? 'var(--danger)' : 'var(--text-primary)',
+                            borderRadius: '50%',
+                            width: '34px',
+                            height: '34px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            transition: 'transform 0.2s ease, background 0.2s ease',
+                            zIndex: 5
+                          }}
+                        >
+                          <Heart size={16} fill={isInWishlist(product.id) ? 'var(--danger)' : 'none'} />
+                        </button>
+                      )}
+
                       {product.stock <= 0 && (
-                        <div style={{ position: 'absolute', top: '10px', right: '10px', background: 'var(--danger)', color: 'white', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                        <div style={{ position: 'absolute', bottom: '10px', left: '10px', background: 'var(--danger)', color: 'white', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold' }}>
                           Out of Stock
                         </div>
                       )}
@@ -397,13 +688,21 @@ const Shop = () => {
                     </div>
 
                     <Link to={`/product/${product.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                      <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem', lineHeight: '1.3' }}>{product.name}</h3>
+                      <h3 style={{ fontSize: '1.2rem', marginBottom: '0.5rem', lineHeight: '1.3' }}>{product.title}</h3>
                     </Link>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginBottom: '0.5rem' }}>
                       <Star size={16} color="var(--warning)" fill="var(--warning)" />
-                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>--</span>
+                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                        {product.review_count > 0 ? `${product.avg_rating} (${product.review_count})` : 'No reviews'}
+                      </span>
                     </div>
+
+                    {isSellerFlagged(product) && (
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', color: 'var(--warning)', background: 'rgba(255, 180, 0, 0.12)', border: '1px solid rgba(255, 180, 0, 0.25)', padding: '0.15rem 0.5rem', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 'bold', marginBottom: '0.8rem', width: 'fit-content' }}>
+                        <AlertTriangle size={12} /> Low rated seller ({product.seller_avg_rating ? `${product.seller_avg_rating}★` : 'Notice'})
+                      </div>
+                    )}
 
                     <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--accent-primary)' }}>
@@ -414,10 +713,7 @@ const Shop = () => {
                         <button
                           className="btn btn-outline"
                           style={{ padding: '0.4rem 0.8rem' }}
-                          onClick={() => {
-                            if (!user) alert("Please login first to add to cart!");
-                            else addToCart(product.id, 1);
-                          }}
+                          onClick={() => handleQuickAdd(product)}
                         >
                           Cart
                         </button>
@@ -430,6 +726,53 @@ const Shop = () => {
           </div>
         </main>
       </div>
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div
+          style={{
+            position: 'fixed',
+            top: '24px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'rgba(10, 25, 20, 0.95)',
+            border: '1px solid var(--success)',
+            color: 'var(--success)',
+            padding: '0.9rem 1.6rem',
+            borderRadius: '10px',
+            backdropFilter: 'blur(10px)',
+            boxShadow: '0 8px 30px rgba(0, 0, 0, 0.6), 0 0 15px rgba(0, 230, 118, 0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.6rem',
+            zIndex: 1300,
+            fontWeight: 'bold',
+            fontSize: '0.95rem',
+            animation: 'fadeIn 0.2s ease-out',
+            maxWidth: '90vw',
+            textAlign: 'center'
+          }}
+        >
+          {toastMessage}
+        </div>
+      )}
+
+      {/* Seller Warning Modal */}
+      <SellerWarningModal
+        isOpen={warningModalOpen}
+        onClose={() => {
+          setWarningModalOpen(false);
+          setPendingWarningProduct(null);
+        }}
+        onConfirm={() => {
+          if (pendingWarningProduct) {
+            addToCart(pendingWarningProduct.id, 1);
+            showToast(`✓ Added "${pendingWarningProduct.title}" to cart!`);
+            setPendingWarningProduct(null);
+          }
+        }}
+        product={pendingWarningProduct}
+      />
     </div>
   );
 };

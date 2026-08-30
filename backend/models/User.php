@@ -2,7 +2,7 @@
 // backend/models/User.php
 class User {
     private $conn;
-    private $table_name = "USERS";
+    private $table_name = "users";
 
     public $id;
     public $first_name;

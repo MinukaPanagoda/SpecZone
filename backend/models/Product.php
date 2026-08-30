@@ -67,11 +67,19 @@ class Product {
 
     // Get all products
     public function read() {
-        $query = "SELECT p.*, c.name as category_name, u.first_name as seller_name,
-                         (SELECT image_url FROM product_images WHERE product_id = p.id LIMIT 1) as image_url
+        $query = "SELECT p.*, c.name as category_name, u.first_name as seller_name, s.shop_name,
+                         COALESCE(s.warning_count, 0) as seller_warning_count,
+                         COALESCE(s.is_verified, 0) as seller_is_verified,
+                         (SELECT image_url FROM product_images WHERE product_id = p.id LIMIT 1) as image_url,
+                         COALESCE((SELECT ROUND(AVG(rating), 1) FROM reviews WHERE product_id = p.id), 0) as avg_rating,
+                         (SELECT COUNT(id) FROM reviews WHERE product_id = p.id) as review_count,
+                         COALESCE((SELECT ROUND(AVG(r.rating), 1) FROM reviews r JOIN products pr ON r.product_id = pr.id WHERE pr.seller_id = p.seller_id), 0) as seller_avg_rating,
+                         (SELECT COUNT(r.id) FROM reviews r JOIN products pr ON r.product_id = pr.id WHERE pr.seller_id = p.seller_id) as seller_review_count,
+                         (SELECT COUNT(c.id) FROM complaints c WHERE c.seller_id = p.seller_id AND c.status = 'pending') as seller_complaint_count
                   FROM " . $this->table_name . " p
                   LEFT JOIN categories c ON p.category_id = c.id
-                  LEFT JOIN users u ON p.seller_id = u.id";
+                  LEFT JOIN users u ON p.seller_id = u.id
+                  LEFT JOIN sellers_info s ON p.seller_id = s.user_id";
 
         if ($this->seller_id) {
             $query .= " WHERE p.seller_id = :seller_id";
@@ -91,11 +99,19 @@ class Product {
 
     // Get single product
     public function readSingle() {
-        $query = "SELECT p.*, c.name as category_name, u.first_name as seller_name,
-                         (SELECT image_url FROM product_images WHERE product_id = p.id LIMIT 1) as image_url
+        $query = "SELECT p.*, c.name as category_name, u.first_name as seller_name, s.shop_name,
+                         COALESCE(s.warning_count, 0) as seller_warning_count,
+                         COALESCE(s.is_verified, 0) as seller_is_verified,
+                         (SELECT image_url FROM product_images WHERE product_id = p.id LIMIT 1) as image_url,
+                         COALESCE((SELECT ROUND(AVG(rating), 1) FROM reviews WHERE product_id = p.id), 0) as avg_rating,
+                         (SELECT COUNT(id) FROM reviews WHERE product_id = p.id) as review_count,
+                         COALESCE((SELECT ROUND(AVG(r.rating), 1) FROM reviews r JOIN products pr ON r.product_id = pr.id WHERE pr.seller_id = p.seller_id), 0) as seller_avg_rating,
+                         (SELECT COUNT(r.id) FROM reviews r JOIN products pr ON r.product_id = pr.id WHERE pr.seller_id = p.seller_id) as seller_review_count,
+                         (SELECT COUNT(c.id) FROM complaints c WHERE c.seller_id = p.seller_id AND c.status = 'pending') as seller_complaint_count
                   FROM " . $this->table_name . " p
                   LEFT JOIN categories c ON p.category_id = c.id
                   LEFT JOIN users u ON p.seller_id = u.id
+                  LEFT JOIN sellers_info s ON p.seller_id = s.user_id
                   WHERE p.id = :id
                   LIMIT 1";
 
@@ -116,6 +132,91 @@ class Product {
             return $row;
         }
         return false;
+    }
+
+    // Update product (price, stock, title, description, specifications, image_url)
+    public function update() {
+        try {
+            $this->conn->beginTransaction();
+
+            $query = "UPDATE " . $this->table_name . " 
+                      SET price = :price, 
+                          stock_quantity = :stock_quantity" .
+                          (!empty($this->title) ? ", title = :title" : "") .
+                          (!empty($this->category_id) ? ", category_id = :category_id" : "") .
+                          (isset($this->description) ? ", description = :description" : "") .
+                          (!empty($this->specifications) ? ", specifications = :specifications" : "") .
+                      " WHERE id = :id";
+            
+            if (!empty($this->seller_id)) {
+                $query .= " AND seller_id = :seller_id";
+            }
+
+            $stmt = $this->conn->prepare($query);
+
+            $stmt->bindParam(":price", $this->price);
+            $stmt->bindParam(":stock_quantity", $this->stock_quantity);
+            $stmt->bindParam(":id", $this->id);
+
+            if (!empty($this->title)) {
+                $this->title = htmlspecialchars(strip_tags($this->title));
+                $stmt->bindParam(":title", $this->title);
+            }
+            if (!empty($this->category_id)) {
+                $stmt->bindParam(":category_id", $this->category_id);
+            }
+            if (isset($this->description)) {
+                $this->description = htmlspecialchars(strip_tags($this->description));
+                $stmt->bindParam(":description", $this->description);
+            }
+            if (!empty($this->specifications)) {
+                $stmt->bindParam(":specifications", $this->specifications);
+            }
+            if (!empty($this->seller_id)) {
+                $stmt->bindParam(":seller_id", $this->seller_id);
+            }
+
+            if ($stmt->execute()) {
+                if (!empty($this->image_url)) {
+                    $check_img = $this->conn->prepare("SELECT id FROM product_images WHERE product_id = :product_id LIMIT 1");
+                    $check_img->bindParam(":product_id", $this->id);
+                    $check_img->execute();
+                    if ($check_img->rowCount() > 0) {
+                        $img_stmt = $this->conn->prepare("UPDATE product_images SET image_url = :image_url WHERE product_id = :product_id");
+                    } else {
+                        $img_stmt = $this->conn->prepare("INSERT INTO product_images SET product_id = :product_id, image_url = :image_url");
+                    }
+                    $img_stmt->bindParam(":image_url", $this->image_url);
+                    $img_stmt->bindParam(":product_id", $this->id);
+                    $img_stmt->execute();
+                }
+
+                $this->conn->commit();
+                return true;
+            }
+
+            $this->conn->rollBack();
+            return false;
+        } catch (Exception $e) {
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
+            return false;
+        }
+    }
+
+    // Delete product
+    public function delete() {
+        $query = "DELETE FROM " . $this->table_name . " WHERE id = :id";
+        if (!empty($this->seller_id)) {
+            $query .= " AND seller_id = :seller_id";
+        }
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(":id", $this->id);
+        if (!empty($this->seller_id)) {
+            $stmt->bindParam(":seller_id", $this->seller_id);
+        }
+        return $stmt->execute();
     }
 }
 ?>

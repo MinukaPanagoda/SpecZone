@@ -8,6 +8,8 @@ const SellerDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState({ avg_rating: 0, total_reviews: 0, active_listings: 0 });
+  const [sales, setSales] = useState([]);
+  const [salesLoading, setSalesLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -24,6 +26,24 @@ const SellerDashboard = () => {
         }
       })
       .catch(err => console.error(err));
+  }, [user, navigate]);
+
+  useEffect(() => {
+    if (!user || user.role !== 'seller') return;
+
+    setSalesLoading(true);
+    fetch(`http://localhost/SpecZone/backend/api/orders.php?action=read_seller&seller_id=${user.id}`)
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setSales(data.slice(0, 5));
+        }
+        setSalesLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setSalesLoading(false);
+      });
   }, [user, navigate]);
 
   let ratingColor = 'var(--text-secondary)';
@@ -87,9 +107,14 @@ const SellerDashboard = () => {
         <div className="glass-panel" style={{ padding: '2rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
             <h3>Recent Sales</h3>
-            <button className="btn btn-outline" style={{ padding: '0.5rem 1rem' }}>View All</button>
+            <button className="btn btn-outline" style={{ padding: '0.5rem 1rem' }} onClick={() => navigate('/seller/orders')}>View All</button>
           </div>
-          
+
+          {salesLoading ? (
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Loading sales...</div>
+          ) : sales.length === 0 ? (
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>No sales yet.</div>
+          ) : (
           <div style={{ overflowX: 'auto', width: '100%' }}>
           <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
             <thead>
@@ -101,21 +126,22 @@ const SellerDashboard = () => {
               </tr>
             </thead>
             <tbody>
-              <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                <td style={{ padding: '1rem 0' }}>#ORD-001</td>
-                <td style={{ padding: '1rem 0' }}>RTX 3060 Ti</td>
-                <td style={{ padding: '1rem 0' }}>Lahiru</td>
-                <td style={{ padding: '1rem 0' }}><span style={{ color: 'var(--warning)' }}>Pending</span></td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                <td style={{ padding: '1rem 0' }}>#ORD-002</td>
-                <td style={{ padding: '1rem 0' }}>Ryzen 5 5600X</td>
-                <td style={{ padding: '1rem 0' }}>Kasun</td>
-                <td style={{ padding: '1rem 0' }}><span style={{ color: 'var(--success)' }}>Shipped</span></td>
-              </tr>
+              {sales.map((item) => (
+                <tr key={item.item_id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                  <td style={{ padding: '1rem 0' }}>#{item.order_id}</td>
+                  <td style={{ padding: '1rem 0' }}>{item.title}</td>
+                  <td style={{ padding: '1rem 0' }}>{item.buyer_name}</td>
+                  <td style={{ padding: '1rem 0' }}>
+                    <span style={{ color: item.status === 'delivered' ? 'var(--success)' : item.status === 'shipped' ? 'var(--warning)' : 'var(--text-secondary)' }}>
+                      {item.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
           </div>
+          )}
         </div>
       </main>
     </div>

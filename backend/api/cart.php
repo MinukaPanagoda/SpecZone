@@ -30,7 +30,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'get') {
                 'price' => $row['price'],
                 'quantity' => $row['quantity'],
                 'stock_quantity' => $row['stock_quantity'],
-                'image_url' => $row['image_url']
+                'image_url' => $row['image_url'],
+                'seller_name' => $row['seller_name'],
+                'shop_name' => $row['shop_name'],
+                'seller_warning_count' => intval($row['seller_warning_count'] ?? 0),
+                'seller_avg_rating' => floatval($row['seller_avg_rating'] ?? 0),
+                'seller_complaint_count' => intval($row['seller_complaint_count'] ?? 0)
             ];
         }
         http_response_code(200);

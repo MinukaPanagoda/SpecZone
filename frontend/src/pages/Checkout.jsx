@@ -37,12 +37,14 @@ const Checkout = () => {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
   const [orderSnapshot, setOrderSnapshot] = useState(null);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [placedOrderId, setPlacedOrderId] = useState(null);
 
   useEffect(() => {
     if (!user || user.role !== 'buyer') {
       navigate('/login');
     }
-    if (cartItems.length === 0 && !success) {
+    if (cartItems.length === 0 && !success && !showSuccessPopup) {
       navigate('/cart');
     }
     
@@ -50,7 +52,7 @@ const Checkout = () => {
     if (user && !shipping.fullName) {
       setShipping(prev => ({ ...prev, fullName: `${user.first_name || ''} ${user.last_name || ''}`.trim() }));
     }
-  }, [user, cartItems, navigate, success]);
+  }, [user, cartItems, navigate, success, showSuccessPopup]);
 
   const handleChange = (e) => {
     setShipping({ ...shipping, [e.target.name]: e.target.value });
@@ -95,13 +97,17 @@ const Checkout = () => {
       const data = await res.json();
       
       if (res.ok) {
+        setPlacedOrderId(data.order_id || null);
+        setShowSuccessPopup(true);
         await fetchCart(); // clears the local cart context
-        alert("🎉 Order placed successfully! Redirecting to your Orders dashboard...");
-        navigate('/buyer/dashboard', { state: { tab: 'orders' } });
+        
+        setTimeout(() => {
+          navigate('/buyer/dashboard', { state: { tab: 'orders' } });
+        }, 2200);
       } else {
         setError(data.message || 'Failed to place order.');
       }
-    } catch (err) {
+    } catch {
       setError('An error occurred while connecting to the server. Please try again.');
     } finally {
       setLoading(false);
@@ -599,6 +605,120 @@ const Checkout = () => {
 
         </div>
       </form>
+
+      {/* Small React Order Success Popup */}
+      {showSuccessPopup && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.78)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2000,
+            padding: '1.2rem',
+            animation: 'fadeIn 0.2s ease-out'
+          }}
+        >
+          <div
+            className="glass-panel"
+            style={{
+              width: '100%',
+              maxWidth: '420px',
+              padding: '2.2rem 1.8rem',
+              borderRadius: '16px',
+              border: '1px solid rgba(0, 240, 255, 0.3)',
+              boxShadow: '0 0 35px rgba(0, 240, 255, 0.2)',
+              background: 'linear-gradient(145deg, rgba(18, 22, 34, 0.98), rgba(10, 14, 22, 0.98))',
+              textAlign: 'center',
+              position: 'relative',
+              animation: 'popupScaleIn 0.25s ease-out'
+            }}
+          >
+            {/* Animated Success Badge Icon */}
+            <div
+              style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '50%',
+                background: 'rgba(0, 230, 118, 0.15)',
+                border: '2px solid var(--success)',
+                color: 'var(--success)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 1.2rem',
+                boxShadow: '0 0 25px rgba(0, 230, 118, 0.3)'
+              }}
+            >
+              <CheckCircle2 size={36} />
+            </div>
+
+            <h3 style={{ fontSize: '1.35rem', fontWeight: 'bold', margin: '0 0 0.5rem 0', color: '#ffffff' }}>
+              Order Placed Successfully!
+            </h3>
+            
+            {placedOrderId && (
+              <div style={{
+                display: 'inline-block',
+                background: 'rgba(0, 240, 255, 0.1)',
+                border: '1px solid rgba(0, 240, 255, 0.25)',
+                borderRadius: '20px',
+                padding: '0.2rem 0.8rem',
+                fontSize: '0.85rem',
+                color: 'var(--accent-primary)',
+                fontWeight: '600',
+                marginBottom: '0.8rem'
+              }}>
+                Order Ref: #{placedOrderId}
+              </div>
+            )}
+
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.92rem', lineHeight: '1.5', margin: '0 0 1.2rem 0' }}>
+              Redirecting to your Orders dashboard...
+            </p>
+
+            {/* Smooth Progress Bar */}
+            <div style={{
+              width: '100%',
+              height: '4px',
+              background: 'rgba(255, 255, 255, 0.1)',
+              borderRadius: '2px',
+              overflow: 'hidden',
+              marginBottom: '1.2rem'
+            }}>
+              <div
+                style={{
+                  height: '100%',
+                  background: 'linear-gradient(90deg, var(--accent-primary), var(--success))',
+                  animation: 'orderRedirectProgress 2.2s linear forwards'
+                }}
+              />
+            </div>
+
+            <button
+              type="button"
+              className="btn btn-primary"
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                fontSize: '0.95rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                cursor: 'pointer',
+                borderRadius: '8px'
+              }}
+              onClick={() => navigate('/buyer/dashboard', { state: { tab: 'orders' } })}
+            >
+              <ShoppingBag size={16} /> Go to Orders Dashboard
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

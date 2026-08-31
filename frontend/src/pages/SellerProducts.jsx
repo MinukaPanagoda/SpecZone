@@ -15,85 +15,11 @@ import {
   Layers,
   AlertCircle,
   Image as ImageIcon,
-  Sparkles
+  Sparkles,
+  Zap,
+  Gamepad2
 } from 'lucide-react';
-
-const CATEGORY_SPEC_TEMPLATES = {
-  cpu: [
-    { key: 'Brand', value: '', placeholder: 'e.g. Intel / AMD' },
-    { key: 'Cores', value: '', placeholder: 'e.g. 6 Cores' },
-    { key: 'Threads', value: '', placeholder: 'e.g. 12 Threads' },
-    { key: 'Base Clock', value: '', placeholder: 'e.g. 2.5 GHz' },
-    { key: 'Boost Clock', value: '', placeholder: 'e.g. 4.4 GHz' },
-    { key: 'Socket', value: '', placeholder: 'e.g. LGA1700 / AM5' },
-    { key: 'Power Usage (TDP)', value: '', placeholder: 'e.g. 65W / 125W' },
-    { key: 'Estimated Gaming FPS', value: '', placeholder: 'e.g. 140 FPS (Avg 1080p Ultra)' },
-  ],
-  gpu: [
-    { key: 'Brand', value: '', placeholder: 'e.g. NVIDIA / AMD / ASUS / MSI' },
-    { key: 'VRAM', value: '', placeholder: 'e.g. 8GB GDDR6 / 12GB GDDR6X / 24GB' },
-    { key: 'Boost Clock', value: '', placeholder: 'e.g. 1777 MHz / 2520 MHz' },
-    { key: 'Power Usage (TDP)', value: '', placeholder: 'e.g. 170W / 285W / 450W' },
-    { key: 'Estimated Gaming FPS', value: '', placeholder: 'e.g. 95 FPS (1080p Ultra) / 75 FPS (1440p)' },
-    { key: 'Memory Interface', value: '', placeholder: 'e.g. 128-bit / 192-bit / 384-bit' },
-    { key: 'Recommended PSU', value: '', placeholder: 'e.g. 550W / 750W / 1000W' },
-    { key: 'Ray Tracing', value: '', placeholder: 'e.g. Supported / 3rd Gen RT' },
-  ],
-  storage: [
-    { key: 'Capacity', value: '', placeholder: 'e.g. 1TB / 2TB / 500GB' },
-    { key: 'Form Factor', value: '', placeholder: 'e.g. M.2 2280 NVMe / 2.5" SATA' },
-    { key: 'Interface', value: '', placeholder: 'e.g. PCIe 4.0 x4 / SATA III' },
-    { key: 'Read Speed', value: '', placeholder: 'e.g. 7000 MB/s' },
-    { key: 'Write Speed', value: '', placeholder: 'e.g. 5000 MB/s' },
-    { key: 'Power Usage', value: '', placeholder: 'e.g. 6W (Active) / 0.5W (Idle)' },
-  ],
-  ram: [
-    { key: 'Capacity', value: '', placeholder: 'e.g. 16GB (2x8GB) / 32GB (2x16GB)' },
-    { key: 'Memory Type', value: '', placeholder: 'e.g. DDR4 / DDR5' },
-    { key: 'Speed', value: '', placeholder: 'e.g. 3200 MHz / 6000 MHz' },
-    { key: 'Latency (CAS)', value: '', placeholder: 'e.g. CL16 / CL30' },
-    { key: 'Voltage', value: '', placeholder: 'e.g. 1.35V' },
-  ],
-  motherboard: [
-    { key: 'Chipset', value: '', placeholder: 'e.g. Intel B660 / AMD B550 / X670' },
-    { key: 'Socket', value: '', placeholder: 'e.g. LGA1700 / AM5' },
-    { key: 'Form Factor', value: '', placeholder: 'e.g. ATX / Micro-ATX' },
-    { key: 'Memory Slots', value: '', placeholder: 'e.g. 4x DDR4 / 4x DDR5' },
-    { key: 'Max Power Support', value: '', placeholder: 'e.g. 14+2 Power Phases' },
-  ],
-  psu: [
-    { key: 'Wattage', value: '', placeholder: 'e.g. 650W / 750W / 850W / 1000W' },
-    { key: 'Efficiency', value: '', placeholder: 'e.g. 80 Plus Gold / Bronze / Platinum' },
-    { key: 'Modularity', value: '', placeholder: 'e.g. Fully Modular / Semi-Modular' },
-    { key: 'Power Output Rating', value: '', placeholder: 'e.g. Continuous 750W Peak 850W' },
-  ],
-  cooling: [
-    { key: 'Cooler Type', value: '', placeholder: 'e.g. 240mm AIO Liquid / Air Cooler' },
-    { key: 'TDP Cooling Capacity', value: '', placeholder: 'e.g. 250W TDP' },
-    { key: 'Fan Speed', value: '', placeholder: 'e.g. 800 - 2000 RPM' },
-    { key: 'Noise Level', value: '', placeholder: 'e.g. 28 dBA' },
-    { key: 'Socket Support', value: '', placeholder: 'e.g. LGA1700 / AM5 / AM4' },
-  ],
-  cases: [
-    { key: 'Form Factor Support', value: '', placeholder: 'e.g. ATX / Micro-ATX / ITX' },
-    { key: 'Max GPU Length', value: '', placeholder: 'e.g. 380mm' },
-    { key: 'Max PSU Length', value: '', placeholder: 'e.g. 200mm' },
-    { key: 'Included Fans', value: '', placeholder: 'e.g. 3x 120mm ARGB' },
-  ]
-};
-
-const getCategoryKey = (catName = '') => {
-  const lower = catName.toLowerCase();
-  if (lower.includes('cpu') || lower.includes('process')) return 'cpu';
-  if (lower.includes('gpu') || lower.includes('graphic') || lower.includes('card')) return 'gpu';
-  if (lower.includes('storage') || lower.includes('ssd') || lower.includes('hard') || lower.includes('drive')) return 'storage';
-  if (lower.includes('ram') || lower.includes('memory')) return 'ram';
-  if (lower.includes('motherboard') || lower.includes('board')) return 'motherboard';
-  if (lower.includes('psu') || lower.includes('power')) return 'psu';
-  if (lower.includes('cool')) return 'cooling';
-  if (lower.includes('case')) return 'cases';
-  return null;
-};
+import { getCategoryFields } from '../utils/categorySpecs';
 
 const SellerProducts = () => {
   const { user } = useAuth();
@@ -101,6 +27,7 @@ const SellerProducts = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
 
   // Edit Modal State
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -112,10 +39,9 @@ const SellerProducts = () => {
     image_url: '',
     description: ''
   });
-  const [editPowerUsage, setEditPowerUsage] = useState('');
-  const [editGamingFps, setEditGamingFps] = useState('');
-  const [editBrand, setEditBrand] = useState('');
-  const [editMainSpec, setEditMainSpec] = useState('');
+  
+  // Dynamic category-specific specs and extra custom specs
+  const [editCategorySpecs, setEditCategorySpecs] = useState({});
   const [editExtraSpecs, setEditExtraSpecs] = useState([]);
   const [editLoading, setEditLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -159,7 +85,7 @@ const SellerProducts = () => {
       description: product.description || ''
     });
 
-    // Parse specs
+    // Parse existing specs
     let specsObj = {};
     if (product.specs && typeof product.specs === 'object') {
       specsObj = product.specs;
@@ -171,38 +97,35 @@ const SellerProducts = () => {
       }
     }
 
-    let power = '';
-    let fps = '';
-    let brandVal = '';
-    let mainSpecVal = '';
+    const catFields = getCategoryFields(product.category_name || '');
+    const standardKeys = new Set(catFields.map(f => f.key.toLowerCase().trim()));
+    const initialCategorySpecs = {};
     const extra = [];
 
+    // Map existing specs to category fields
+    catFields.forEach(f => {
+      // Find matching key (exact or case-insensitive)
+      const foundKey = Object.keys(specsObj).find(k => k.toLowerCase().trim() === f.key.toLowerCase().trim());
+      initialCategorySpecs[f.key] = foundKey ? String(specsObj[foundKey]) : '';
+    });
+
+    // Find any additional specs that don't belong to the standard category fields
     Object.entries(specsObj).forEach(([k, v]) => {
-      const lower = k.toLowerCase().trim();
-      if (/^(power|tdp|wattage|consumption|energy)/i.test(lower)) {
-        power = String(v);
-      } else if (/(fps|framerate|frame rate|gaming performance|gaming fps|estimated gaming)/i.test(lower)) {
-        fps = String(v);
-      } else if (lower === 'brand' || lower === 'manufacturer') {
-        brandVal = String(v);
-      } else if (lower === 'specification' || lower === 'key specification' || lower === 'vram' || lower === 'socket' || lower === 'capacity') {
-        if (!mainSpecVal) {
-          mainSpecVal = `${k}: ${v}`;
-        } else {
-          extra.push({ key: k, value: String(v) });
-        }
-      } else {
+      if (!standardKeys.has(k.toLowerCase().trim()) && String(v).trim()) {
         extra.push({ key: k, value: String(v) });
       }
     });
 
-    setEditPowerUsage(power);
-    setEditGamingFps(fps);
-    setEditBrand(brandVal);
-    setEditMainSpec(mainSpecVal);
+    setEditCategorySpecs(initialCategorySpecs);
     setEditExtraSpecs(extra);
-
     setEditModalOpen(true);
+  };
+
+  const handleEditCategorySpecChange = (key, val) => {
+    setEditCategorySpecs(prev => ({
+      ...prev,
+      [key]: val
+    }));
   };
 
   const handleEditExtraSpecChange = (index, field, val) => {
@@ -230,18 +153,12 @@ const SellerProducts = () => {
 
     // Build specs object
     const specsObject = {};
-    if (editPowerUsage.trim()) {
-      specsObject['Power Usage (TDP)'] = editPowerUsage.trim();
-    }
-    if (editGamingFps.trim()) {
-      specsObject['Estimated Gaming FPS'] = editGamingFps.trim();
-    }
-    if (editBrand.trim()) {
-      specsObject['Brand'] = editBrand.trim();
-    }
-    if (editMainSpec.trim()) {
-      specsObject['Specification'] = editMainSpec.trim();
-    }
+    Object.entries(editCategorySpecs).forEach(([k, v]) => {
+      if (typeof v === 'string' && v.trim()) {
+        specsObject[k] = v.trim();
+      }
+    });
+
     editExtraSpecs.forEach(item => {
       if (item.key.trim() && item.value.trim()) {
         specsObject[item.key.trim()] = item.value.trim();
@@ -274,8 +191,8 @@ const SellerProducts = () => {
         alert(data.message || 'Failed to update product.');
       }
     } catch (err) {
-      console.error("Error updating product:", err);
-      alert('Error updating product. Please try again.');
+      console.error(err);
+      alert('An error occurred while updating the product.');
     } finally {
       setEditLoading(false);
     }
@@ -351,49 +268,50 @@ const SellerProducts = () => {
                 <thead>
                   <tr style={{ background: 'rgba(255,255,255,0.05)' }}>
                     <th style={{ padding: '1.2rem 1rem' }}>Product</th>
-                    <th style={{ padding: '1.2rem 1rem' }}>Category</th>
-                    <th style={{ padding: '1.2rem 1rem' }}>Price (Rs.)</th>
-                    <th style={{ padding: '1.2rem 1rem' }}>Stock</th>
-                    <th style={{ padding: '1.2rem 1rem' }}>Status</th>
-                    <th style={{ padding: '1.2rem 1rem', textAlign: 'center' }}>Actions</th>
+                    <th style={{ padding: '1.2rem 1rem', whiteSpace: 'nowrap' }}>Category</th>
+                    <th style={{ padding: '1.2rem 1rem', whiteSpace: 'nowrap' }}>Price (Rs.)</th>
+                    <th style={{ padding: '1.2rem 1rem', whiteSpace: 'nowrap' }}>Stock</th>
+                    <th style={{ padding: '1.2rem 1rem', whiteSpace: 'nowrap' }}>Status</th>
+                    <th style={{ padding: '1.2rem 1rem', textAlign: 'center', whiteSpace: 'nowrap' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {products.map((product) => (
                     <tr key={product.id} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                      <td style={{ padding: '1rem' }}>
+                      <td style={{ padding: '1rem', minWidth: '220px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                          <img src={product.image_url || 'https://via.placeholder.com/50'} alt={product.title} style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '6px' }} />
+                          <img src={product.image_url || 'https://via.placeholder.com/50'} alt={product.title} style={{ width: '50px', height: '50px', objectFit: 'cover', borderRadius: '6px', flexShrink: 0 }} />
                           <div>
                             <div style={{ fontWeight: 'bold', fontSize: '1rem' }}>{product.title}</div>
                             <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>SKU / ID: #{product.id}</div>
                           </div>
                         </div>
                       </td>
-                      <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>
+                      <td style={{ padding: '1rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
                         {product.category_name}
                       </td>
-                      <td style={{ padding: '1rem', fontWeight: 'bold', color: 'var(--accent-primary)', fontSize: '1.05rem' }}>
+                      <td style={{ padding: '1rem', fontWeight: 'bold', color: 'var(--accent-primary)', fontSize: '1.05rem', whiteSpace: 'nowrap' }}>
                         Rs. {parseFloat(product.price).toLocaleString('en-IN')}
                       </td>
-                      <td style={{ padding: '1rem', fontWeight: 'bold' }}>
-                        {product.stock} units
+                      <td style={{ padding: '1rem', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+                        {product.stock ?? product.stock_quantity ?? 0} units
                       </td>
-                      <td style={{ padding: '1rem' }}>
+                      <td style={{ padding: '1rem', whiteSpace: 'nowrap' }}>
                         <span style={{ 
-                          padding: '0.3rem 0.65rem', 
+                          padding: '0.3rem 0.6rem', 
                           borderRadius: '20px', 
-                          fontSize: '0.78rem', 
+                          fontSize: '0.8rem', 
                           fontWeight: 'bold',
                           textTransform: 'uppercase',
-                          background: product.stock > 0 ? 'rgba(0, 255, 150, 0.15)' : 'rgba(255, 51, 102, 0.15)',
-                          color: product.stock > 0 ? 'var(--success)' : 'var(--danger)',
-                          border: `1px solid ${product.stock > 0 ? 'rgba(0, 255, 150, 0.3)' : 'rgba(255, 51, 102, 0.3)'}`
+                          background: (product.stock ?? product.stock_quantity) > 0 ? 'rgba(0, 255, 150, 0.15)' : 'rgba(255, 51, 102, 0.15)',
+                          color: (product.stock ?? product.stock_quantity) > 0 ? 'var(--success)' : 'var(--danger)',
+                          whiteSpace: 'nowrap',
+                          display: 'inline-block'
                         }}>
-                          {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
+                          {(product.stock ?? product.stock_quantity) > 0 ? 'In Stock' : 'Out of Stock'}
                         </span>
                       </td>
-                      <td style={{ padding: '1rem', textAlign: 'center' }}>
+                      <td style={{ padding: '1rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
                         <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
                           <button 
                             className="btn btn-outline" 
@@ -617,76 +535,44 @@ const SellerProducts = () => {
                 {/* Technical Specifications & Comparison Fields */}
                 <div style={{ marginTop: '0.5rem', padding: '1.2rem', background: 'rgba(0, 0, 0, 0.35)', borderRadius: '10px', border: '1px solid rgba(0, 240, 255, 0.2)' }}>
                   <h4 style={{ margin: '0 0 0.8rem 0', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--accent-primary)' }}>
-                    <Sparkles size={16} /> Comparison Specs (Power & Gaming)
+                    <Sparkles size={16} /> {editingProduct?.category_name ? `${editingProduct.category_name} Specifications` : 'Technical Specifications'}
                   </h4>
 
-                  <div className="seller-two-col">
-                    {/* Power Usage Field */}
-                    <div className="form-group" style={{ margin: 0 }}>
-                      <label className="form-label" style={{ fontSize: '0.82rem', color: '#ffb703', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                        <Zap size={14} /> Power Usage / TDP
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        placeholder="e.g. 170W or 65W"
-                        value={editPowerUsage}
-                        onChange={(e) => setEditPowerUsage(e.target.value)}
-                        style={{ fontSize: '0.85rem', padding: '0.5rem 0.7rem' }}
-                      />
-                    </div>
+                  {/* Category-Specific Grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '0.8rem' }}>
+                    {getCategoryFields(editingProduct?.category_name || '').map((field) => {
+                      const isPower = field.isPower;
+                      const isFps = field.isFps;
+                      const labelColor = isPower ? '#ffb703' : isFps ? 'var(--accent-primary)' : 'var(--text-secondary)';
 
-                    {/* Gaming FPS Field */}
-                    <div className="form-group" style={{ margin: 0 }}>
-                      <label className="form-label" style={{ fontSize: '0.82rem', color: 'var(--accent-primary)', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                        <Gamepad2 size={14} /> Estimated Gaming FPS
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        placeholder="e.g. 95 FPS or 140 FPS"
-                        value={editGamingFps}
-                        onChange={(e) => setEditGamingFps(e.target.value)}
-                        style={{ fontSize: '0.85rem', padding: '0.5rem 0.7rem' }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="seller-two-col" style={{ marginTop: '0.8rem' }}>
-                    {/* Brand Field */}
-                    <div className="form-group" style={{ margin: 0 }}>
-                      <label className="form-label" style={{ fontSize: '0.82rem' }}>
-                        Brand / Manufacturer
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        placeholder="e.g. NVIDIA / Intel / Corsair"
-                        value={editBrand}
-                        onChange={(e) => setEditBrand(e.target.value)}
-                        style={{ fontSize: '0.85rem', padding: '0.5rem 0.7rem' }}
-                      />
-                    </div>
-
-                    {/* Main Spec Field */}
-                    <div className="form-group" style={{ margin: 0 }}>
-                      <label className="form-label" style={{ fontSize: '0.82rem' }}>
-                        Key Spec / Memory
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        placeholder="e.g. 12GB GDDR6 / LGA1700"
-                        value={editMainSpec}
-                        onChange={(e) => setEditMainSpec(e.target.value)}
-                        style={{ fontSize: '0.85rem', padding: '0.5rem 0.7rem' }}
-                      />
-                    </div>
+                      return (
+                        <div key={field.key} className="form-group" style={{ margin: 0 }}>
+                          <label className="form-label" style={{ fontSize: '0.8rem', color: labelColor, fontWeight: isPower || isFps ? 'bold' : 'normal', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                            {isPower && <Zap size={13} />}
+                            {isFps && <Gamepad2 size={13} />}
+                            {field.label}
+                          </label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            placeholder={field.placeholder}
+                            value={editCategorySpecs[field.key] || ''}
+                            onChange={(e) => handleEditCategorySpecChange(field.key, e.target.value)}
+                            style={{
+                              fontSize: '0.85rem',
+                              padding: '0.45rem 0.65rem',
+                              borderColor: isPower ? 'rgba(255, 180, 0, 0.3)' : isFps ? 'rgba(0, 240, 255, 0.3)' : 'var(--border-color)'
+                            }}
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
 
                   {/* Extra custom specs */}
                   {editExtraSpecs.length > 0 && (
                     <div style={{ marginTop: '0.8rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 'bold' }}>Additional Specs:</div>
                       {editExtraSpecs.map((item, idx) => (
                         <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr auto', gap: '0.5rem', alignItems: 'center' }}>
                           <input
@@ -709,6 +595,7 @@ const SellerProducts = () => {
                             type="button"
                             onClick={() => removeEditExtraSpec(idx)}
                             style={{ background: 'transparent', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '0.2rem' }}
+                            title="Remove spec"
                           >
                             <Trash2 size={15} />
                           </button>
@@ -720,7 +607,7 @@ const SellerProducts = () => {
                   <button
                     type="button"
                     onClick={addEditExtraSpec}
-                    style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '0.8rem', cursor: 'pointer', marginTop: '0.6rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', padding: 0 }}
+                    style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '0.8rem', cursor: 'pointer', marginTop: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', padding: 0 }}
                   >
                     <Plus size={13} /> + Add Another Spec
                   </button>

@@ -1040,3 +1040,84 @@ a:hover {
   }
 }
 
+/* ==========================================================================
+   Print Optimization for Invoices & Receipts
+   ========================================================================== */
+@media print {
+  /* Hide the rest of the web application */
+  body, html {
+    background: #ffffff !important;
+    color: #111111 !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  /* Make only the printable invoice card visible */
+  #invoice-printable-card,
+  #invoice-printable-card * {
+    visibility: visible;
+  }
+
+  #invoice-printable-card {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 24px !important;
+    background: #ffffff !important;
+    color: #111111 !important;
+    box-shadow: none !important;
+    border: 1px solid #cccccc !important;
+    border-radius: 8px !important;
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Clean contrast for paper printing */
+  #invoice-printable-card h2,
+  #invoice-printable-card h3,
+  #invoice-printable-card h4,
+  #invoice-printable-card strong,
+  #invoice-printable-card p,
+  #invoice-printable-card span,
+  #invoice-printable-card td,
+  #invoice-printable-card th,
+  #invoice-printable-card div {
+    color: #111111 !important;
+    text-shadow: none !important;
+  }
+
+  #invoice-printable-card h2 {
+    color: #007799 !important;
+  }
+
+  #invoice-printable-card table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  #invoice-printable-card th {
+    border-bottom: 2px solid #333333 !important;
+    color: #333333 !important;
+  }
+
+  #invoice-printable-card td {
+    border-bottom: 1px solid #e0e0e0 !important;
+  }
+
+  /* Hide interactive action buttons in print view */
+  .no-print,
+  .no-print * {
+    display: none !important;
+    visibility: hidden !important;
+  }
+}
+
+

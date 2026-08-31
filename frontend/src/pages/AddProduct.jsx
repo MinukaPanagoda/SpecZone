@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Save, Image as ImageIcon, Menu, ChevronDown, Plus, Trash2, Zap, Gamepad2, Sparkles } from 'lucide-react';
+import { Save, Image as ImageIcon, Menu, ChevronDown, Plus, Trash2, Zap, Gamepad2, Sparkles, Cpu } from 'lucide-react';
 import SellerSidebar from '../components/SellerSidebar';
+import { getCategoryFields } from '../utils/categorySpecs';
 
 const AddProduct = () => {
   const { user } = useAuth();
@@ -21,11 +22,9 @@ const AddProduct = () => {
     image_url: ''
   });
 
-  // Direct, simple performance & spec fields
-  const [powerUsage, setPowerUsage] = useState('');
-  const [gamingFps, setGamingFps] = useState('');
-  const [brand, setBrand] = useState('');
-  const [mainSpec, setMainSpec] = useState('');
+  // Dynamic specs object keyed by standard field key (e.g., { Cores: '6 Cores', Socket: 'LGA1700', 'Power Usage (TDP)': '65W' })
+  const [categorySpecs, setCategorySpecs] = useState({});
+  // Optional extra custom specs
   const [extraSpecs, setExtraSpecs] = useState([]);
 
   useEffect(() => {
@@ -40,19 +39,39 @@ const AddProduct = () => {
           setCategories(data);
           if (data.length > 0) {
             setFormData(prev => ({ ...prev, category_id: data[0].id }));
+            // Initialize specs for first category
+            initCategorySpecs(data[0].name);
           }
         }
       })
       .catch(err => console.error("Error fetching categories:", err));
   }, [user, navigate]);
 
+  const initCategorySpecs = (catName) => {
+    const fields = getCategoryFields(catName);
+    const initial = {};
+    fields.forEach(f => {
+      initial[f.key] = '';
+    });
+    setCategorySpecs(initial);
+    setExtraSpecs([]);
+  };
+
   const handleCategorySelect = (cat) => {
     setFormData(prev => ({ ...prev, category_id: cat.id }));
     setCategoryDropdownOpen(false);
+    initCategorySpecs(cat.name);
   };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleCategorySpecChange = (key, val) => {
+    setCategorySpecs(prev => ({
+      ...prev,
+      [key]: val
+    }));
   };
 
   const addExtraSpec = () => {
@@ -71,24 +90,21 @@ const AddProduct = () => {
     });
   };
 
+  const currentCategoryName = categories.find(cat => String(cat.id) === String(formData.category_id))?.name || '';
+  const currentCategoryFields = getCategoryFields(currentCategoryName);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setStatus({ type: 'info', message: 'Adding product...' });
 
-    // Build simple specs object
+    // Build specs object from non-empty category specs and extra specs
     const specsObject = {};
-    if (powerUsage.trim()) {
-      specsObject['Power Usage (TDP)'] = powerUsage.trim();
-    }
-    if (gamingFps.trim()) {
-      specsObject['Estimated Gaming FPS'] = gamingFps.trim();
-    }
-    if (brand.trim()) {
-      specsObject['Brand'] = brand.trim();
-    }
-    if (mainSpec.trim()) {
-      specsObject['Specification'] = mainSpec.trim();
-    }
+    Object.entries(categorySpecs).forEach(([k, v]) => {
+      if (typeof v === 'string' && v.trim()) {
+        specsObject[k] = v.trim();
+      }
+    });
+
     extraSpecs.forEach(item => {
       if (item.key.trim() && item.value.trim()) {
         specsObject[item.key.trim()] = item.value.trim();
@@ -111,7 +127,7 @@ const AddProduct = () => {
       const data = await response.json();
 
       if (response.ok) {
-        setStatus({ type: 'success', message: '✓ Product added successfully!' });
+        setStatus({ type: 'success', message: '✓ Product and category specifications added successfully!' });
         setFormData({
           name: '',
           description: '',
@@ -120,11 +136,9 @@ const AddProduct = () => {
           category_id: categories.length > 0 ? categories[0].id : '',
           image_url: ''
         });
-        setPowerUsage('');
-        setGamingFps('');
-        setBrand('');
-        setMainSpec('');
-        setExtraSpecs([]);
+        if (categories.length > 0) {
+          initCategorySpecs(categories[0].name);
+        }
       } else {
         setStatus({ type: 'error', message: data.message || 'Failed to add product.' });
       }
@@ -133,8 +147,6 @@ const AddProduct = () => {
       setStatus({ type: 'error', message: 'An error occurred. Please try again.' });
     }
   };
-
-  const currentCategoryName = categories.find(cat => String(cat.id) === String(formData.category_id))?.name || '';
 
   return (
     <div className="dashboard-layout" style={{ minHeight: '100vh' }}>
@@ -148,11 +160,11 @@ const AddProduct = () => {
           <span className="seller-mobile-title">Add Product</span>
         </div>
 
-        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+        <div style={{ maxWidth: '850px', margin: '0 auto' }}>
           <div style={{ marginBottom: '2rem' }}>
             <h2 style={{ margin: 0, fontSize: '2rem' }}>Add Product</h2>
             <p style={{ color: 'var(--text-secondary)', margin: '0.3rem 0 0 0', fontSize: '0.95rem' }}>
-              Fill in product information and comparison specs below.
+              Fill in product details and category-specific hardware specifications for buyer comparison.
             </p>
           </div>
         
@@ -174,7 +186,7 @@ const AddProduct = () => {
                   className="form-control" 
                   value={formData.name} 
                   onChange={handleChange} 
-                  placeholder="e.g. NVIDIA GeForce RTX 4070 / Intel Core i5-13400F" 
+                  placeholder="e.g. Intel Core i5-12400F Processor / NVIDIA RTX 4070 / Corsair Vengeance 32GB" 
                   required 
                 />
               </div>
@@ -183,11 +195,11 @@ const AddProduct = () => {
               <div className="seller-two-col">
                 <div className="form-group">
                   <label className="form-label">Price (Rs.) *</label>
-                  <input type="number" name="price" className="form-control" value={formData.price} onChange={handleChange} required min="0" step="0.01" placeholder="e.g. 185000" />
+                  <input type="number" name="price" className="form-control" value={formData.price} onChange={handleChange} required min="0" step="0.01" placeholder="e.g. 45000" />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Stock Quantity *</label>
-                  <input type="number" name="stock" className="form-control" value={formData.stock} onChange={handleChange} required min="0" placeholder="e.g. 5" />
+                  <input type="number" name="stock" className="form-control" value={formData.stock} onChange={handleChange} required min="0" placeholder="e.g. 10" />
                 </div>
               </div>
 
@@ -269,81 +281,59 @@ const AddProduct = () => {
                 </div>
               </div>
 
-              {/* Simple Comparison & Performance Specs (Easy Inputs) */}
-              <div style={{ marginTop: '1.8rem', marginBottom: '1.8rem', padding: '1.4rem', background: 'rgba(0, 0, 0, 0.3)', borderRadius: '10px', border: '1px solid rgba(0, 240, 255, 0.2)' }}>
-                <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Sparkles size={17} /> Comparison Specs (Power & Gaming Performance)
-                </h3>
-
-                <div className="seller-two-col">
-                  {/* Power Usage Field */}
-                  <div className="form-group" style={{ margin: 0 }}>
-                    <label className="form-label" style={{ fontSize: '0.85rem', color: '#ffb703', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                      <Zap size={15} /> Power Usage / TDP (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder="e.g. 170W or 65W"
-                      value={powerUsage}
-                      onChange={(e) => setPowerUsage(e.target.value)}
-                    />
-                  </div>
-
-                  {/* Gaming FPS Field */}
-                  <div className="form-group" style={{ margin: 0 }}>
-                    <label className="form-label" style={{ fontSize: '0.85rem', color: 'var(--accent-primary)', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                      <Gamepad2 size={15} /> Estimated Gaming FPS (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder="e.g. 95 FPS or 140 FPS"
-                      value={gamingFps}
-                      onChange={(e) => setGamingFps(e.target.value)}
-                    />
+              {/* Dynamic Category Technical Specifications */}
+              <div style={{ marginTop: '1.8rem', marginBottom: '1.8rem', padding: '1.5rem', background: 'rgba(0, 0, 0, 0.35)', borderRadius: '10px', border: '1px solid rgba(0, 240, 255, 0.2)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1.15rem', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <Sparkles size={18} /> {currentCategoryName ? `${currentCategoryName} Specifications` : 'Technical Specifications'}
+                    </h3>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', margin: '0.2rem 0 0 0' }}>
+                      Fill in relevant hardware specs below. These specs power the <strong>Buyer Comparison Tool</strong> automatically.
+                    </p>
                   </div>
                 </div>
 
-                <div className="seller-two-col" style={{ marginTop: '1rem' }}>
-                  {/* Brand Field */}
-                  <div className="form-group" style={{ margin: 0 }}>
-                    <label className="form-label" style={{ fontSize: '0.85rem' }}>
-                      Brand / Manufacturer (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder="e.g. NVIDIA / Intel / Corsair"
-                      value={brand}
-                      onChange={(e) => setBrand(e.target.value)}
-                    />
-                  </div>
+                {/* Category-Specific Form Fields Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem' }}>
+                  {currentCategoryFields.map((field) => {
+                    const isPower = field.isPower;
+                    const isFps = field.isFps;
+                    const labelColor = isPower ? '#ffb703' : isFps ? 'var(--accent-primary)' : 'var(--text-secondary)';
 
-                  {/* Main Spec Field */}
-                  <div className="form-group" style={{ margin: 0 }}>
-                    <label className="form-label" style={{ fontSize: '0.85rem' }}>
-                      Key Spec / Memory (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder="e.g. 12GB GDDR6 / LGA1700 / 1TB NVMe"
-                      value={mainSpec}
-                      onChange={(e) => setMainSpec(e.target.value)}
-                    />
-                  </div>
+                    return (
+                      <div key={field.key} className="form-group" style={{ margin: 0 }}>
+                        <label className="form-label" style={{ fontSize: '0.85rem', color: labelColor, fontWeight: isPower || isFps ? 'bold' : 'normal', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                          {isPower && <Zap size={14} />}
+                          {isFps && <Gamepad2 size={14} />}
+                          {field.label}
+                        </label>
+                        <input
+                          type="text"
+                          className="form-control"
+                          placeholder={field.placeholder}
+                          value={categorySpecs[field.key] || ''}
+                          onChange={(e) => handleCategorySpecChange(field.key, e.target.value)}
+                          style={{
+                            fontSize: '0.9rem',
+                            borderColor: isPower ? 'rgba(255, 180, 0, 0.3)' : isFps ? 'rgba(0, 240, 255, 0.3)' : 'var(--border-color)'
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
 
                 {/* Extra custom specs */}
                 {extraSpecs.length > 0 && (
-                  <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                  <div style={{ marginTop: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                    <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 'bold' }}>Additional Custom Specs:</div>
                     {extraSpecs.map((item, idx) => (
                       <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr auto', gap: '0.6rem', alignItems: 'center' }}>
                         <input
                           type="text"
                           className="form-control"
-                          placeholder="Feature (e.g. Interface)"
+                          placeholder="Feature Name (e.g. Warranty)"
                           value={item.key}
                           onChange={(e) => handleExtraSpecChange(idx, 'key', e.target.value)}
                           style={{ fontSize: '0.85rem' }}
@@ -351,7 +341,7 @@ const AddProduct = () => {
                         <input
                           type="text"
                           className="form-control"
-                          placeholder="Value (e.g. PCIe 4.0)"
+                          placeholder="Value (e.g. 3 Years)"
                           value={item.value}
                           onChange={(e) => handleExtraSpecChange(idx, 'value', e.target.value)}
                           style={{ fontSize: '0.85rem' }}
@@ -360,6 +350,7 @@ const AddProduct = () => {
                           type="button"
                           onClick={() => removeExtraSpec(idx)}
                           style={{ background: 'transparent', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '0.3rem' }}
+                          title="Remove custom spec"
                         >
                           <Trash2 size={16} />
                         </button>
@@ -371,9 +362,9 @@ const AddProduct = () => {
                 <button
                   type="button"
                   onClick={addExtraSpec}
-                  style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '0.82rem', cursor: 'pointer', marginTop: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: 0 }}
+                  style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '0.82rem', cursor: 'pointer', marginTop: '1rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: 0 }}
                 >
-                  <Plus size={14} /> + Add Another Spec
+                  <Plus size={14} /> + Add Additional Custom Spec
                 </button>
               </div>
 
@@ -407,4 +398,3 @@ const AddProduct = () => {
 };
 
 export default AddProduct;
-

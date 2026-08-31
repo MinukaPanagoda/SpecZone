@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Package, PlusSquare, ShoppingCart, BarChart2, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Package, PlusSquare, ShoppingCart, BarChart2, LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const SellerSidebar = ({ open, onClose }) => {
@@ -30,10 +30,6 @@ const SellerSidebar = ({ open, onClose }) => {
         <Link to="/seller/analytics" className={`sidebar-link ${location.pathname === '/seller/analytics' ? 'active' : ''}`} onClick={onClose}>
           <BarChart2 size={20} />
           Sales Analytics
-        </Link>
-        <Link to="/seller/settings" className={`sidebar-link ${location.pathname === '/seller/settings' ? 'active' : ''}`} onClick={onClose}>
-          <Settings size={20} />
-          Shop Settings
         </Link>
         <button onClick={() => { logout(); if (onClose) onClose(); }} className="sidebar-link" style={{ width: '100%', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', color: 'var(--danger)', marginTop: '2rem' }}>
           <LogOut size={20} />

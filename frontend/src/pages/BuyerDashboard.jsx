@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, ShoppingBag, Heart, Wrench, Menu, X, Trash2, ShoppingCart, Printer, CheckCircle2, AlertTriangle, Plus, Play, ArrowRight } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Heart, Wrench, Menu, X, Trash2, ShoppingCart, Printer, CheckCircle2, AlertTriangle, Plus, Play, ArrowRight, FileText } from 'lucide-react';
 
 const BuyerDashboard = () => {
   const { user } = useAuth();
@@ -18,6 +18,7 @@ const BuyerDashboard = () => {
   const [loadingBuilds, setLoadingBuilds] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
+
   const [reportItem, setReportItem] = useState(null);
   const [reportReason, setReportReason] = useState('');
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
@@ -385,25 +386,63 @@ const BuyerDashboard = () => {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                {orders.map(order => (
+                {orders.map(order => {
+                  const isDelivered = order.items && order.items.length > 0 && order.items.every(item => item.status === 'delivered');
+
+                  return (
                   <div key={order.id} className="glass-panel" style={{ overflow: 'hidden' }}>
                     <div style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', flexWrap: 'wrap', gap: '1rem' }}>
                       <div>
                         <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Order Placed: {new Date(order.created_at).toLocaleDateString()}</span>
-                        <h4 style={{ margin: '0.2rem 0 0 0', fontSize: '1.15rem' }}>Order #{order.id}</h4>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '0.2rem' }}>
+                          <h4 style={{ margin: 0, fontSize: '1.15rem' }}>Order #{order.id}</h4>
+                          {isDelivered && (
+                            <span style={{ padding: '0.15rem 0.5rem', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 'bold', background: 'rgba(0, 255, 150, 0.15)', color: 'var(--success)', border: '1px solid rgba(0, 255, 150, 0.3)' }}>
+                              ✓ COMPLETED
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <button
-                          type="button"
-                          className="btn btn-outline"
-                          style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                          onClick={() => {
-                            setSelectedOrderForInvoice(order);
-                            setInvoiceModalOpen(true);
-                          }}
-                        >
-                          <Printer size={15} /> Print Invoice
-                        </button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                        {isDelivered ? (
+                          <button
+                            type="button"
+                            className="btn"
+                            style={{
+                              padding: '0.45rem 0.9rem',
+                              fontSize: '0.85rem',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.45rem',
+                              background: 'rgba(0, 255, 150, 0.15)',
+                              color: 'var(--success)',
+                              border: '1px solid rgba(0, 255, 150, 0.4)',
+                              borderRadius: '6px',
+                              fontWeight: 'bold',
+                              cursor: 'pointer'
+                            }}
+                            onClick={() => {
+                              setSelectedOrderForInvoice(order);
+                              setInvoiceModalOpen(true);
+                            }}
+                            title="View & Print Official Final Tax Invoice (Delivered)"
+                          >
+                            <FileText size={15} /> Official Tax Invoice (Delivered)
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className="btn btn-outline"
+                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                            onClick={() => {
+                              setSelectedOrderForInvoice(order);
+                              setInvoiceModalOpen(true);
+                            }}
+                            title="View Order Slip"
+                          >
+                            <Printer size={15} /> Order Receipt
+                          </button>
+                        )}
                         <div style={{ textAlign: 'right' }}>
                           <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Total Amount</span>
                           <h4 style={{ margin: '0.2rem 0 0 0', color: 'var(--accent-primary)' }}>Rs. {parseFloat(order.total_amount).toLocaleString('en-IN')}</h4>
@@ -459,7 +498,8 @@ const BuyerDashboard = () => {
                       ))}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -748,7 +788,10 @@ const BuyerDashboard = () => {
         </div>
       )}
       {/* Printable Invoice Modal */}
-      {invoiceModalOpen && selectedOrderForInvoice && (
+      {invoiceModalOpen && selectedOrderForInvoice && (() => {
+        const isDelivered = selectedOrderForInvoice.items && selectedOrderForInvoice.items.length > 0 && selectedOrderForInvoice.items.every(item => item.status === 'delivered');
+
+        return (
         <div
           style={{
             position: 'fixed',
@@ -766,6 +809,7 @@ const BuyerDashboard = () => {
           }}
         >
           <div
+            id="invoice-printable-card"
             className="glass-panel"
             style={{
               width: '95%',
@@ -773,15 +817,25 @@ const BuyerDashboard = () => {
               padding: '2.5rem',
               maxHeight: '90vh',
               overflowY: 'auto',
-              border: '1px solid rgba(0, 240, 255, 0.3)',
-              background: '#0e1117'
+              border: `1px solid ${isDelivered ? 'rgba(0, 255, 150, 0.4)' : 'rgba(0, 240, 255, 0.3)'}`,
+              background: '#0e1117',
+              boxShadow: isDelivered ? '0 0 35px rgba(0, 255, 150, 0.15)' : '0 0 35px rgba(0, 240, 255, 0.15)'
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid rgba(255,255,255,0.1)', paddingBottom: '1.2rem', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid rgba(255,255,255,0.1)', paddingBottom: '1.2rem', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
               <div>
-                <h2 style={{ margin: 0, fontSize: '1.8rem', color: 'var(--accent-primary)' }}>SpecZone</h2>
-                <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Official Order Receipt & Tax Invoice</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                  <h2 style={{ margin: 0, fontSize: '1.8rem', color: 'var(--accent-primary)' }}>SpecZone</h2>
+                  {isDelivered && (
+                    <span style={{ padding: '0.2rem 0.5rem', background: 'rgba(0, 255, 150, 0.15)', color: 'var(--success)', border: '1px solid rgba(0, 255, 150, 0.3)', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                      ✓ DELIVERED
+                    </span>
+                  )}
+                </div>
+                <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                  {isDelivered ? 'Official Tax Invoice & Warranty Certificate' : 'Order Receipt & Pro-Forma Invoice'}
+                </p>
               </div>
               <div style={{ textAlign: 'right' }}>
                 <h3 style={{ margin: 0, fontSize: '1.2rem' }}>INVOICE #{selectedOrderForInvoice.id}</h3>
@@ -798,15 +852,21 @@ const BuyerDashboard = () => {
                 <p style={{ margin: 0, color: 'var(--text-secondary)' }}>{user?.email}</p>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <strong style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', display: 'block', textTransform: 'uppercase' }}>Payment Status:</strong>
-                {(() => {
-                  const payStatus = getOrderPaymentStatus(selectedOrderForInvoice);
-                  return (
-                    <span style={{ display: 'inline-block', marginTop: '0.3rem', padding: '0.25rem 0.6rem', borderRadius: '4px', background: payStatus.bg, color: payStatus.color, fontWeight: 'bold', fontSize: '0.8rem' }}>
-                      {payStatus.text}
-                    </span>
-                  );
-                })()}
+                <strong style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', display: 'block', textTransform: 'uppercase' }}>Delivery & Payment Status:</strong>
+                {isDelivered ? (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', marginTop: '0.3rem', padding: '0.25rem 0.6rem', borderRadius: '4px', background: 'rgba(0, 255, 150, 0.15)', color: 'var(--success)', fontWeight: 'bold', fontSize: '0.8rem' }}>
+                    <CheckCircle2 size={13} /> DELIVERED & PAID
+                  </span>
+                ) : (
+                  (() => {
+                    const payStatus = getOrderPaymentStatus(selectedOrderForInvoice);
+                    return (
+                      <span style={{ display: 'inline-block', marginTop: '0.3rem', padding: '0.25rem 0.6rem', borderRadius: '4px', background: payStatus.bg, color: payStatus.color, fontWeight: 'bold', fontSize: '0.8rem' }}>
+                        {payStatus.text}
+                      </span>
+                    );
+                  })()
+                )}
               </div>
             </div>
 
@@ -851,9 +911,24 @@ const BuyerDashboard = () => {
                   <span>Rs. {parseFloat(selectedOrderForInvoice.total_amount).toLocaleString('en-IN')}</span>
                 </div>
               </div>
+
+              {/* Delivery / Warranty Certificate Notice */}
+              <div style={{
+                marginTop: '1.2rem',
+                padding: '0.8rem',
+                borderRadius: '6px',
+                background: isDelivered ? 'rgba(0, 255, 150, 0.08)' : 'rgba(255, 255, 255, 0.03)',
+                border: `1px solid ${isDelivered ? 'rgba(0, 255, 150, 0.2)' : 'rgba(255, 255, 255, 0.08)'}`,
+                fontSize: '0.8rem',
+                color: isDelivered ? 'var(--success)' : 'var(--text-secondary)'
+              }}>
+                {isDelivered
+                  ? '✓ Order Completed & Delivered: This document serves as your official Tax Invoice and valid Manufacturer Warranty Certificate.'
+                  : 'Order is currently being processed or shipped. Your official final tax invoice with warranty coverage will be fully unlocked upon delivery.'}
+              </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '2rem' }}>
+            <div className="no-print" style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
               <button
                 type="button"
                 className="btn btn-outline"
@@ -875,7 +950,8 @@ const BuyerDashboard = () => {
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* Small React Feedback Popup (Success / Error for Report Issue) */}
       {reportStatusModal.isOpen && (

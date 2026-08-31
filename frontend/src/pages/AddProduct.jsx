@@ -1,64 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Save, Image as ImageIcon, Menu, ChevronDown, Plus, Trash2, Sparkles, Layers } from 'lucide-react';
+import { Save, Image as ImageIcon, Menu, ChevronDown, Plus, Trash2, Zap, Gamepad2, Sparkles } from 'lucide-react';
 import SellerSidebar from '../components/SellerSidebar';
-
-// Standard Hardware Spec Templates for seamless buyer comparisons
-const CATEGORY_SPEC_TEMPLATES = {
-  cpu: [
-    { key: 'Brand', value: '', placeholder: 'e.g. Intel / AMD' },
-    { key: 'Cores', value: '', placeholder: 'e.g. 6 Cores' },
-    { key: 'Threads', value: '', placeholder: 'e.g. 12 Threads' },
-    { key: 'Base Clock', value: '', placeholder: 'e.g. 2.5 GHz' },
-    { key: 'Boost Clock', value: '', placeholder: 'e.g. 4.4 GHz' },
-    { key: 'Socket', value: '', placeholder: 'e.g. LGA1700 / AM5' },
-    { key: 'TDP', value: '', placeholder: 'e.g. 65W' },
-  ],
-  gpu: [
-    { key: 'Brand', value: '', placeholder: 'e.g. NVIDIA / AMD / ASUS' },
-    { key: 'VRAM', value: '', placeholder: 'e.g. 8GB GDDR6 / 12GB GDDR6X' },
-    { key: 'Boost Clock', value: '', placeholder: 'e.g. 1777 MHz' },
-    { key: 'Memory Interface', value: '', placeholder: 'e.g. 128-bit / 192-bit' },
-    { key: 'Recommended PSU', value: '', placeholder: 'e.g. 550W / 650W' },
-    { key: 'Ray Tracing', value: '', placeholder: 'e.g. Supported / 3rd Gen' },
-  ],
-  storage: [
-    { key: 'Capacity', value: '', placeholder: 'e.g. 1TB / 2TB / 500GB' },
-    { key: 'Form Factor', value: '', placeholder: 'e.g. M.2 2280 NVMe / 2.5" SATA' },
-    { key: 'Interface', value: '', placeholder: 'e.g. PCIe 4.0 x4 / SATA III' },
-    { key: 'Read Speed', value: '', placeholder: 'e.g. 7000 MB/s' },
-    { key: 'Write Speed', value: '', placeholder: 'e.g. 5000 MB/s' },
-  ],
-  ram: [
-    { key: 'Capacity', value: '', placeholder: 'e.g. 16GB (2x8GB) / 32GB (2x16GB)' },
-    { key: 'Memory Type', value: '', placeholder: 'e.g. DDR4 / DDR5' },
-    { key: 'Speed', value: '', placeholder: 'e.g. 3200 MHz / 6000 MHz' },
-    { key: 'Latency (CAS)', value: '', placeholder: 'e.g. CL16 / CL30' },
-  ],
-  motherboard: [
-    { key: 'Chipset', value: '', placeholder: 'e.g. Intel B660 / AMD B550' },
-    { key: 'Socket', value: '', placeholder: 'e.g. LGA1700 / AM5' },
-    { key: 'Form Factor', value: '', placeholder: 'e.g. ATX / Micro-ATX' },
-    { key: 'Memory Slots', value: '', placeholder: 'e.g. 4x DDR4 / 4x DDR5' },
-  ],
-  psu: [
-    { key: 'Wattage', value: '', placeholder: 'e.g. 650W / 750W / 850W' },
-    { key: 'Efficiency', value: '', placeholder: 'e.g. 80 Plus Gold / Bronze' },
-    { key: 'Modularity', value: '', placeholder: 'e.g. Fully Modular / Non-Modular' },
-  ]
-};
-
-const getCategoryKey = (catName = '') => {
-  const lower = catName.toLowerCase();
-  if (lower.includes('cpu') || lower.includes('process')) return 'cpu';
-  if (lower.includes('gpu') || lower.includes('graphic') || lower.includes('card')) return 'gpu';
-  if (lower.includes('storage') || lower.includes('ssd') || lower.includes('hard') || lower.includes('drive')) return 'storage';
-  if (lower.includes('ram') || lower.includes('memory')) return 'ram';
-  if (lower.includes('motherboard') || lower.includes('board')) return 'motherboard';
-  if (lower.includes('psu') || lower.includes('power')) return 'psu';
-  return null;
-};
 
 const AddProduct = () => {
   const { user } = useAuth();
@@ -77,16 +21,18 @@ const AddProduct = () => {
     image_url: ''
   });
 
-  // Dynamic Specs Key-Value List
-  const [specList, setSpecList] = useState([]);
+  // Direct, simple performance & spec fields
+  const [powerUsage, setPowerUsage] = useState('');
+  const [gamingFps, setGamingFps] = useState('');
+  const [brand, setBrand] = useState('');
+  const [mainSpec, setMainSpec] = useState('');
+  const [extraSpecs, setExtraSpecs] = useState([]);
 
   useEffect(() => {
-    // Redirect if not seller
     if (!user || user.role !== 'seller') {
       navigate('/login');
     }
 
-    // Fetch categories
     fetch('http://localhost/SpecZone/backend/api/categories.php')
       .then(res => res.json())
       .then(data => {
@@ -94,63 +40,58 @@ const AddProduct = () => {
           setCategories(data);
           if (data.length > 0) {
             setFormData(prev => ({ ...prev, category_id: data[0].id }));
-            loadCategoryTemplate(data[0].name);
           }
         }
       })
       .catch(err => console.error("Error fetching categories:", err));
   }, [user, navigate]);
 
-  const loadCategoryTemplate = (catName) => {
-    const key = getCategoryKey(catName);
-    if (key && CATEGORY_SPEC_TEMPLATES[key]) {
-      setSpecList(CATEGORY_SPEC_TEMPLATES[key].map(item => ({ ...item, value: '' })));
-    } else {
-      setSpecList([
-        { key: 'Brand', value: '', placeholder: 'e.g. Corsair' },
-        { key: 'Model', value: '', placeholder: 'e.g. Pro Edition' }
-      ]);
-    }
-  };
-
   const handleCategorySelect = (cat) => {
     setFormData(prev => ({ ...prev, category_id: cat.id }));
     setCategoryDropdownOpen(false);
-    loadCategoryTemplate(cat.name);
   };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Handle Spec Changes
-  const handleSpecChange = (index, field, val) => {
-    setSpecList(prev => {
+  const addExtraSpec = () => {
+    setExtraSpecs(prev => [...prev, { key: '', value: '' }]);
+  };
+
+  const removeExtraSpec = (index) => {
+    setExtraSpecs(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleExtraSpecChange = (index, field, val) => {
+    setExtraSpecs(prev => {
       const updated = [...prev];
       updated[index] = { ...updated[index], [field]: val };
       return updated;
     });
   };
 
-  const addSpecRow = () => {
-    setSpecList(prev => [...prev, { key: '', value: '', placeholder: 'Value' }]);
-  };
-
-  const removeSpecRow = (index) => {
-    setSpecList(prev => prev.filter((_, i) => i !== index));
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setStatus({ type: 'info', message: 'Adding product...' });
 
-    // Build specs JSON object from filled fields
+    // Build simple specs object
     const specsObject = {};
-    specList.forEach(item => {
-      const k = item.key.trim();
-      const v = item.value.trim();
-      if (k && v) {
-        specsObject[k] = v;
+    if (powerUsage.trim()) {
+      specsObject['Power Usage (TDP)'] = powerUsage.trim();
+    }
+    if (gamingFps.trim()) {
+      specsObject['Estimated Gaming FPS'] = gamingFps.trim();
+    }
+    if (brand.trim()) {
+      specsObject['Brand'] = brand.trim();
+    }
+    if (mainSpec.trim()) {
+      specsObject['Specification'] = mainSpec.trim();
+    }
+    extraSpecs.forEach(item => {
+      if (item.key.trim() && item.value.trim()) {
+        specsObject[item.key.trim()] = item.value.trim();
       }
     });
 
@@ -170,7 +111,7 @@ const AddProduct = () => {
       const data = await response.json();
 
       if (response.ok) {
-        setStatus({ type: 'success', message: 'Product and comparison specs added successfully!' });
+        setStatus({ type: 'success', message: '✓ Product added successfully!' });
         setFormData({
           name: '',
           description: '',
@@ -179,9 +120,11 @@ const AddProduct = () => {
           category_id: categories.length > 0 ? categories[0].id : '',
           image_url: ''
         });
-        if (categories.length > 0) {
-          loadCategoryTemplate(categories[0].name);
-        }
+        setPowerUsage('');
+        setGamingFps('');
+        setBrand('');
+        setMainSpec('');
+        setExtraSpecs([]);
       } else {
         setStatus({ type: 'error', message: data.message || 'Failed to add product.' });
       }
@@ -205,14 +148,12 @@ const AddProduct = () => {
           <span className="seller-mobile-title">Add Product</span>
         </div>
 
-        <div style={{ maxWidth: '850px', margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
-            <div>
-              <h2 style={{ margin: 0, fontSize: '2rem' }}>Add New Product</h2>
-              <p style={{ color: 'var(--text-secondary)', margin: '0.3rem 0 0 0', fontSize: '0.95rem' }}>
-                Fill in component details and specifications. Specs will be automatically used in the Buyer Comparison Tool.
-              </p>
-            </div>
+        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          <div style={{ marginBottom: '2rem' }}>
+            <h2 style={{ margin: 0, fontSize: '2rem' }}>Add Product</h2>
+            <p style={{ color: 'var(--text-secondary)', margin: '0.3rem 0 0 0', fontSize: '0.95rem' }}>
+              Fill in product information and comparison specs below.
+            </p>
           </div>
         
           {status.message && (
@@ -221,10 +162,10 @@ const AddProduct = () => {
             </div>
           )}
 
-          <div className="glass-panel" style={{ padding: '2.5rem' }}>
+          <div className="glass-panel" style={{ padding: '2rem' }}>
             <form onSubmit={handleSubmit}>
               
-              {/* Product Basic Info */}
+              {/* Product Name */}
               <div className="form-group">
                 <label className="form-label">Product Name / Model *</label>
                 <input 
@@ -233,26 +174,26 @@ const AddProduct = () => {
                   className="form-control" 
                   value={formData.name} 
                   onChange={handleChange} 
-                  placeholder="e.g. Intel Core i5-12400F Processor / Samsung 980 Pro 1TB NVMe" 
+                  placeholder="e.g. NVIDIA GeForce RTX 4070 / Intel Core i5-13400F" 
                   required 
                 />
               </div>
 
+              {/* Price & Stock */}
               <div className="seller-two-col">
                 <div className="form-group">
                   <label className="form-label">Price (Rs.) *</label>
-                  <input type="number" name="price" className="form-control" value={formData.price} onChange={handleChange} required min="0" step="0.01" placeholder="e.g. 45000" />
+                  <input type="number" name="price" className="form-control" value={formData.price} onChange={handleChange} required min="0" step="0.01" placeholder="e.g. 185000" />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Stock Quantity *</label>
-                  <input type="number" name="stock" className="form-control" value={formData.stock} onChange={handleChange} required min="0" placeholder="e.g. 10" />
+                  <input type="number" name="stock" className="form-control" value={formData.stock} onChange={handleChange} required min="0" placeholder="e.g. 5" />
                 </div>
               </div>
 
               {/* Category Dropdown */}
               <div className="form-group">
                 <label className="form-label">Category *</label>
-              
                 <div style={{ position: 'relative', width: '100%', zIndex: categoryDropdownOpen ? 100 : 1 }}>
                   <button
                     type="button"
@@ -269,13 +210,10 @@ const AddProduct = () => {
                       borderRadius: 'var(--border-radius-sm)',
                       cursor: 'pointer',
                       textAlign: 'left',
-                      position: 'relative',
-                      transition: 'all var(--transition-fast)',
-                      boxShadow: categoryDropdownOpen ? '0 0 10px rgba(0, 240, 255, 0.1)' : 'none'
+                      position: 'relative'
                     }}
                   >
                     {currentCategoryName || 'Select Category'}
-              
                     <ChevronDown
                       size={18}
                       style={{
@@ -284,12 +222,11 @@ const AddProduct = () => {
                         top: '50%',
                         transform: `translateY(-50%) rotate(${categoryDropdownOpen ? 180 : 0}deg)`,
                         color: 'var(--text-secondary)',
-                        pointerEvents: 'none',
-                        transition: 'transform var(--transition-fast)'
+                        pointerEvents: 'none'
                       }}
                     />
                   </button>
-              
+
                   {categoryDropdownOpen && (
                     <div
                       role="listbox"
@@ -302,144 +239,163 @@ const AddProduct = () => {
                         border: '1px solid var(--border-color)',
                         borderRadius: 'var(--border-radius-md)',
                         boxShadow: '0 12px 30px rgba(0, 0, 0, 0.45)',
-                        overflow: 'hidden',
                         zIndex: 1000,
-                        maxHeight: '240px',
+                        maxHeight: '220px',
                         overflowY: 'auto'
                       }}
                     >
-                      {categories.map((cat, index) => {
-                        const isSelected = String(cat.id) === String(formData.category_id);
-              
-                        return (
-                          <button
-                            key={cat.id}
-                            type="button"
-                            role="option"
-                            aria-selected={isSelected}
-                            onClick={() => handleCategorySelect(cat)}
-                            style={{
-                              width: '100%',
-                              padding: '0.75rem 1rem',
-                              background: isSelected
-                                ? 'rgba(0, 240, 255, 0.1)'
-                                : 'transparent',
-                              color: isSelected
-                                ? 'var(--accent-primary)'
-                                : 'var(--text-primary)',
-                              border: 'none',
-                              borderBottom: index < categories.length - 1
-                                ? '1px solid rgba(255, 255, 255, 0.05)'
-                                : 'none',
-                              cursor: 'pointer',
-                              textAlign: 'left',
-                              fontFamily: 'inherit',
-                              fontSize: '1rem',
-                              transition: 'background var(--transition-fast), color var(--transition-fast)'
-                            }}
-                            onMouseEnter={(e) => {
-                              if (!isSelected) {
-                                e.currentTarget.style.background = 'rgba(0, 240, 255, 0.08)';
-                                e.currentTarget.style.color = 'var(--accent-primary)';
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (!isSelected) {
-                                e.currentTarget.style.background = 'transparent';
-                              }
-                            }}
-                          >
-                            {cat.name}
-                          </button>
-                        );
-                      })}
+                      {categories.map((cat) => (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => handleCategorySelect(cat)}
+                          style={{
+                            width: '100%',
+                            padding: '0.75rem 1rem',
+                            background: String(cat.id) === String(formData.category_id) ? 'rgba(0, 240, 255, 0.1)' : 'transparent',
+                            color: String(cat.id) === String(formData.category_id) ? 'var(--accent-primary)' : 'var(--text-primary)',
+                            border: 'none',
+                            borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            fontSize: '0.95rem'
+                          }}
+                        >
+                          {cat.name}
+                        </button>
+                      ))}
                     </div>
                   )}
                 </div>
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Description</label>
-                <textarea name="description" className="form-control" value={formData.description} onChange={handleChange} rows="3" placeholder="Provide product overview, warranty information, and key highlights..."></textarea>
+              {/* Simple Comparison & Performance Specs (Easy Inputs) */}
+              <div style={{ marginTop: '1.8rem', marginBottom: '1.8rem', padding: '1.4rem', background: 'rgba(0, 0, 0, 0.3)', borderRadius: '10px', border: '1px solid rgba(0, 240, 255, 0.2)' }}>
+                <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Sparkles size={17} /> Comparison Specs (Power & Gaming Performance)
+                </h3>
+
+                <div className="seller-two-col">
+                  {/* Power Usage Field */}
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontSize: '0.85rem', color: '#ffb703', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <Zap size={15} /> Power Usage / TDP (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="e.g. 170W or 65W"
+                      value={powerUsage}
+                      onChange={(e) => setPowerUsage(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Gaming FPS Field */}
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontSize: '0.85rem', color: 'var(--accent-primary)', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <Gamepad2 size={15} /> Estimated Gaming FPS (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="e.g. 95 FPS or 140 FPS"
+                      value={gamingFps}
+                      onChange={(e) => setGamingFps(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="seller-two-col" style={{ marginTop: '1rem' }}>
+                  {/* Brand Field */}
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontSize: '0.85rem' }}>
+                      Brand / Manufacturer (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="e.g. NVIDIA / Intel / Corsair"
+                      value={brand}
+                      onChange={(e) => setBrand(e.target.value)}
+                    />
+                  </div>
+
+                  {/* Main Spec Field */}
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontSize: '0.85rem' }}>
+                      Key Spec / Memory (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="e.g. 12GB GDDR6 / LGA1700 / 1TB NVMe"
+                      value={mainSpec}
+                      onChange={(e) => setMainSpec(e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                {/* Extra custom specs */}
+                {extraSpecs.length > 0 && (
+                  <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                    {extraSpecs.map((item, idx) => (
+                      <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr auto', gap: '0.6rem', alignItems: 'center' }}>
+                        <input
+                          type="text"
+                          className="form-control"
+                          placeholder="Feature (e.g. Interface)"
+                          value={item.key}
+                          onChange={(e) => handleExtraSpecChange(idx, 'key', e.target.value)}
+                          style={{ fontSize: '0.85rem' }}
+                        />
+                        <input
+                          type="text"
+                          className="form-control"
+                          placeholder="Value (e.g. PCIe 4.0)"
+                          value={item.value}
+                          onChange={(e) => handleExtraSpecChange(idx, 'value', e.target.value)}
+                          style={{ fontSize: '0.85rem' }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeExtraSpec(idx)}
+                          style={{ background: 'transparent', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '0.3rem' }}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={addExtraSpec}
+                  style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '0.82rem', cursor: 'pointer', marginTop: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: 0 }}
+                >
+                  <Plus size={14} /> + Add Another Spec
+                </button>
               </div>
 
+              {/* Description */}
+              <div className="form-group">
+                <label className="form-label">Description</label>
+                <textarea name="description" className="form-control" value={formData.description} onChange={handleChange} rows="3" placeholder="Provide product overview and key highlights..."></textarea>
+              </div>
+
+              {/* Image URL */}
               <div className="form-group">
                 <label className="form-label">Image URL</label>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <div style={{ padding: '0.8rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', display: 'flex', alignItems: 'center' }}>
-                    <ImageIcon size={20} color="var(--text-secondary)" />
+                  <div style={{ padding: '0.7rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', display: 'flex', alignItems: 'center' }}>
+                    <ImageIcon size={18} color="var(--text-secondary)" />
                   </div>
                   <input type="url" name="image_url" className="form-control" value={formData.image_url} onChange={handleChange} placeholder="https://example.com/image.jpg" />
                 </div>
               </div>
 
-              {/* Visual Technical Specifications Builder */}
-              <div style={{ marginTop: '2.5rem', marginBottom: '2rem', padding: '1.5rem', background: 'rgba(0, 0, 0, 0.3)', borderRadius: '10px', border: '1px solid rgba(0, 240, 255, 0.2)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  <div>
-                    <h3 style={{ margin: 0, fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-primary)' }}>
-                      <Sparkles size={18} /> Technical Specifications & Comparison Facts
-                    </h3>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', margin: '0.2rem 0 0 0' }}>
-                      Easy Form: Fill in key facts below. These will power the <strong>Buyer Comparison Tool</strong> automatically.
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={addSpecRow}
-                    className="btn btn-outline"
-                    style={{ fontSize: '0.85rem', padding: '0.4rem 0.8rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
-                  >
-                    <Plus size={14} /> Add Spec Field
-                  </button>
-                </div>
-
-                {/* Specs List Rows */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-                  {specList.map((item, idx) => (
-                    <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr auto', gap: '0.8rem', alignItems: 'center' }}>
-                      <input
-                        type="text"
-                        className="form-control"
-                        placeholder="Feature (e.g. Cores / VRAM)"
-                        value={item.key}
-                        onChange={(e) => handleSpecChange(idx, 'key', e.target.value)}
-                        style={{ fontSize: '0.9rem', fontWeight: 'bold', background: 'rgba(0,0,0,0.4)' }}
-                      />
-                      <input
-                        type="text"
-                        className="form-control"
-                        placeholder={item.placeholder || 'Value (e.g. 6 Cores)'}
-                        value={item.value}
-                        onChange={(e) => handleSpecChange(idx, 'value', e.target.value)}
-                        style={{ fontSize: '0.9rem' }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeSpecRow(idx)}
-                        style={{
-                          background: 'transparent',
-                          border: 'none',
-                          color: 'var(--danger)',
-                          cursor: 'pointer',
-                          padding: '0.4rem',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          opacity: 0.8
-                        }}
-                        title="Remove specification"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <button type="submit" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.8rem 1.8rem', fontSize: '1.05rem', cursor: 'pointer' }}>
-                <Save size={20} />
+              <button type="submit" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.8rem 1.8rem', fontSize: '1rem', cursor: 'pointer', marginTop: '1.5rem' }}>
+                <Save size={18} />
                 Save Product
               </button>
             </form>
@@ -451,3 +407,4 @@ const AddProduct = () => {
 };
 
 export default AddProduct;
+

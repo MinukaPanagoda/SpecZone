@@ -145,7 +145,7 @@ class Product {
                           (!empty($this->title) ? ", title = :title" : "") .
                           (!empty($this->category_id) ? ", category_id = :category_id" : "") .
                           (isset($this->description) ? ", description = :description" : "") .
-                          (!empty($this->specifications) ? ", specifications = :specifications" : "") .
+                          (isset($this->specifications) ? ", specifications = :specifications" : "") .
                       " WHERE id = :id";
             
             if (!empty($this->seller_id)) {
@@ -169,7 +169,7 @@ class Product {
                 $this->description = htmlspecialchars(strip_tags($this->description));
                 $stmt->bindParam(":description", $this->description);
             }
-            if (!empty($this->specifications)) {
+            if (isset($this->specifications)) {
                 $stmt->bindParam(":specifications", $this->specifications);
             }
             if (!empty($this->seller_id)) {

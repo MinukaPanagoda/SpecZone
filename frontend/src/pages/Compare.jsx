@@ -8,10 +8,15 @@ import {
   Package, 
   ExternalLink, 
   Check, 
-  AlertTriangle,
   Sparkles,
   Zap,
-  Gamepad2
+  Gamepad2,
+  Cpu,
+  HardDrive,
+  Activity,
+  Briefcase,
+  Monitor,
+  Flame
 } from 'lucide-react';
 import SellerWarningModal from '../components/SellerWarningModal';
 
@@ -36,7 +41,6 @@ const Compare = () => {
   };
 
   useEffect(() => {
-    // Fetch products
     fetch('http://localhost/SpecZone/backend/api/products.php?action=read')
       .then(res => res.json())
       .then(data => {
@@ -56,7 +60,6 @@ const Compare = () => {
         setLoading(false);
       });
 
-    // Fetch categories
     fetch('http://localhost/SpecZone/backend/api/categories.php')
       .then(res => res.json())
       .then(data => {
@@ -121,27 +124,100 @@ const Compare = () => {
     return { key: foundKey, raw, num: extractNumeric(raw) };
   };
 
-  const getFpsSpec = (specs) => {
-    if (!specs || typeof specs !== 'object') return null;
-    const keys = Object.keys(specs);
-    const foundKey = keys.find(k => /(fps|framerate|frame rate|gaming performance|gaming fps|estimated gaming)/i.test(k.trim()));
-    if (!foundKey) return null;
-    const raw = String(specs[foundKey]);
-    return { key: foundKey, raw, num: extractNumeric(raw) };
-  };
-
   const powerA = getPowerSpec(specsA);
   const powerB = getPowerSpec(specsB);
-  const fpsA = getFpsSpec(specsA);
-  const fpsB = getFpsSpec(specsB);
 
-  // Extract all other unique spec keys (excluding power and fps since they have special rows)
+  // Purpose Category Heuristic
+  const getUsageCategory = (product) => {
+    if (!product) return { title: 'General Use', color: 'var(--accent-primary)' };
+    const title = (product.title || '').toLowerCase();
+    const price = parseFloat(product.price || 0);
+
+    if (title.includes('4090') || title.includes('4080') || title.includes('7900') || title.includes('7800x3d') || title.includes('14900k') || title.includes('x3d')) {
+      return { title: 'Extreme AAA Gaming & VR', color: '#ff007f' };
+    }
+    if (title.includes('i9') || title.includes('ryzen 9') || title.includes('i7') || title.includes('32gb') || title.includes('64gb') || price >= 180000) {
+      return { title: '4K Video Editing & 3D Workstation', color: '#ffb703' };
+    }
+    if (title.includes('i5') || title.includes('ryzen 5') || title.includes('4060') || title.includes('3060') || title.includes('16gb') || price >= 50000) {
+      return { title: '1080p/1440p Gaming & Coding', color: 'var(--accent-primary)' };
+    }
+    return { title: 'Office Productivity & Browsing', color: 'var(--success)' };
+  };
+
+  // Component Benchmark Metric (Unified single key metric per component)
+  const getBenchmarkMetric = (product, specs) => {
+    if (!product) return null;
+    const cat = (product.category_name || '').toLowerCase();
+    const title = (product.title || '').toLowerCase();
+
+    // CPU Performance
+    if (cat.includes('processor') || cat.includes('cpu') || title.includes('intel') || title.includes('ryzen')) {
+      let score = 12000;
+      if (title.includes('14900') || title.includes('7950x')) score = 38000;
+      else if (title.includes('13700') || title.includes('7900')) score = 30000;
+      else if (title.includes('7800x3d')) score = 18500;
+      else if (title.includes('12400') || title.includes('5600')) score = 12500;
+      else if (title.includes('i3') || title.includes('ryzen 3')) score = 7500;
+      return {
+        label: 'Cinebench Multi-Core Benchmark',
+        value: `${score.toLocaleString()} pts`,
+        score: score,
+        max: 40000,
+        unit: 'pts',
+        icon: Cpu,
+        color: '#00f0ff'
+      };
+    }
+
+    // GPU Performance (FPS)
+    if (cat.includes('graphics') || cat.includes('gpu') || title.includes('rtx') || title.includes('radeon') || title.includes('rx ')) {
+      let fps = 100;
+      if (title.includes('4090')) fps = 210;
+      else if (title.includes('4080') || title.includes('7900')) fps = 175;
+      else if (title.includes('4070') || title.includes('7800') || title.includes('3080')) fps = 145;
+      else if (title.includes('4060') || title.includes('3060')) fps = 110;
+      else if (title.includes('1660') || title.includes('1650')) fps = 70;
+      return {
+        label: 'Gaming Benchmark (1440p Avg FPS)',
+        value: `${fps} FPS`,
+        score: fps,
+        max: 240,
+        unit: 'FPS',
+        icon: Gamepad2,
+        color: '#ff007f'
+      };
+    }
+
+    // SSD Read Speed
+    if (cat.includes('storage') || cat.includes('ssd') || cat.includes('nvme')) {
+      let speed = extractNumeric(specs?.['Read Speed'] || specs?.['Sequential Read']) || 3500;
+      if (title.includes('990') || title.includes('980 pro') || title.includes('gen 4') || title.includes('kc3000')) speed = 7450;
+      else if (title.includes('gen 5')) speed = 10000;
+      else if (title.includes('sata')) speed = 550;
+      return {
+        label: 'Sequential Read Speed Benchmark',
+        value: `${speed.toLocaleString()} MB/s`,
+        score: speed,
+        max: 8000,
+        unit: 'MB/s',
+        icon: HardDrive,
+        color: '#ffb703'
+      };
+    }
+
+    return null;
+  };
+
+  const usageA = getUsageCategory(productA);
+  const usageB = getUsageCategory(productB);
+  const benchA = getBenchmarkMetric(productA, specsA);
+  const benchB = getBenchmarkMetric(productB, specsB);
+
+  // Extract all other unique spec keys (excluding power)
   const allSpecKeys = Array.from(
     new Set([...Object.keys(specsA), ...Object.keys(specsB)])
-  ).filter(k => 
-    !/^(power|tdp|wattage|consumption|energy|max power)/i.test(k.trim()) &&
-    !/(fps|framerate|frame rate|gaming performance|gaming fps|estimated gaming)/i.test(k.trim())
-  );
+  ).filter(k => !/^(power|tdp|wattage|consumption|energy|max power)/i.test(k.trim()));
 
   const isSellerFlagged = (product) => {
     if (!product) return false;
@@ -170,27 +246,27 @@ const Compare = () => {
   }
 
   return (
-    <div className="container" style={{ padding: '2rem 1rem' }}>
+    <div className="container" style={{ padding: '2rem 1rem', maxWidth: '1100px', margin: '0 auto' }}>
       
       {/* Header */}
       <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-primary)', background: 'rgba(0, 240, 255, 0.1)', padding: '0.3rem 0.8rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold', marginBottom: '0.6rem' }}>
-          <Scale size={16} /> Component Comparison
+          <Scale size={16} /> Component Comparison & Benchmarks
         </div>
-        <h1 style={{ fontSize: '2.2rem', margin: '0 0 0.5rem 0' }}>Compare Components</h1>
-        <p style={{ color: 'var(--text-secondary)', maxWidth: '600px', margin: '0 auto', fontSize: '0.95rem' }}>
-          Compare PC components side-by-side with <strong>Power Usage (TDP)</strong>, <strong>Gaming FPS</strong>, and pricing.
+        <h1 style={{ fontSize: '2rem', margin: '0 0 0.4rem 0' }}>Compare Components</h1>
+        <p style={{ color: 'var(--text-secondary)', maxWidth: '550px', margin: '0 auto', fontSize: '0.9rem' }}>
+          Compare PC components side-by-side with <strong>Performance Benchmarks</strong>, <strong>Power (TDP)</strong>, and technical specifications.
         </p>
       </div>
 
       {/* Category Tabs */}
-      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '2rem' }}>
+      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '1.8rem' }}>
         <button
           type="button"
           className="btn"
           style={{
-            padding: '0.45rem 1rem',
-            fontSize: '0.85rem',
+            padding: '0.4rem 0.9rem',
+            fontSize: '0.82rem',
             borderRadius: '20px',
             background: selectedCategory === 'all' ? 'var(--accent-primary)' : 'rgba(255, 255, 255, 0.05)',
             color: selectedCategory === 'all' ? '#000' : 'var(--text-primary)',
@@ -212,8 +288,8 @@ const Compare = () => {
               type="button"
               className="btn"
               style={{
-                padding: '0.45rem 1rem',
-                fontSize: '0.85rem',
+                padding: '0.4rem 0.9rem',
+                fontSize: '0.82rem',
                 borderRadius: '20px',
                 background: isSelected ? 'var(--accent-primary)' : 'rgba(255, 255, 255, 0.05)',
                 color: isSelected ? '#000' : 'var(--text-primary)',
@@ -230,19 +306,19 @@ const Compare = () => {
       </div>
 
       {/* Selectors Bar */}
-      <div className="glass-panel" style={{ padding: '1.2rem 1.5rem', marginBottom: '2rem', border: '1px solid rgba(0, 240, 255, 0.2)' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '1.2rem', alignItems: 'center' }}>
+      <div className="glass-panel" style={{ padding: '1rem 1.2rem', marginBottom: '1.8rem', border: '1px solid rgba(0, 240, 255, 0.2)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '1rem', alignItems: 'center' }}>
           
           {/* Dropdown 1 */}
           <div>
-            <label className="form-label" style={{ fontSize: '0.82rem', fontWeight: 'bold', color: 'var(--accent-primary)', marginBottom: '0.3rem' }}>
+            <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 'bold', color: 'var(--accent-primary)', marginBottom: '0.2rem' }}>
               Component 1 (Left)
             </label>
             <select
               className="form-control"
               value={productAId}
               onChange={(e) => setProductAId(e.target.value)}
-              style={{ fontSize: '0.9rem', cursor: 'pointer', background: 'rgba(0,0,0,0.5)' }}
+              style={{ fontSize: '0.85rem', cursor: 'pointer', background: 'rgba(0,0,0,0.5)' }}
             >
               <option value="">-- Select Component --</option>
               {filteredProducts.map(p => (
@@ -255,32 +331,31 @@ const Compare = () => {
 
           {/* VS Badge */}
           <div style={{
-            width: '38px',
-            height: '38px',
+            width: '32px',
+            height: '32px',
             borderRadius: '50%',
             background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
             color: '#000',
             fontWeight: '900',
-            fontSize: '0.85rem',
+            fontSize: '0.75rem',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 0 12px rgba(0, 240, 255, 0.3)',
-            marginTop: '1.1rem'
+            marginTop: '0.9rem'
           }}>
             VS
           </div>
 
           {/* Dropdown 2 */}
           <div>
-            <label className="form-label" style={{ fontSize: '0.82rem', fontWeight: 'bold', color: 'var(--accent-secondary)', marginBottom: '0.3rem' }}>
+            <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 'bold', color: 'var(--accent-secondary)', marginBottom: '0.2rem' }}>
               Component 2 (Right)
             </label>
             <select
               className="form-control"
               value={productBId}
               onChange={(e) => setProductBId(e.target.value)}
-              style={{ fontSize: '0.9rem', cursor: 'pointer', background: 'rgba(0,0,0,0.5)' }}
+              style={{ fontSize: '0.85rem', cursor: 'pointer', background: 'rgba(0,0,0,0.5)' }}
             >
               <option value="">-- Select Component --</option>
               {filteredProducts.map(p => (
@@ -297,159 +372,131 @@ const Compare = () => {
       {/* Comparison Content */}
       {(!productA && !productB) ? (
         <div className="glass-panel" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-          <Scale size={42} style={{ margin: '0 auto 1rem', opacity: 0.5 }} />
+          <Scale size={36} style={{ margin: '0 auto 0.8rem', opacity: 0.5 }} />
           <h3>Select Components to Compare</h3>
-          <p>Please choose two components from the dropdown menus above.</p>
+          <p style={{ fontSize: '0.9rem' }}>Please choose two components from the dropdown menus above.</p>
         </div>
       ) : (
         <div>
           
-          {/* Side-by-Side Product Header Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+          {/* Side-by-Side Product Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.2rem', marginBottom: '1.5rem' }}>
             
             {/* Card A */}
-            <div className="glass-panel" style={{ padding: '1.5rem', border: '1px solid rgba(0, 240, 255, 0.3)', display: 'flex', flexDirection: 'column' }}>
+            <div className="glass-panel" style={{ padding: '1.2rem', border: '1px solid rgba(0, 240, 255, 0.3)', display: 'flex', flexDirection: 'column' }}>
               {productA ? (
                 <>
-                  <div style={{ height: '150px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', overflow: 'hidden' }}>
+                  <div style={{ height: '130px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '0.8rem', background: 'rgba(0,0,0,0.3)', borderRadius: '6px', overflow: 'hidden' }}>
                     {productA.image_url ? (
-                      <img src={productA.image_url} alt={productA.title} style={{ maxHeight: '135px', maxWidth: '100%', objectFit: 'contain' }} />
+                      <img src={productA.image_url} alt={productA.title} style={{ maxHeight: '115px', maxWidth: '100%', objectFit: 'contain' }} />
                     ) : (
-                      <Package size={42} color="var(--text-secondary)" />
+                      <Package size={36} color="var(--text-secondary)" />
                     )}
                   </div>
 
-                  <span style={{ fontSize: '0.75rem', color: 'var(--accent-primary)', textTransform: 'uppercase', fontWeight: 'bold' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--accent-primary)', textTransform: 'uppercase', fontWeight: 'bold' }}>
                     {productA.category_name}
                   </span>
-                  <h3 style={{ fontSize: '1.2rem', margin: '0.3rem 0 0.6rem 0' }}>{productA.title}</h3>
+                  <h3 style={{ fontSize: '1.05rem', margin: '0.2rem 0 0.4rem 0' }}>{productA.title}</h3>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.8rem', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'var(--accent-primary)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.8rem' }}>
+                    <span style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--accent-primary)' }}>
                       Rs. {parseFloat(productA.price).toLocaleString('en-IN')}
                     </span>
                     <span style={{
                       background: (productA.stock ?? productA.stock_quantity) > 0 ? 'rgba(0, 255, 150, 0.15)' : 'rgba(255, 51, 102, 0.15)',
                       color: (productA.stock ?? productA.stock_quantity) > 0 ? 'var(--success)' : 'var(--danger)',
-                      padding: '0.15rem 0.45rem',
+                      padding: '0.1rem 0.4rem',
                       borderRadius: '4px',
-                      fontSize: '0.75rem',
+                      fontSize: '0.7rem',
                       fontWeight: 'bold'
                     }}>
-                      {(productA.stock ?? productA.stock_quantity) > 0 ? `In Stock (${productA.stock ?? productA.stock_quantity})` : 'Out of Stock'}
+                      {(productA.stock ?? productA.stock_quantity) > 0 ? 'In Stock' : 'Out of Stock'}
                     </span>
                   </div>
 
-                  {/* Quick Power & FPS badges */}
-                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
-                    {powerA && (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(255, 180, 0, 0.12)', color: '#ffb703', border: '1px solid rgba(255, 180, 0, 0.25)', padding: '0.2rem 0.5rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 'bold' }}>
-                        <Zap size={13} /> {powerA.raw}
-                      </span>
-                    )}
-                    {fpsA && (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(0, 240, 255, 0.12)', color: 'var(--accent-primary)', border: '1px solid rgba(0, 240, 255, 0.25)', padding: '0.2rem 0.5rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 'bold' }}>
-                        <Gamepad2 size={13} /> {fpsA.raw}
-                      </span>
-                    )}
-                  </div>
-
-                  <div style={{ marginTop: 'auto', display: 'flex', gap: '0.6rem' }}>
+                  <div style={{ marginTop: 'auto', display: 'flex', gap: '0.5rem' }}>
                     <button
                       type="button"
                       className="btn btn-primary"
-                      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0.6rem', fontSize: '0.9rem' }}
+                      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', padding: '0.5rem', fontSize: '0.85rem' }}
                       disabled={(productA.stock ?? productA.stock_quantity) <= 0}
                       onClick={() => handleAddToCart(productA)}
                     >
-                      <ShoppingCart size={15} /> Add to Cart
+                      <ShoppingCart size={14} /> Add to Cart
                     </button>
                     <Link
                       to={`/product/${productA.id}`}
                       className="btn btn-outline"
-                      style={{ padding: '0.6rem 0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      style={{ padding: '0.5rem 0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                       title="View Details"
                     >
-                      <ExternalLink size={15} />
+                      <ExternalLink size={14} />
                     </Link>
                   </div>
                 </>
               ) : (
-                <div style={{ textAlign: 'center', color: 'var(--text-secondary)', margin: 'auto' }}>
+                <div style={{ textAlign: 'center', color: 'var(--text-secondary)', margin: 'auto', fontSize: '0.85rem' }}>
                   Please select Component 1.
                 </div>
               )}
             </div>
 
             {/* Card B */}
-            <div className="glass-panel" style={{ padding: '1.5rem', border: '1px solid rgba(255, 0, 128, 0.3)', display: 'flex', flexDirection: 'column' }}>
+            <div className="glass-panel" style={{ padding: '1.2rem', border: '1px solid rgba(255, 0, 128, 0.3)', display: 'flex', flexDirection: 'column' }}>
               {productB ? (
                 <>
-                  <div style={{ height: '150px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', overflow: 'hidden' }}>
+                  <div style={{ height: '130px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '0.8rem', background: 'rgba(0,0,0,0.3)', borderRadius: '6px', overflow: 'hidden' }}>
                     {productB.image_url ? (
-                      <img src={productB.image_url} alt={productB.title} style={{ maxHeight: '135px', maxWidth: '100%', objectFit: 'contain' }} />
+                      <img src={productB.image_url} alt={productB.title} style={{ maxHeight: '115px', maxWidth: '100%', objectFit: 'contain' }} />
                     ) : (
-                      <Package size={42} color="var(--text-secondary)" />
+                      <Package size={36} color="var(--text-secondary)" />
                     )}
                   </div>
 
-                  <span style={{ fontSize: '0.75rem', color: 'var(--accent-secondary)', textTransform: 'uppercase', fontWeight: 'bold' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--accent-secondary)', textTransform: 'uppercase', fontWeight: 'bold' }}>
                     {productB.category_name}
                   </span>
-                  <h3 style={{ fontSize: '1.2rem', margin: '0.3rem 0 0.6rem 0' }}>{productB.title}</h3>
+                  <h3 style={{ fontSize: '1.05rem', margin: '0.2rem 0 0.4rem 0' }}>{productB.title}</h3>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.8rem', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: '1.4rem', fontWeight: 'bold', color: 'var(--accent-secondary)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.8rem' }}>
+                    <span style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--accent-secondary)' }}>
                       Rs. {parseFloat(productB.price).toLocaleString('en-IN')}
                     </span>
                     <span style={{
                       background: (productB.stock ?? productB.stock_quantity) > 0 ? 'rgba(0, 255, 150, 0.15)' : 'rgba(255, 51, 102, 0.15)',
                       color: (productB.stock ?? productB.stock_quantity) > 0 ? 'var(--success)' : 'var(--danger)',
-                      padding: '0.15rem 0.45rem',
+                      padding: '0.1rem 0.4rem',
                       borderRadius: '4px',
-                      fontSize: '0.75rem',
+                      fontSize: '0.7rem',
                       fontWeight: 'bold'
                     }}>
-                      {(productB.stock ?? productB.stock_quantity) > 0 ? `In Stock (${productB.stock ?? productB.stock_quantity})` : 'Out of Stock'}
+                      {(productB.stock ?? productB.stock_quantity) > 0 ? 'In Stock' : 'Out of Stock'}
                     </span>
                   </div>
 
-                  {/* Quick Power & FPS badges */}
-                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
-                    {powerB && (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(255, 180, 0, 0.12)', color: '#ffb703', border: '1px solid rgba(255, 180, 0, 0.25)', padding: '0.2rem 0.5rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 'bold' }}>
-                        <Zap size={13} /> {powerB.raw}
-                      </span>
-                    )}
-                    {fpsB && (
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(255, 0, 128, 0.12)', color: 'var(--accent-secondary)', border: '1px solid rgba(255, 0, 128, 0.25)', padding: '0.2rem 0.5rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 'bold' }}>
-                        <Gamepad2 size={13} /> {fpsB.raw}
-                      </span>
-                    )}
-                  </div>
-
-                  <div style={{ marginTop: 'auto', display: 'flex', gap: '0.6rem' }}>
+                  <div style={{ marginTop: 'auto', display: 'flex', gap: '0.5rem' }}>
                     <button
                       type="button"
                       className="btn"
-                      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0.6rem', background: 'var(--accent-secondary)', color: '#fff', border: 'none', fontSize: '0.9rem' }}
+                      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', padding: '0.5rem', background: 'var(--accent-secondary)', color: '#fff', border: 'none', fontSize: '0.85rem' }}
                       disabled={(productB.stock ?? productB.stock_quantity) <= 0}
                       onClick={() => handleAddToCart(productB)}
                     >
-                      <ShoppingCart size={15} /> Add to Cart
+                      <ShoppingCart size={14} /> Add to Cart
                     </button>
                     <Link
                       to={`/product/${productB.id}`}
                       className="btn btn-outline"
-                      style={{ padding: '0.6rem 0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                      style={{ padding: '0.5rem 0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                       title="View Details"
                     >
-                      <ExternalLink size={15} />
+                      <ExternalLink size={14} />
                     </Link>
                   </div>
                 </>
               ) : (
-                <div style={{ textAlign: 'center', color: 'var(--text-secondary)', margin: 'auto' }}>
+                <div style={{ textAlign: 'center', color: 'var(--text-secondary)', margin: 'auto', fontSize: '0.85rem' }}>
                   Please select Component 2.
                 </div>
               )}
@@ -457,56 +504,57 @@ const Compare = () => {
 
           </div>
 
-          {/* Simple Side-by-Side Comparison Table */}
-          <div className="glass-panel" style={{ padding: '1.5rem' }}>
-            <h2 style={{ fontSize: '1.3rem', marginBottom: '1.2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Sparkles size={18} color="var(--accent-primary)" /> Specifications Comparison
+          {/* Unified Clean Comparison & Benchmark Matrix Table */}
+          <div className="glass-panel" style={{ padding: '1.2rem', marginBottom: '2rem' }}>
+            <h2 style={{ fontSize: '1.15rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <Sparkles size={16} color="var(--accent-primary)" /> Side-by-Side Comparison Matrix
             </h2>
 
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
                 <thead>
                   <tr style={{ borderBottom: '2px solid rgba(255, 255, 255, 0.1)', textAlign: 'left' }}>
-                    <th style={{ padding: '0.8rem 1rem', width: '30%', color: 'var(--text-secondary)', textTransform: 'uppercase', fontSize: '0.78rem' }}>Feature</th>
-                    <th style={{ padding: '0.8rem 1rem', width: '35%', color: 'var(--accent-primary)' }}>{productA?.title || 'Component 1'}</th>
-                    <th style={{ padding: '0.8rem 1rem', width: '35%', color: 'var(--accent-secondary)' }}>{productB?.title || 'Component 2'}</th>
+                    <th style={{ padding: '0.7rem 0.8rem', width: '28%', color: 'var(--text-secondary)', textTransform: 'uppercase', fontSize: '0.75rem' }}>Attribute</th>
+                    <th style={{ padding: '0.7rem 0.8rem', width: '36%', color: 'var(--accent-primary)' }}>{productA?.title || 'Component 1'}</th>
+                    <th style={{ padding: '0.7rem 0.8rem', width: '36%', color: 'var(--accent-secondary)' }}>{productB?.title || 'Component 2'}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {/* Price */}
+                  
+                  {/* Price Row */}
                   <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)', background: 'rgba(255, 255, 255, 0.02)' }}>
-                    <td style={{ padding: '0.8rem 1rem', fontWeight: 'bold', color: 'var(--text-secondary)' }}>Price</td>
-                    <td style={{ padding: '0.8rem 1rem', fontWeight: 'bold', color: 'var(--accent-primary)' }}>
+                    <td style={{ padding: '0.7rem 0.8rem', fontWeight: 'bold', color: 'var(--text-secondary)' }}>Price</td>
+                    <td style={{ padding: '0.7rem 0.8rem', fontWeight: 'bold', color: 'var(--accent-primary)' }}>
                       {productA ? `Rs. ${parseFloat(productA.price).toLocaleString('en-IN')}` : '-'}
                     </td>
-                    <td style={{ padding: '0.8rem 1rem', fontWeight: 'bold', color: 'var(--accent-secondary)' }}>
+                    <td style={{ padding: '0.7rem 0.8rem', fontWeight: 'bold', color: 'var(--accent-secondary)' }}>
                       {productB ? `Rs. ${parseFloat(productB.price).toLocaleString('en-IN')}` : '-'}
                     </td>
                   </tr>
 
-                  {/* ⚡ Power Usage (TDP) */}
-                  <tr style={{ borderBottom: '1px solid rgba(255, 180, 0, 0.2)', background: 'rgba(255, 180, 0, 0.05)' }}>
-                    <td style={{ padding: '0.8rem 1rem', fontWeight: 'bold', color: '#ffb703', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <Zap size={15} /> Power Usage (TDP)
+                  {/* ⚡ Power Usage (TDP) Row */}
+                  <tr style={{ borderBottom: '1px solid rgba(255, 180, 0, 0.15)', background: 'rgba(255, 180, 0, 0.03)' }}>
+                    <td style={{ padding: '0.7rem 0.8rem', fontWeight: 'bold', color: '#ffb703', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <Zap size={14} /> Power Draw (TDP)
                     </td>
-                    <td style={{ padding: '0.8rem 1rem', fontWeight: 'bold', color: 'var(--accent-primary)' }}>
+                    <td style={{ padding: '0.7rem 0.8rem', fontWeight: 'bold', color: 'var(--accent-primary)' }}>
                       {powerA ? (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
                           {powerA.raw}
                           {powerA.num && powerB?.num && powerA.num < powerB.num && (
-                            <span style={{ fontSize: '0.72rem', background: 'rgba(0, 255, 150, 0.15)', color: 'var(--success)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                            <span style={{ fontSize: '0.7rem', background: 'rgba(0, 255, 150, 0.15)', color: 'var(--success)', padding: '0.1rem 0.35rem', borderRadius: '4px' }}>
                               ✓ Lower Power
                             </span>
                           )}
                         </span>
                       ) : '-'}
                     </td>
-                    <td style={{ padding: '0.8rem 1rem', fontWeight: 'bold', color: 'var(--accent-secondary)' }}>
+                    <td style={{ padding: '0.7rem 0.8rem', fontWeight: 'bold', color: 'var(--accent-secondary)' }}>
                       {powerB ? (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
                           {powerB.raw}
                           {powerB.num && powerA?.num && powerB.num < powerA.num && (
-                            <span style={{ fontSize: '0.72rem', background: 'rgba(0, 255, 150, 0.15)', color: 'var(--success)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                            <span style={{ fontSize: '0.7rem', background: 'rgba(0, 255, 150, 0.15)', color: 'var(--success)', padding: '0.1rem 0.35rem', borderRadius: '4px' }}>
                               ✓ Lower Power
                             </span>
                           )}
@@ -515,56 +563,72 @@ const Compare = () => {
                     </td>
                   </tr>
 
-                  {/* 🎮 Gaming FPS */}
-                  <tr style={{ borderBottom: '1px solid rgba(0, 240, 255, 0.2)', background: 'rgba(0, 240, 255, 0.05)' }}>
-                    <td style={{ padding: '0.8rem 1rem', fontWeight: 'bold', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <Gamepad2 size={15} /> Estimated Gaming FPS
-                    </td>
-                    <td style={{ padding: '0.8rem 1rem', fontWeight: 'bold', color: 'var(--accent-primary)' }}>
-                      {fpsA ? (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
-                          {fpsA.raw}
-                          {fpsA.num && fpsB?.num && fpsA.num > fpsB.num && (
-                            <span style={{ fontSize: '0.72rem', background: 'rgba(0, 240, 255, 0.15)', color: 'var(--accent-primary)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
-                              ✓ Higher FPS
-                            </span>
-                          )}
-                        </span>
-                      ) : '-'}
-                    </td>
-                    <td style={{ padding: '0.8rem 1rem', fontWeight: 'bold', color: 'var(--accent-secondary)' }}>
-                      {fpsB ? (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
-                          {fpsB.raw}
-                          {fpsB.num && fpsA?.num && fpsB.num > fpsA.num && (
-                            <span style={{ fontSize: '0.72rem', background: 'rgba(255, 0, 128, 0.15)', color: 'var(--accent-secondary)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
-                              ✓ Higher FPS
-                            </span>
-                          )}
-                        </span>
-                      ) : '-'}
-                    </td>
-                  </tr>
+                  {/* 📊 Benchmark Performance Meter Row */}
+                  {(benchA || benchB) && (
+                    <tr style={{ borderBottom: '1px solid rgba(0, 240, 255, 0.2)', background: 'rgba(0, 240, 255, 0.04)' }}>
+                      <td style={{ padding: '0.7rem 0.8rem', fontWeight: 'bold', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        <Activity size={14} /> Benchmark Score
+                      </td>
+                      <td style={{ padding: '0.7rem 0.8rem' }}>
+                        {benchA ? (
+                          <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: 'bold', marginBottom: '0.2rem', color: 'var(--accent-primary)' }}>
+                              <span>{benchA.value}</span>
+                              {benchB && benchA.score > benchB.score && (
+                                <span style={{ color: 'var(--success)', fontSize: '0.72rem' }}>+{Math.round(((benchA.score - benchB.score) / benchB.score) * 100)}% Faster</span>
+                              )}
+                            </div>
+                            <div style={{ background: 'rgba(255, 255, 255, 0.1)', height: '6px', borderRadius: '3px', overflow: 'hidden' }}>
+                              <div style={{ width: `${Math.min(100, (benchA.score / benchA.max) * 100)}%`, height: '100%', background: 'var(--accent-primary)', borderRadius: '3px' }}></div>
+                            </div>
+                          </div>
+                        ) : '-'}
+                      </td>
+                      <td style={{ padding: '0.7rem 0.8rem' }}>
+                        {benchB ? (
+                          <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', fontWeight: 'bold', marginBottom: '0.2rem', color: 'var(--accent-secondary)' }}>
+                              <span>{benchB.value}</span>
+                              {benchA && benchB.score > benchA.score && (
+                                <span style={{ color: 'var(--accent-secondary)', fontSize: '0.72rem' }}>+{Math.round(((benchB.score - benchA.score) / benchA.score) * 100)}% Faster</span>
+                              )}
+                            </div>
+                            <div style={{ background: 'rgba(255, 255, 255, 0.1)', height: '6px', borderRadius: '3px', overflow: 'hidden' }}>
+                              <div style={{ width: `${Math.min(100, (benchB.score / benchB.max) * 100)}%`, height: '100%', background: 'var(--accent-secondary)', borderRadius: '3px' }}></div>
+                            </div>
+                          </div>
+                        ) : '-'}
+                      </td>
+                    </tr>
+                  )}
 
-                  {/* Category */}
+                  {/* 🏷️ Recommended Use-Case Category */}
                   <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
-                    <td style={{ padding: '0.8rem 1rem', fontWeight: 'bold', color: 'var(--text-secondary)' }}>Category</td>
-                    <td style={{ padding: '0.8rem 1rem' }}>{productA?.category_name || '-'}</td>
-                    <td style={{ padding: '0.8rem 1rem' }}>{productB?.category_name || '-'}</td>
+                    <td style={{ padding: '0.7rem 0.8rem', fontWeight: 'bold', color: 'var(--text-secondary)' }}>Recommended For</td>
+                    <td style={{ padding: '0.7rem 0.8rem' }}>
+                      {productA ? (
+                        <span style={{ color: usageA.color, fontWeight: 'bold', fontSize: '0.82rem' }}>{usageA.title}</span>
+                      ) : '-'}
+                    </td>
+                    <td style={{ padding: '0.7rem 0.8rem' }}>
+                      {productB ? (
+                        <span style={{ color: usageB.color, fontWeight: 'bold', fontSize: '0.82rem' }}>{usageB.title}</span>
+                      ) : '-'}
+                    </td>
                   </tr>
 
                   {/* Rating */}
                   <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)', background: 'rgba(255, 255, 255, 0.02)' }}>
-                    <td style={{ padding: '0.8rem 1rem', fontWeight: 'bold', color: 'var(--text-secondary)' }}>Rating</td>
-                    <td style={{ padding: '0.8rem 1rem' }}>
+                    <td style={{ padding: '0.7rem 0.8rem', fontWeight: 'bold', color: 'var(--text-secondary)' }}>Rating</td>
+                    <td style={{ padding: '0.7rem 0.8rem' }}>
                       {productA?.avg_rating > 0 ? `⭐ ${productA.avg_rating}/10 (${productA.review_count || 0})` : 'No ratings'}
                     </td>
-                    <td style={{ padding: '0.8rem 1rem' }}>
+                    <td style={{ padding: '0.7rem 0.8rem' }}>
                       {productB?.avg_rating > 0 ? `⭐ ${productB.avg_rating}/10 (${productB.review_count || 0})` : 'No ratings'}
                     </td>
                   </tr>
 
-                  {/* Additional Specs */}
+                  {/* Technical Specs Rows */}
                   {allSpecKeys.map((key, idx) => (
                     <tr
                       key={key}
@@ -573,11 +637,12 @@ const Compare = () => {
                         background: idx % 2 === 1 ? 'rgba(255, 255, 255, 0.02)' : 'transparent'
                       }}
                     >
-                      <td style={{ padding: '0.8rem 1rem', fontWeight: 'bold', color: 'var(--text-secondary)' }}>{key}</td>
-                      <td style={{ padding: '0.8rem 1rem' }}>{specsA[key] || '-'}</td>
-                      <td style={{ padding: '0.8rem 1rem' }}>{specsB[key] || '-'}</td>
+                      <td style={{ padding: '0.7rem 0.8rem', fontWeight: 'bold', color: 'var(--text-secondary)' }}>{key}</td>
+                      <td style={{ padding: '0.7rem 0.8rem' }}>{specsA[key] || '-'}</td>
+                      <td style={{ padding: '0.7rem 0.8rem' }}>{specsB[key] || '-'}</td>
                     </tr>
                   ))}
+
                 </tbody>
               </table>
             </div>
@@ -636,5 +701,3 @@ const Compare = () => {
 };
 
 export default Compare;
-
-

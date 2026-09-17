@@ -14,6 +14,10 @@ CREATE TABLE `build_items` (
   `product_id` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+INSERT INTO `build_items` (`id`, `build_id`, `product_id`) VALUES
+(1, 1, 4),
+(2, 2, 4);
+
 CREATE TABLE `build_lists` (
   `id` int(11) NOT NULL,
   `buyer_id` int(11) NOT NULL,
@@ -21,12 +25,21 @@ CREATE TABLE `build_lists` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+INSERT INTO `build_lists` (`id`, `buyer_id`, `build_name`, `created_at`) VALUES
+(1, 5, 'Custom Rig - Aug 30, 2026', '2026-08-30 13:12:17'),
+(2, 5, 'Custom Rig - Aug 30, 2026', '2026-08-30 18:09:26');
+
 CREATE TABLE `cart` (
   `id` int(11) NOT NULL,
   `buyer_id` int(11) NOT NULL,
   `product_id` int(11) NOT NULL,
   `quantity` int(11) DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+INSERT INTO `cart` (`id`, `buyer_id`, `product_id`, `quantity`) VALUES
+(44, 5, 4, 1),
+(45, 5, 9, 1),
+(46, 5, 1, 1);
 
 CREATE TABLE `categories` (
   `id` int(11) NOT NULL,
@@ -56,7 +69,11 @@ INSERT INTO `complaints` (`id`, `seller_id`, `buyer_id`, `reason`, `status`) VAL
 (1, 8, 5, 'ko', 'resolved'),
 (2, 8, 5, 'oh my order', 'resolved'),
 (3, 8, 5, 'seller', 'pending'),
-(4, 8, 5, 'darn', 'pending');
+(4, 8, 5, 'darn', 'pending'),
+(5, 1, 5, 'late', 'pending'),
+(6, 8, 5, 'oh sheate', 'pending'),
+(7, 8, 5, 'jig', 'pending'),
+(8, 8, 5, 'oh', 'pending');
 
 CREATE TABLE `orders` (
   `id` int(11) NOT NULL,
@@ -81,7 +98,14 @@ INSERT INTO `orders` (`id`, `buyer_id`, `total_amount`, `created_at`) VALUES
 (13, 5, 500000.00, '2026-08-18 16:17:47'),
 (14, 5, 40000.00, '2026-08-18 16:18:20'),
 (15, 5, 80000.00, '2026-08-18 18:11:49'),
-(16, 5, 97000.00, '2026-08-26 09:42:27');
+(16, 5, 97000.00, '2026-08-26 09:42:27'),
+(17, 5, 110000.00, '2026-08-30 11:05:35'),
+(18, 5, 45000.00, '2026-08-30 11:06:40'),
+(19, 5, 45000.00, '2026-08-30 11:23:37'),
+(20, 5, 500000.00, '2026-08-30 11:29:50'),
+(21, 5, 40000.00, '2026-08-30 11:31:27'),
+(22, 5, 23423.00, '2026-08-30 11:33:11'),
+(23, 5, 40000.00, '2026-08-30 12:44:56');
 
 CREATE TABLE `order_items` (
   `id` int(11) NOT NULL,
@@ -94,7 +118,7 @@ CREATE TABLE `order_items` (
 
 INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `quantity`, `unit_price`, `status`) VALUES
 (1, 1, 1, 1, 12000.00, 'pending'),
-(2, 2, 1, 1, 12000.00, 'shipped'),
+(2, 2, 1, 1, 12000.00, 'delivered'),
 (3, 2, 2, 1, 134.00, 'pending'),
 (4, 3, 3, 3, 45000.00, 'pending'),
 (5, 3, 4, 3, 52000.00, 'pending'),
@@ -112,11 +136,18 @@ INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `quantity`, `unit_pri
 (17, 10, 3, 1, 45000.00, 'pending'),
 (18, 11, 5, 1, 25000.00, 'pending'),
 (19, 12, 2, 2, 134.00, 'shipped'),
-(20, 13, 12, 1, 500000.00, 'pending'),
+(20, 13, 12, 1, 500000.00, 'shipped'),
 (21, 14, 13, 1, 40000.00, 'pending'),
 (22, 15, 13, 2, 40000.00, 'delivered'),
 (23, 16, 3, 1, 45000.00, 'pending'),
-(24, 16, 4, 1, 52000.00, 'pending');
+(24, 16, 4, 1, 52000.00, 'pending'),
+(25, 17, 9, 1, 110000.00, 'pending'),
+(26, 18, 3, 1, 45000.00, 'pending'),
+(27, 19, 3, 1, 45000.00, 'pending'),
+(28, 20, 12, 1, 500000.00, 'pending'),
+(29, 21, 13, 1, 40000.00, 'shipped'),
+(30, 22, 10, 1, 23423.00, 'delivered'),
+(31, 23, 13, 1, 40000.00, 'pending');
 
 CREATE TABLE `products` (
   `id` int(11) NOT NULL,
@@ -131,19 +162,19 @@ CREATE TABLE `products` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 INSERT INTO `products` (`id`, `seller_id`, `category_id`, `title`, `description`, `price`, `stock_quantity`, `specifications`, `created_at`) VALUES
-(1, 2, 7, 'MS50', '', 12000.00, 8, '{}', '2026-07-12 19:09:18'),
-(2, 2, 3, 'ma43', '', 134.00, 1, '{}', '2026-07-12 20:14:38'),
-(3, 1, 1, 'Intel Core i5-12400F', 'Great budget CPU for gaming.', 45000.00, 2, '{\"Socket\":\"LGA1700\",\"Cores\":\"6\",\"Threads\":\"12\"}', '2026-07-13 05:15:38'),
-(4, 1, 1, 'AMD Ryzen 5 5600X', 'Fast and reliable AMD processor.', 52000.00, 9, '{\"Socket\":\"AM4\",\"Cores\":\"6\",\"Threads\":\"12\"}', '2026-07-13 05:15:38'),
+(1, 2, 7, 'DY470 ATX PC Case', '', 12000.00, 18, '{\"Brand\":\"ASUS\"}', '2026-07-12 19:09:18'),
+(2, 2, 3, 'ROG Z890', '', 134000.00, 10, '{\"Brand\":\"ASUS\"}', '2026-07-12 20:14:38'),
+(3, 1, 1, 'Intel Core i5-12400F', 'Great budget CPU for gaming.', 45000.00, 0, '{\"Socket\":\"LGA1700\",\"Cores\":\"6 Cores\",\"Threads\":\"12 Threads\",\"Base Clock\":\"2.5 GHz\",\"Boost Clock\":\"4.4 GHz\",\"Power Usage (TDP)\":\"65W\",\"Estimated Gaming FPS\":\"135 FPS (Avg 1080p Ultra)\"}', '2026-07-13 05:15:38'),
+(4, 1, 1, 'AMD Ryzen 5 5600X', 'Fast and reliable AMD processor.', 52000.00, 9, '{\"Socket\":\"AM4\",\"Cores\":\"6 Cores\",\"Threads\":\"12 Threads\",\"Base Clock\":\"3.7 GHz\",\"Boost Clock\":\"4.6 GHz\",\"Power Usage (TDP)\":\"65W\",\"Estimated Gaming FPS\":\"142 FPS (Avg 1080p Ultra)\"}', '2026-07-13 05:15:38'),
 (5, 1, 3, 'MSI PRO H610M-G DDR4', 'LGA1700 motherboard for Intel 12th/13th gen.', 25000.00, 4, '{\"Socket\":\"LGA1700\",\"Memory Type\":\"DDR4\",\"Form Factor\":\"mATX\"}', '2026-07-13 05:15:38'),
 (6, 1, 3, 'ASUS Prime B550M-A', 'AM4 motherboard for Ryzen 5000 series.', 28000.00, 8, '{\"Socket\":\"AM4\",\"Memory Type\":\"DDR4\",\"Form Factor\":\"mATX\"}', '2026-07-13 05:15:38'),
 (7, 1, 4, 'Corsair Vengeance LPX 16GB (2x8GB)', 'Fast DDR4 memory.', 15000.00, 20, '{\"Memory Type\":\"DDR4\",\"Speed\":\"3200MHz\",\"Capacity\":\"16GB\"}', '2026-07-13 05:15:38'),
 (8, 1, 4, 'Kingston Fury Beast 16GB', 'Next-gen DDR5 memory.', 22000.00, 12, '{\"Memory Type\":\"DDR5\",\"Speed\":\"5200MHz\",\"Capacity\":\"16GB\"}', '2026-07-13 05:15:38'),
-(9, 1, 2, 'NVIDIA GeForce RTX 3060', 'Great 1080p gaming graphics card.', 110000.00, 4, '{\"VRAM\":\"12GB\",\"Core Clock\":\"1.32GHz\"}', '2026-07-13 05:15:38'),
-(10, 8, 5, 'fromorignl', 'min', 23423.00, 2, '{\"Socket\":\"LGA1700\",\"Cores\":\"6\",\"Threads\":\"12\"}', '2026-08-17 10:28:48'),
+(9, 1, 2, 'NVIDIA GeForce RTX 3060', 'Great 1080p gaming graphics card.', 110000.00, 3, '{\"Brand\":\"NVIDIA \\/ EVGA\",\"VRAM\":\"12GB GDDR6\",\"Boost Clock\":\"1777 MHz\",\"Power Usage (TDP)\":\"170W\",\"Estimated Gaming FPS\":\"85 FPS (1080p Ultra)\",\"Memory Interface\":\"192-bit\",\"Recommended PSU\":\"550W\",\"Ray Tracing\":\"2nd Gen RT Cores\"}', '2026-07-13 05:15:38'),
+(10, 8, 5, 'fromorignl', 'min', 23423.00, 1, '{\"Socket\":\"LGA1700\",\"Cores\":\"6\",\"Threads\":\"12\"}', '2026-08-17 10:28:48'),
 (11, 8, 4, 'formnewSZ', 'RAM within CPU\ncool product huh', 1400.00, 23, '{\"Socket\":\"LGA1700\",\"Cores\":\"6\",\"Threads\":\"12\"}', '2026-08-17 10:39:13'),
-(12, 8, 2, 'GeForce RTX 4090 Vladilena Milize', 'geforce rtx 4090 vladilena milize anime inspired special edition gpu', 500000.00, 8, '{\"GPU\":\"4090\"}', '2026-08-17 17:45:10'),
-(13, 8, 4, 'XPS D50 Long Yao ROG STRIX', 'Asia-exclusive', 40000.00, 3, '{\"Capacity\":\"32GB\",\"gen\":\"DDR4\"}', '2026-08-18 16:11:18');
+(12, 8, 2, 'GeForce RTX 4090 Vladilena Milize', 'geforce rtx 4090 vladilena milize anime inspired special edition gpu', 500000.00, 7, '{\"Brand\":\"NVIDIA \\/ Special Edition\",\"VRAM\":\"24GB GDDR6X\",\"Boost Clock\":\"2520 MHz\",\"Power Usage (TDP)\":\"450W\",\"Estimated Gaming FPS\":\"185 FPS (1080p Ultra) \\/ 140 FPS (4K)\",\"Memory Interface\":\"384-bit\",\"Recommended PSU\":\"850W\",\"Ray Tracing\":\"3rd Gen RT Cores\"}', '2026-08-17 17:45:10'),
+(13, 8, 4, 'XPS D50 Long Yao ROG STRIX', 'Asia-exclusive', 40000.00, 1, '{\"Capacity\":\"32GB\",\"gen\":\"DDR4\"}', '2026-08-18 16:11:18');
 
 CREATE TABLE `product_images` (
   `id` int(11) NOT NULL,
@@ -162,7 +193,9 @@ INSERT INTO `product_images` (`id`, `product_id`, `image_url`) VALUES
 (8, 10, 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&q=80'),
 (9, 11, 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&q=80'),
 (10, 12, 'http://localhost/SpecZone/frontend/src/img/GeForce_RTX_4090_Vladilena_Milize.jpg'),
-(11, 13, 'http://localhost/SpecZone/frontend/src/img/XPS_D50_Long_Yao_ROG_STRIX.webp');
+(11, 13, 'http://localhost/SpecZone/frontend/src/img/XPS_D50_Long_Yao_ROG_STRIX.webp'),
+(12, 2, 'http://localhost/SpecZone/frontend/src/img/ROG_Z890.jpg'),
+(13, 1, 'http://localhost/SpecZone/frontend/src/img/DY470_ATX_PC_Case.jpg');
 
 CREATE TABLE `reviews` (
   `id` int(11) NOT NULL,
@@ -178,7 +211,9 @@ INSERT INTO `reviews` (`id`, `product_id`, `buyer_id`, `rating`, `comment`, `cre
 (2, 2, 1, 5, '2wqe', '2026-07-13 06:07:22'),
 (3, 2, 1, 10, 'adw', '2026-07-13 06:14:17'),
 (4, 3, 5, 10, 'isfake?', '2026-08-14 15:53:51'),
-(5, 13, 5, 10, 'oool', '2026-08-18 16:28:54');
+(5, 13, 5, 10, 'oool', '2026-08-18 16:28:54'),
+(6, 3, 5, 0, 'bad', '2026-08-30 11:20:33'),
+(7, 3, 5, 0, 'fake', '2026-08-30 11:20:56');
 
 CREATE TABLE `sellers_info` (
   `id` int(11) NOT NULL,
@@ -209,13 +244,18 @@ INSERT INTO `users` (`id`, `first_name`, `last_name`, `email`, `password`, `role
 (6, 'erin', 'yogokuro', 'erin@gmail.com', '$2y$10$fR8NCFORvewoI3sVIyp3xO/OOzfvK2d5fjHlsq.2XFMZbM6dOcjWO', 'buyer', '2026-08-13 04:39:58'),
 (7, 'wei', 'helios', 'wei@gmail.com', '$2y$10$j/YO3v4ue4LdzSY5CDjYz.WHnN0BsKAxAMP.dSDz/RhbI6dUsoGdK', 'buyer', '2026-08-15 14:44:31'),
 (8, 'ina', 'nis', 'ina@gmail.com', '$2y$10$dLwbCjkRE7or.ARzspfy5OwiD33Hx4KaXiSgAY2vOKYcwWAEVEyBC', 'seller', '2026-08-15 15:01:11'),
-(9, 'towa', 'takoyami', 'towa@gmail.com', '$2y$10$qQDYaVwbl0obTS4kpWNi8.vS1OlhsJH6ECfmvAMnPj4aI3mTck06K', 'admin', '2026-08-15 15:02:12');
+(9, 'towa', 'takoyami', 'towa@gmail.com', '$2y$10$qQDYaVwbl0obTS4kpWNi8.vS1OlhsJH6ECfmvAMnPj4aI3mTck06K', 'buyer', '2026-08-15 15:02:12');
 
 CREATE TABLE `wishlist` (
   `id` int(11) NOT NULL,
   `buyer_id` int(11) NOT NULL,
   `product_id` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+INSERT INTO `wishlist` (`id`, `buyer_id`, `product_id`) VALUES
+(1, 5, 13),
+(2, 5, 2),
+(3, 5, 4);
 
 
 ALTER TABLE `build_items`
@@ -278,34 +318,34 @@ ALTER TABLE `wishlist`
 
 
 ALTER TABLE `build_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 ALTER TABLE `build_lists`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 ALTER TABLE `cart`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=47;
 
 ALTER TABLE `categories`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 ALTER TABLE `complaints`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 ALTER TABLE `orders`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 
 ALTER TABLE `order_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
 
 ALTER TABLE `products`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 ALTER TABLE `product_images`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 ALTER TABLE `reviews`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 ALTER TABLE `sellers_info`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
@@ -314,7 +354,7 @@ ALTER TABLE `users`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 ALTER TABLE `wishlist`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 
 ALTER TABLE `build_items`

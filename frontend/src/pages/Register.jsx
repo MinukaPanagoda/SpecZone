@@ -11,6 +11,8 @@ const Register = () => {
     role: 'buyer',
     phone: '',
     address: '',
+    city: '',
+    postalCode: '',
     shopName: ''
   });
   
@@ -87,6 +89,8 @@ const Register = () => {
           role: formData.role,
           phone: formData.phone.trim(),
           address: formData.address.trim(),
+          city: formData.city.trim(),
+          postal_code: formData.postalCode.trim(),
           shop_name: formData.role === 'seller' ? (formData.shopName.trim() || `${formData.firstName.trim()}'s PC Store`) : ''
         }),
       });
@@ -95,7 +99,7 @@ const Register = () => {
 
       if (response.ok) {
         setStatus({ type: 'success', message: 'Account created successfully! Redirecting to login...' });
-        setFormData({ firstName: '', lastName: '', email: '', password: '', role: 'buyer', phone: '', address: '', shopName: '' });
+        setFormData({ firstName: '', lastName: '', email: '', password: '', role: 'buyer', phone: '', address: '', city: '', postalCode: '', shopName: '' });
         setTimeout(() => {
           navigate('/login');
         }, 1500);
@@ -392,14 +396,39 @@ const Register = () => {
               />
             </div>
             <div className="form-group">
-              <label className="form-label">{formData.role === 'seller' ? 'Store / Pickup Address' : 'Shipping Address'}</label>
+              <label className="form-label">{formData.role === 'seller' ? 'Store / Pickup Address' : 'Street Address'}</label>
               <input 
                 type="text" 
                 name="address" 
                 className="form-control" 
                 value={formData.address} 
                 onChange={handleChange} 
-                placeholder="e.g. 123 Galle Road, Colombo 03"
+                placeholder="e.g. 123 Galle Road, Bambalapitiya"
+              />
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '0.2rem' }}>
+            <div className="form-group">
+              <label className="form-label">City / Town</label>
+              <input 
+                type="text" 
+                name="city" 
+                className="form-control" 
+                value={formData.city} 
+                onChange={handleChange} 
+                placeholder="e.g. Colombo, Kandy, Galle"
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Postal Code</label>
+              <input 
+                type="text" 
+                name="postalCode" 
+                className="form-control" 
+                value={formData.postalCode} 
+                onChange={handleChange} 
+                placeholder="e.g. 00400"
               />
             </div>
           </div>

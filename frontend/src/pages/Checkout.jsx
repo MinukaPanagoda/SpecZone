@@ -26,18 +26,20 @@ const Checkout = () => {
   const navigate = useNavigate();
 
   const [shipping, setShipping] = useState({
-    fullName: '',
-    address: '',
-    city: '',
-    postalCode: '',
-    phone: ''
+    fullName: user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : '',
+    address: user?.address || '',
+    city: user?.city || '',
+    postalCode: user?.postal_code || user?.postalCode || '',
+    phone: user?.phone || ''
   });
+
+  const [hasAutofilled, setHasAutofilled] = useState(false);
 
   const [paymentMethod, setPaymentMethod] = useState('card'); // 'card' | 'bank_transfer' | 'cod'
 
   // Card Details State
   const [cardDetails, setCardDetails] = useState({
-    cardholderName: '',
+    cardholderName: user ? `${user.first_name || ''} ${user.last_name || ''}`.trim().toUpperCase() : '',
     cardNumber: '',
     expiry: '',
     cvv: ''
@@ -61,18 +63,52 @@ const Checkout = () => {
   useEffect(() => {
     if (!user || user.role !== 'buyer') {
       navigate('/login');
+      return;
     }
     if (cartItems.length === 0 && !success && !showSuccessPopup) {
       navigate('/cart');
+      return;
     }
 
-    // Prefill name if available
-    if (user && !shipping.fullName) {
-      const name = `${user.first_name || ''} ${user.last_name || ''}`.trim();
-      setShipping(prev => ({ ...prev, fullName: name }));
-      if (!cardDetails.cardholderName) {
-        setCardDetails(prev => ({ ...prev, cardholderName: name.toUpperCase() }));
-      }
+    // Prefill from current auth user context
+    const name = `${user.first_name || ''} ${user.last_name || ''}`.trim();
+    setShipping(prev => ({
+      fullName: prev.fullName || name,
+      phone: prev.phone || user.phone || '',
+      address: prev.address || user.address || '',
+      city: prev.city || user.city || '',
+      postalCode: prev.postalCode || user.postal_code || user.postalCode || ''
+    }));
+
+    if (!cardDetails.cardholderName && name) {
+      setCardDetails(prev => ({ ...prev, cardholderName: name.toUpperCase() }));
+    }
+
+    // Fetch freshest profile from database to ensure fresh autofill
+    if (user.id) {
+      fetch(`http://localhost/SpecZone/backend/api/profile.php?action=get_profile&user_id=${user.id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.profile) {
+            const p = data.profile;
+            const pName = `${p.first_name || ''} ${p.last_name || ''}`.trim();
+            setShipping(prev => ({
+              fullName: prev.fullName || pName || name,
+              phone: prev.phone || p.phone || '',
+              address: prev.address || p.address || '',
+              city: prev.city || p.city || '',
+              postalCode: prev.postalCode || p.postal_code || ''
+            }));
+            if (p.phone || p.address || p.city || p.postal_code) {
+              setHasAutofilled(true);
+            }
+            setCardDetails(prev => ({
+              ...prev,
+              cardholderName: prev.cardholderName || (pName || name).toUpperCase()
+            }));
+          }
+        })
+        .catch(err => console.error("Error autofilling checkout profile:", err));
     }
   }, [user, cartItems, navigate, success, showSuccessPopup]);
 
@@ -238,9 +274,14 @@ const Checkout = () => {
 
           {/* Shipping & Payment Form */}
           <div className="glass-panel checkout-shipping">
-            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.8rem' }}>
-              <Truck size={20} color="var(--accent-primary)" /> 1. Shipping Details
-            </h3>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.2rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.8rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+                <Truck size={20} color="var(--accent-primary)" /> 1. Shipping Details
+              </h3>
+              <span style={{ fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', color: 'var(--accent-primary)', background: 'rgba(0, 240, 255, 0.1)', padding: '0.25rem 0.6rem', borderRadius: '4px', border: '1px solid rgba(0, 240, 255, 0.25)' }}>
+                <CheckCircle2 size={13} /> Auto-filled from your profile
+              </span>
+            </div>
 
             <div className="form-group">
               <label className="form-label">Full Name *</label>

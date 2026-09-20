@@ -12,13 +12,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 include_once '../config/db.php';
 
-// Ensure phone and address columns exist in users table
+// Ensure phone, address, city, and postal_code columns exist in users table
 try {
     $conn->exec("ALTER TABLE `users` ADD COLUMN `phone` VARCHAR(20) NULL AFTER `role`");
 } catch (Exception $e) {}
 
 try {
     $conn->exec("ALTER TABLE `users` ADD COLUMN `address` TEXT NULL AFTER `phone`");
+} catch (Exception $e) {}
+
+try {
+    $conn->exec("ALTER TABLE `users` ADD COLUMN `city` VARCHAR(100) NULL AFTER `address`");
+} catch (Exception $e) {}
+
+try {
+    $conn->exec("ALTER TABLE `users` ADD COLUMN `postal_code` VARCHAR(20) NULL AFTER `city`");
 } catch (Exception $e) {}
 
 // Ensure sellers_info table exists
@@ -54,7 +62,7 @@ if ($action === 'get_profile' && $_SERVER['REQUEST_METHOD'] === 'GET') {
 
     try {
         $query = "
-            SELECT u.id, u.first_name, u.last_name, u.email, u.role, u.phone, u.address, u.created_at,
+            SELECT u.id, u.first_name, u.last_name, u.email, u.role, u.phone, u.address, u.city, u.postal_code, u.created_at,
                    s.shop_name, s.warning_count, s.is_verified, s.address as shop_address, s.phone as shop_phone
             FROM users u
             LEFT JOIN sellers_info s ON u.id = s.user_id
@@ -78,6 +86,8 @@ if ($action === 'get_profile' && $_SERVER['REQUEST_METHOD'] === 'GET') {
                     "role" => $row['role'],
                     "phone" => $row['phone'] ?? '',
                     "address" => $row['address'] ?? '',
+                    "city" => $row['city'] ?? '',
+                    "postal_code" => $row['postal_code'] ?? '',
                     "shop_name" => $row['shop_name'] ?? '',
                     "shop_address" => $row['shop_address'] ?? $row['address'] ?? '',
                     "shop_phone" => $row['shop_phone'] ?? $row['phone'] ?? '',
@@ -113,6 +123,8 @@ else if ($action === 'update_profile' && $_SERVER['REQUEST_METHOD'] === 'POST') 
     $last_name = isset($data->last_name) ? trim($data->last_name) : '';
     $phone = isset($data->phone) ? trim($data->phone) : '';
     $address = isset($data->address) ? trim($data->address) : '';
+    $city = isset($data->city) ? trim($data->city) : '';
+    $postal_code = isset($data->postal_code) ? trim($data->postal_code) : (isset($data->postalCode) ? trim($data->postalCode) : '');
     $shop_name = isset($data->shop_name) ? trim($data->shop_name) : '';
 
     // Validate Name (no digits)
@@ -130,17 +142,19 @@ else if ($action === 'update_profile' && $_SERVER['REQUEST_METHOD'] === 'POST') 
 
     try {
         // Update users table
-        $query = "UPDATE users SET first_name = :first_name, last_name = :last_name, phone = :phone, address = :address WHERE id = :id";
+        $query = "UPDATE users SET first_name = :first_name, last_name = :last_name, phone = :phone, address = :address, city = :city, postal_code = :postal_code WHERE id = :id";
         $stmt = $conn->prepare($query);
         $stmt->bindParam(':first_name', $first_name);
         $stmt->bindParam(':last_name', $last_name);
         $stmt->bindParam(':phone', $phone);
         $stmt->bindParam(':address', $address);
+        $stmt->bindParam(':city', $city);
+        $stmt->bindParam(':postal_code', $postal_code);
         $stmt->bindParam(':id', $user_id);
         $stmt->execute();
 
         // If user is seller or shop_name provided, update sellers_info
-        if (!empty($shop_name) || isset($data->role) && $data->role === 'seller') {
+        if (!empty($shop_name) || (isset($data->role) && $data->role === 'seller')) {
             $checkStmt = $conn->prepare("SELECT id FROM sellers_info WHERE user_id = :uid LIMIT 1");
             $checkStmt->bindParam(':uid', $user_id);
             $checkStmt->execute();
@@ -174,6 +188,8 @@ else if ($action === 'update_profile' && $_SERVER['REQUEST_METHOD'] === 'POST') 
                 "last_name" => $last_name,
                 "phone" => $phone,
                 "address" => $address,
+                "city" => $city,
+                "postal_code" => $postal_code,
                 "shop_name" => $shop_name
             ]
         ]);

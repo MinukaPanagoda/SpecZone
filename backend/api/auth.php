@@ -39,6 +39,8 @@ if (isset($_GET['action'])) {
             $password = $data->password;
             $phone = isset($data->phone) ? trim($data->phone) : '';
             $address = isset($data->address) ? trim($data->address) : '';
+            $city = isset($data->city) ? trim($data->city) : '';
+            $postal_code = isset($data->postal_code) ? trim($data->postal_code) : (isset($data->postalCode) ? trim($data->postalCode) : '');
             $shopName = isset($data->shop_name) ? trim($data->shop_name) : '';
 
             // Validate Name (No numbers allowed)
@@ -81,6 +83,8 @@ if (isset($_GET['action'])) {
             $user->password = $password;
             $user->phone = $phone;
             $user->address = $address;
+            $user->city = $city;
+            $user->postal_code = $postal_code;
             $user->shop_name = $shopName;
             $user->role = isset($data->role) ? $data->role : 'buyer'; // default role is buyer
 
@@ -122,6 +126,8 @@ if (isset($_GET['action'])) {
                         "role" => $user->role,
                         "phone" => $user->phone,
                         "address" => $user->address,
+                        "city" => $user->city,
+                        "postal_code" => $user->postal_code,
                         "shop_name" => $user->shop_name
                     )
                 ));

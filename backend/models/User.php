@@ -12,6 +12,8 @@ class User {
     public $role;
     public $phone;
     public $address;
+    public $city;
+    public $postal_code;
     public $shop_name;
 
     public function __construct($db) {
@@ -23,12 +25,18 @@ class User {
         try {
             $this->conn->exec("ALTER TABLE `users` ADD COLUMN `address` TEXT NULL AFTER `phone`");
         } catch(Exception $e) {}
+        try {
+            $this->conn->exec("ALTER TABLE `users` ADD COLUMN `city` VARCHAR(100) NULL AFTER `address`");
+        } catch(Exception $e) {}
+        try {
+            $this->conn->exec("ALTER TABLE `users` ADD COLUMN `postal_code` VARCHAR(20) NULL AFTER `city`");
+        } catch(Exception $e) {}
     }
 
     // Register a new user
     public function register() {
         $query = "INSERT INTO " . $this->table_name . " 
-                  SET first_name=:first_name, last_name=:last_name, email=:email, password=:password, role=:role, phone=:phone, address=:address";
+                  SET first_name=:first_name, last_name=:last_name, email=:email, password=:password, role=:role, phone=:phone, address=:address, city=:city, postal_code=:postal_code";
         
         $stmt = $this->conn->prepare($query);
 
@@ -39,6 +47,8 @@ class User {
         $this->role = htmlspecialchars(strip_tags($this->role));
         $this->phone = htmlspecialchars(strip_tags($this->phone ?? ''));
         $this->address = htmlspecialchars(strip_tags($this->address ?? ''));
+        $this->city = htmlspecialchars(strip_tags($this->city ?? ''));
+        $this->postal_code = htmlspecialchars(strip_tags($this->postal_code ?? ''));
         
         // Hash the password securely
         $password_hash = password_hash($this->password, PASSWORD_BCRYPT);
@@ -51,6 +61,8 @@ class User {
         $stmt->bindParam(":role", $this->role);
         $stmt->bindParam(":phone", $this->phone);
         $stmt->bindParam(":address", $this->address);
+        $stmt->bindParam(":city", $this->city);
+        $stmt->bindParam(":postal_code", $this->postal_code);
 
         if ($stmt->execute()) {
             $this->id = $this->conn->lastInsertId();
@@ -77,7 +89,7 @@ class User {
 
     // Login user
     public function login() {
-        $query = "SELECT u.id, u.first_name, u.last_name, u.email, u.password, u.role, u.phone, u.address, s.shop_name 
+        $query = "SELECT u.id, u.first_name, u.last_name, u.email, u.password, u.role, u.phone, u.address, u.city, u.postal_code, s.shop_name 
                   FROM " . $this->table_name . " u 
                   LEFT JOIN sellers_info s ON u.id = s.user_id 
                   WHERE u.email = ? LIMIT 0,1";
@@ -97,6 +109,8 @@ class User {
                 $this->role = $row['role'];
                 $this->phone = $row['phone'] ?? '';
                 $this->address = $row['address'] ?? '';
+                $this->city = $row['city'] ?? '';
+                $this->postal_code = $row['postal_code'] ?? '';
                 $this->shop_name = $row['shop_name'] ?? '';
                 return true;
             }

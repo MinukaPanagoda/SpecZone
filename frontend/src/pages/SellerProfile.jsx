@@ -19,6 +19,8 @@ const SellerProfile = () => {
     email: user?.email || '',
     phone: user?.phone || '',
     address: user?.address || '',
+    city: user?.city || '',
+    postal_code: user?.postal_code || user?.postalCode || '',
     shop_name: user?.shop_name || '',
     is_verified: false,
     warning_count: 0
@@ -54,6 +56,8 @@ const SellerProfile = () => {
             email: data.profile.email || '',
             phone: data.profile.phone || data.profile.shop_phone || '',
             address: data.profile.address || data.profile.shop_address || '',
+            city: data.profile.city || '',
+            postal_code: data.profile.postal_code || '',
             shop_name: data.profile.shop_name || '',
             is_verified: data.profile.is_verified || false,
             warning_count: data.profile.warning_count || 0
@@ -87,6 +91,8 @@ const SellerProfile = () => {
           last_name: profileData.last_name.trim(),
           phone: profileData.phone.trim(),
           address: profileData.address.trim(),
+          city: profileData.city.trim(),
+          postal_code: profileData.postal_code.trim(),
           shop_name: profileData.shop_name.trim(),
           role: 'seller'
         })
@@ -101,6 +107,8 @@ const SellerProfile = () => {
             last_name: profileData.last_name.trim(),
             phone: profileData.phone.trim(),
             address: profileData.address.trim(),
+            city: profileData.city.trim(),
+            postal_code: profileData.postal_code.trim(),
             shop_name: profileData.shop_name.trim()
           });
         }
@@ -337,34 +345,64 @@ const SellerProfile = () => {
                 />
               </div>
 
-              <div className="form-group">
-                <label className="form-label">
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <Phone size={14} color="var(--accent-primary)" /> Store Contact Phone
-                  </span>
-                </label>
-                <input 
-                  type="tel" 
-                  className="form-control"
-                  value={profileData.phone}
-                  onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
-                  placeholder="e.g. +94 11 234 5678"
-                />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="form-group">
+                  <label className="form-label">
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <Phone size={14} color="var(--accent-primary)" /> Store Contact Phone
+                    </span>
+                  </label>
+                  <input 
+                    type="tel" 
+                    className="form-control"
+                    value={profileData.phone}
+                    onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                    placeholder="e.g. +94 11 234 5678"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <MapPin size={14} color="var(--accent-primary)" /> City / Town
+                    </span>
+                  </label>
+                  <input 
+                    type="text" 
+                    className="form-control"
+                    value={profileData.city}
+                    onChange={(e) => setProfileData({ ...profileData, city: e.target.value })}
+                    placeholder="e.g. Colombo, Kandy"
+                  />
+                </div>
               </div>
 
-              <div className="form-group">
-                <label className="form-label">
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <MapPin size={14} color="var(--accent-primary)" /> Store / Pickup Address
-                  </span>
-                </label>
-                <textarea 
-                  className="form-control"
-                  rows={3}
-                  value={profileData.address}
-                  onChange={(e) => setProfileData({ ...profileData, address: e.target.value })}
-                  placeholder="e.g. No 100, Galle Road, Bambalapitiya, Colombo 04"
-                />
+              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem' }}>
+                <div className="form-group">
+                  <label className="form-label">
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <MapPin size={14} color="var(--accent-primary)" /> Store / Pickup Address
+                    </span>
+                  </label>
+                  <input 
+                    type="text"
+                    className="form-control"
+                    value={profileData.address}
+                    onChange={(e) => setProfileData({ ...profileData, address: e.target.value })}
+                    placeholder="e.g. No 100, Galle Road"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Postal Code</label>
+                  <input 
+                    type="text" 
+                    className="form-control"
+                    value={profileData.postal_code}
+                    onChange={(e) => setProfileData({ ...profileData, postal_code: e.target.value })}
+                    placeholder="e.g. 00400"
+                  />
+                </div>
               </div>
 
               <button 

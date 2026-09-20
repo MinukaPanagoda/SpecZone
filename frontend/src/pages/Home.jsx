@@ -66,7 +66,7 @@ const Home = () => {
         <div className="container">
           <div className="glass-panel" style={{ padding: '2rem 1rem', maxWidth: '800px', margin: '0 auto' }}>
             <h1 style={{ fontSize: '4rem', marginBottom: '1rem', lineHeight: '1.1' }}>
-              Your Vision. <br/><span className="text-gradient">Your Build.</span>
+              Your Vision <br/><span className="text-gradient">Your Build</span>
             </h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: '1.2rem', marginBottom: '2rem', padding: '0 2rem' }}>
               SpecZone is the ultimate marketplace for PC enthusiasts. Discover premium components, compare benchmarks, and build your dream rig today.

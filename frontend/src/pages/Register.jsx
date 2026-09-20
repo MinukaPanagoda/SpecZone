@@ -39,6 +39,35 @@ const Register = () => {
   const handleRegister = async (e) => {
     e.preventDefault();
     setStatus({ type: '', message: '' });
+
+    // Validate Name (No numbers allowed)
+    if (/\d/.test(formData.firstName.trim()) || /\d/.test(formData.lastName.trim())) {
+      setStatus({ type: 'error', message: 'Name cannot contain numbers or digits. Please enter letters only.' });
+      return;
+    }
+
+    // Validate Password Complexity
+    if (formData.password.length < 8) {
+      setStatus({ type: 'error', message: 'Password must be at least 8 characters long.' });
+      return;
+    }
+    if (!/[A-Z]/.test(formData.password)) {
+      setStatus({ type: 'error', message: 'Password must contain at least one capital letter (A-Z).' });
+      return;
+    }
+    if (!/[a-z]/.test(formData.password)) {
+      setStatus({ type: 'error', message: 'Password must contain at least one simple letter (a-z).' });
+      return;
+    }
+    if (!/\d/.test(formData.password)) {
+      setStatus({ type: 'error', message: 'Password must contain at least one number (0-9).' });
+      return;
+    }
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(formData.password)) {
+      setStatus({ type: 'error', message: 'Password must contain at least one special character (e.g. !@#$%^&*).' });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -48,9 +77,9 @@ const Register = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          first_name: formData.firstName,
-          last_name: formData.lastName,
-          email: formData.email,
+          first_name: formData.firstName.trim(),
+          last_name: formData.lastName.trim(),
+          email: formData.email.trim(),
           password: formData.password,
           role: formData.role
         }),
@@ -74,6 +103,13 @@ const Register = () => {
       setIsLoading(false);
     }
   };
+
+  const pwd = formData.password;
+  const hasMinLength = pwd.length >= 8;
+  const hasUppercase = /[A-Z]/.test(pwd);
+  const hasLowercase = /[a-z]/.test(pwd);
+  const hasNumber = /\d/.test(pwd);
+  const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(pwd);
 
   return (
     <div className="container auth-container" style={{ padding: '2rem 0' }}>
@@ -102,11 +138,31 @@ const Register = () => {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div className="form-group">
               <label className="form-label">First Name</label>
-              <input type="text" name="firstName" className="form-control" value={formData.firstName} onChange={handleChange} required />
+              <input 
+                type="text" 
+                name="firstName" 
+                className="form-control" 
+                value={formData.firstName} 
+                onChange={handleChange} 
+                placeholder="e.g. John"
+                pattern="^[^\d]+$"
+                title="First name cannot contain numbers"
+                required 
+              />
             </div>
             <div className="form-group">
               <label className="form-label">Last Name</label>
-              <input type="text" name="lastName" className="form-control" value={formData.lastName} onChange={handleChange} required />
+              <input 
+                type="text" 
+                name="lastName" 
+                className="form-control" 
+                value={formData.lastName} 
+                onChange={handleChange} 
+                placeholder="e.g. Doe"
+                pattern="^[^\d]+$"
+                title="Last name cannot contain numbers"
+                required 
+              />
             </div>
           </div>
           
@@ -117,7 +173,35 @@ const Register = () => {
           
           <div className="form-group">
             <label className="form-label">Password</label>
-            <input type="password" name="password" className="form-control" value={formData.password} onChange={handleChange} required />
+            <input 
+              type="password" 
+              name="password" 
+              className="form-control" 
+              value={formData.password} 
+              onChange={handleChange} 
+              minLength={8}
+              placeholder="e.g. SpecZone@2026"
+              required 
+            />
+            
+            {/* Live Password Strength Checklist */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.4rem', marginTop: '0.6rem', fontSize: '0.78rem' }}>
+              <span style={{ color: hasMinLength ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: hasMinLength ? '600' : 'normal' }}>
+                {hasMinLength ? '✓' : '○'} Min. 8 Chars
+              </span>
+              <span style={{ color: hasUppercase ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: hasUppercase ? '600' : 'normal' }}>
+                {hasUppercase ? '✓' : '○'} Capital (A-Z)
+              </span>
+              <span style={{ color: hasLowercase ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: hasLowercase ? '600' : 'normal' }}>
+                {hasLowercase ? '✓' : '○'} Simple (a-z)
+              </span>
+              <span style={{ color: hasNumber ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: hasNumber ? '600' : 'normal' }}>
+                {hasNumber ? '✓' : '○'} Number (0-9)
+              </span>
+              <span style={{ color: hasSpecial ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: hasSpecial ? '600' : 'normal' }}>
+                {hasSpecial ? '✓' : '○'} Special (!@#$)
+              </span>
+            </div>
           </div>
 
           <div className="form-group">

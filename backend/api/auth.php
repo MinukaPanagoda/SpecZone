@@ -33,10 +33,49 @@ if (isset($_GET['action'])) {
     // -----------------------------------------
     if ($action === 'register') {
         if (!empty($data->first_name) && !empty($data->last_name) && !empty($data->email) && !empty($data->password)) {
-            $user->first_name = $data->first_name;
-            $user->last_name = $data->last_name;
-            $user->email = $data->email;
-            $user->password = $data->password;
+            $firstName = trim($data->first_name);
+            $lastName = trim($data->last_name);
+            $email = trim($data->email);
+            $password = $data->password;
+
+            // Validate Name (No numbers allowed)
+            if (preg_match('/\d/', $firstName) || preg_match('/\d/', $lastName)) {
+                http_response_code(400);
+                echo json_encode(array("status" => "error", "message" => "Name cannot contain numbers or digits. Please enter letters only."));
+                exit();
+            }
+
+            // Validate Password Complexity (Minimum 8 characters, Upper, Lower, Number, Special Char)
+            if (strlen($password) < 8) {
+                http_response_code(400);
+                echo json_encode(array("status" => "error", "message" => "Password must be at least 8 characters long."));
+                exit();
+            }
+            if (!preg_match('/[A-Z]/', $password)) {
+                http_response_code(400);
+                echo json_encode(array("status" => "error", "message" => "Password must contain at least one capital letter (A-Z)."));
+                exit();
+            }
+            if (!preg_match('/[a-z]/', $password)) {
+                http_response_code(400);
+                echo json_encode(array("status" => "error", "message" => "Password must contain at least one simple letter (a-z)."));
+                exit();
+            }
+            if (!preg_match('/\d/', $password)) {
+                http_response_code(400);
+                echo json_encode(array("status" => "error", "message" => "Password must contain at least one number (0-9)."));
+                exit();
+            }
+            if (!preg_match('/[!@#$%^&*()_+\-=\[\]{};\':"\\\\|,.<>\/?~`]/', $password)) {
+                http_response_code(400);
+                echo json_encode(array("status" => "error", "message" => "Password must contain at least one special character (!@#$%^&*)."));
+                exit();
+            }
+
+            $user->first_name = $firstName;
+            $user->last_name = $lastName;
+            $user->email = $email;
+            $user->password = $password;
             $user->role = isset($data->role) ? $data->role : 'buyer'; // default role is buyer
 
             if ($user->emailExists()) {

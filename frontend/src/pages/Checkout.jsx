@@ -12,9 +12,12 @@ import {
   Check, 
   Printer, 
   ShoppingBag, 
-  ArrowRight,
-  PackageCheck,
-  ShieldCheck
+  ArrowRight, 
+  PackageCheck, 
+  ShieldCheck,
+  Lock,
+  Smartphone,
+  AlertCircle
 } from 'lucide-react';
 
 const Checkout = () => {
@@ -30,7 +33,22 @@ const Checkout = () => {
     phone: ''
   });
   
-  const [paymentMethod, setPaymentMethod] = useState('cod'); // 'cod' | 'bank_transfer'
+  const [paymentMethod, setPaymentMethod] = useState('card'); // 'card' | 'bank_transfer' | 'cod'
+  
+  // Card Details State
+  const [cardDetails, setCardDetails] = useState({
+    cardholderName: '',
+    cardNumber: '',
+    expiry: '',
+    cvv: ''
+  });
+  
+  // 3D Secure OTP Modal State
+  const [show3DSModal, setShow3DSModal] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [otpProcessing, setOtpProcessing] = useState(false);
+  const [otpError, setOtpError] = useState('');
+
   const [bankRef, setBankRef] = useState('');
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -50,12 +68,47 @@ const Checkout = () => {
     
     // Prefill name if available
     if (user && !shipping.fullName) {
-      setShipping(prev => ({ ...prev, fullName: `${user.first_name || ''} ${user.last_name || ''}`.trim() }));
+      const name = `${user.first_name || ''} ${user.last_name || ''}`.trim();
+      setShipping(prev => ({ ...prev, fullName: name }));
+      if (!cardDetails.cardholderName) {
+        setCardDetails(prev => ({ ...prev, cardholderName: name.toUpperCase() }));
+      }
     }
   }, [user, cartItems, navigate, success, showSuccessPopup]);
 
   const handleChange = (e) => {
     setShipping({ ...shipping, [e.target.name]: e.target.value });
+  };
+
+  // Format Card Number (XXXX XXXX XXXX XXXX)
+  const handleCardNumberChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, '').slice(0, 16);
+    const formatted = raw.replace(/(\d{4})(?=\d)/g, '$1 ');
+    setCardDetails(prev => ({ ...prev, cardNumber: formatted }));
+  };
+
+  // Format Expiry (MM/YY)
+  const handleExpiryChange = (e) => {
+    let val = e.target.value.replace(/\D/g, '').slice(0, 4);
+    if (val.length >= 2) {
+      val = `${val.slice(0, 2)}/${val.slice(2)}`;
+    }
+    setCardDetails(prev => ({ ...prev, expiry: val }));
+  };
+
+  // Format CVV (3-4 digits)
+  const handleCvvChange = (e) => {
+    const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+    setCardDetails(prev => ({ ...prev, cvv: val }));
+  };
+
+  // Detect Card Brand
+  const getCardBrand = (num) => {
+    const clean = num.replace(/\s/g, '');
+    if (clean.startsWith('4')) return 'Visa';
+    if (/^5[1-5]/.test(clean) || /^2[2-7]/.test(clean)) return 'Mastercard';
+    if (/^3[47]/.test(clean)) return 'American Express';
+    return 'Credit/Debit Card';
   };
 
   const handleCopyAccount = () => {
@@ -64,22 +117,58 @@ const Checkout = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const validateCheckoutForm = () => {
+    if (!shipping.fullName || !shipping.address || !shipping.city || !shipping.phone) {
+      setError('Please fill in all required shipping details.');
+      return false;
+    }
+
+    if (paymentMethod === 'bank_transfer' && !bankRef.trim()) {
+      setError('Please enter your Bank Transfer Reference / Transaction ID before submitting.');
+      return false;
+    }
+
+    if (paymentMethod === 'card') {
+      const cleanNum = cardDetails.cardNumber.replace(/\s/g, '');
+      if (cleanNum.length < 16) {
+        setError('Please enter a valid 16-digit card number.');
+        return false;
+      }
+      if (!cardDetails.cardholderName.trim()) {
+        setError('Cardholder name is required.');
+        return false;
+      }
+      if (!cardDetails.expiry || cardDetails.expiry.length < 5) {
+        setError('Please enter a valid expiration date (MM/YY).');
+        return false;
+      }
+      if (!cardDetails.cvv || cardDetails.cvv.length < 3) {
+        setError('Please enter a valid 3 or 4-digit CVV / CVC code.');
+        return false;
+      }
+    }
+
+    return true;
+  };
+
   const handlePlaceOrder = async (e) => {
     if (e && e.preventDefault) {
       e.preventDefault();
     }
     setError('');
 
-    if (!shipping.fullName || !shipping.address || !shipping.city || !shipping.phone) {
-      setError('Please fill in all required shipping details.');
+    if (!validateCheckoutForm()) return;
+
+    // If online card payment, open 3D Secure modal first
+    if (paymentMethod === 'card') {
+      setShow3DSModal(true);
       return;
     }
 
-    if (paymentMethod === 'bank_transfer' && !bankRef.trim()) {
-      setError('Please enter your Bank Transfer Reference / Transaction ID before submitting.');
-      return;
-    }
+    await executeOrderSubmission();
+  };
 
+  const executeOrderSubmission = async (paymentRefData = null) => {
     setLoading(true);
 
     try {
@@ -89,7 +178,7 @@ const Checkout = () => {
         body: JSON.stringify({ 
           buyer_id: user.id, 
           payment_method: paymentMethod,
-          payment_ref: bankRef,
+          payment_ref: paymentRefData || bankRef || (paymentMethod === 'card' ? `CARD-${cardDetails.cardNumber.slice(-4)}-3DS` : 'COD'),
           shipping_details: shipping 
         })
       });
@@ -114,207 +203,26 @@ const Checkout = () => {
     }
   };
 
-  // SUCCESS / FINISHING RECEIPT VIEW
-  if (success && orderSnapshot) {
-    return (
-      <div className="container" style={{ padding: '3rem 1rem', maxWidth: '750px', margin: '0 auto' }}>
-        <div className="glass-panel" style={{ padding: '2.5rem', borderRadius: '12px', border: '1px solid rgba(0, 240, 255, 0.25)', position: 'relative' }}>
-          
-          {/* Header */}
-          <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-            <div style={{
-              width: '70px',
-              height: '70px',
-              borderRadius: '50%',
-              background: 'rgba(0, 255, 150, 0.15)',
-              border: '2px solid var(--success)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 1.2rem',
-              color: 'var(--success)'
-            }}>
-              <CheckCircle2 size={40} />
-            </div>
-            <h1 style={{ fontSize: '2.2rem', margin: '0 0 0.5rem 0' }}>Order Confirmed!</h1>
-            <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: '1rem' }}>
-              Thank you, <strong>{orderSnapshot.shipping.fullName}</strong>. Your hardware order has been successfully placed.
-            </p>
-          </div>
+  // 3D Secure OTP verification handler
+  const handleVerify3DS = async (e) => {
+    e.preventDefault();
+    setOtpError('');
 
-          {/* Order Meta Bar */}
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            background: 'rgba(0, 0, 0, 0.4)',
-            padding: '1rem 1.5rem',
-            borderRadius: '8px',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            marginBottom: '2rem',
-            flexWrap: 'wrap',
-            gap: '0.8rem'
-          }}>
-            <div>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block' }}>Order Reference</span>
-              <strong style={{ fontSize: '1.1rem', color: 'var(--accent-primary)' }}>#ORD-{orderSnapshot.orderId}</strong>
-            </div>
-            <div>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block' }}>Placed Date</span>
-              <span style={{ fontSize: '0.95rem' }}>{orderSnapshot.date}</span>
-            </div>
-            <div>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'block' }}>Status</span>
-              <span style={{
-                background: 'rgba(0, 255, 150, 0.15)',
-                color: 'var(--success)',
-                padding: '0.2rem 0.6rem',
-                borderRadius: '4px',
-                fontSize: '0.8rem',
-                fontWeight: 'bold',
-                textTransform: 'uppercase'
-              }}>
-                Confirmed
-              </span>
-            </div>
-          </div>
+    if (!otpCode || otpCode.length < 4) {
+      setOtpError('Please enter the 6-digit OTP code sent to your registered mobile device.');
+      return;
+    }
 
-          {/* Delivery Timeline Tracker */}
-          <div style={{ marginBottom: '2rem', background: 'rgba(255, 255, 255, 0.03)', padding: '1.2rem', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
-            <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <PackageCheck size={18} color="var(--accent-primary)" /> Fulfillment & Delivery Progress
-            </h4>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.8rem', textAlign: 'center' }}>
-              <div style={{ background: 'rgba(0, 240, 255, 0.1)', padding: '0.7rem', borderRadius: '6px', border: '1px solid var(--accent-primary)' }}>
-                <span style={{ color: 'var(--accent-primary)', fontWeight: 'bold', fontSize: '0.85rem' }}>1. Order Placed ✓</span>
-              </div>
-              <div style={{ background: 'rgba(0, 240, 255, 0.1)', padding: '0.7rem', borderRadius: '6px', border: '1px solid var(--accent-primary)' }}>
-                <span style={{ color: 'var(--accent-primary)', fontWeight: 'bold', fontSize: '0.85rem' }}>2. Payment Logged ✓</span>
-              </div>
-              <div style={{ background: 'rgba(255, 255, 255, 0.05)', padding: '0.7rem', borderRadius: '6px' }}>
-                <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>3. Seller Packing</span>
-              </div>
-              <div style={{ background: 'rgba(255, 255, 255, 0.05)', padding: '0.7rem', borderRadius: '6px' }}>
-                <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>4. Out for Delivery</span>
-              </div>
-            </div>
-          </div>
+    setOtpProcessing(true);
 
-          {/* Payment Method Notice Card */}
-          <div style={{
-            background: orderSnapshot.paymentMethod === 'bank_transfer' ? 'rgba(0, 240, 255, 0.08)' : 'rgba(0, 255, 150, 0.08)',
-            border: `1px solid ${orderSnapshot.paymentMethod === 'bank_transfer' ? 'var(--accent-primary)' : 'var(--success)'}`,
-            padding: '1.2rem',
-            borderRadius: '8px',
-            marginBottom: '2rem'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.4rem' }}>
-              {orderSnapshot.paymentMethod === 'bank_transfer' ? (
-                <>
-                  <Building2 size={20} color="var(--accent-primary)" />
-                  <strong style={{ color: 'var(--accent-primary)', fontSize: '1.05rem' }}>
-                    Payment Method: Direct Bank Transfer
-                  </strong>
-                </>
-              ) : (
-                <>
-                  <DollarSign size={20} color="var(--success)" />
-                  <strong style={{ color: 'var(--success)', fontSize: '1.05rem' }}>
-                    Payment Method: Cash on Delivery (COD)
-                  </strong>
-                </>
-              )}
-            </div>
+    // Simulate authentic 3D Secure Gateway verification latency
+    setTimeout(async () => {
+      setOtpProcessing(false);
+      setShow3DSModal(false);
+      await executeOrderSubmission(`CARD-${cardDetails.cardNumber.slice(-4)}-AUTH-${Math.floor(100000 + Math.random() * 900000)}`);
+    }, 1200);
+  };
 
-            <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
-              {orderSnapshot.paymentMethod === 'bank_transfer' ? (
-                <>
-                  Transaction Reference <strong>"{orderSnapshot.bankRef}"</strong> has been recorded. Our billing team is verifying with Commercial Bank and scheduling your order for dispatch.
-                </>
-              ) : (
-                <>
-                  Please keep exact cash of <strong>Rs. {orderSnapshot.total.toLocaleString('en-IN')}</strong> ready for courier handover when items arrive at your address in <strong>{orderSnapshot.shipping.city}</strong>.
-                </>
-              )}
-            </p>
-          </div>
-
-          {/* Items Summary Table */}
-          <div style={{ marginBottom: '2rem' }}>
-            <h4 style={{ margin: '0 0 1rem 0', fontSize: '1.1rem', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '0.5rem' }}>
-              Purchased Components ({orderSnapshot.items.length})
-            </h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-              {orderSnapshot.items.map((item, idx) => (
-                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', flex: 1, paddingRight: '1rem' }}>
-                    {item.image_url && (
-                      <img src={item.image_url} alt={item.title} style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px', background: 'rgba(0,0,0,0.3)' }} />
-                    )}
-                    <div>
-                      <span style={{ fontWeight: '500' }}>{item.title}</span>
-                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', display: 'block' }}>Qty: {item.quantity}</span>
-                    </div>
-                  </div>
-                  <div style={{ fontWeight: 'bold' }}>
-                    Rs. {(parseFloat(item.price) * item.quantity).toLocaleString('en-IN')}
-                  </div>
-                </div>
-              ))}
-
-              <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: '0.8rem', marginTop: '0.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                  <span>Subtotal</span>
-                  <span>Rs. {orderSnapshot.total.toLocaleString('en-IN')}</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.6rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                  <span>Shipping Delivery Fee</span>
-                  <span style={{ color: 'var(--success)' }}>FREE</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.25rem', fontWeight: 'bold', color: 'var(--accent-primary)' }}>
-                  <span>Grand Total</span>
-                  <span>Rs. {orderSnapshot.total.toLocaleString('en-IN')}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Delivery Address Details */}
-          <div style={{ background: 'rgba(0, 0, 0, 0.3)', padding: '1.2rem', borderRadius: '8px', marginBottom: '2rem', fontSize: '0.9rem' }}>
-            <h5 style={{ margin: '0 0 0.6rem 0', color: 'var(--text-secondary)', textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '0.5px' }}>
-              Delivery Destination
-            </h5>
-            <p style={{ margin: '0 0 0.3rem 0', fontWeight: 'bold', fontSize: '1rem' }}>{orderSnapshot.shipping.fullName}</p>
-            <p style={{ margin: '0 0 0.3rem 0', color: 'var(--text-secondary)' }}>{orderSnapshot.shipping.address}, {orderSnapshot.shipping.city} ({orderSnapshot.shipping.postalCode})</p>
-            <p style={{ margin: 0, color: 'var(--text-secondary)' }}>Phone: {orderSnapshot.shipping.phone}</p>
-          </div>
-
-          {/* Actions */}
-          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              className="btn btn-outline"
-              style={{ flex: 1, minWidth: '160px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
-              onClick={() => window.print()}
-            >
-              <Printer size={18} /> Print Receipt
-            </button>
-            <button
-              type="button"
-              className="btn btn-primary"
-              style={{ flex: 1.5, minWidth: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
-              onClick={() => navigate('/buyer/dashboard')}
-            >
-              <ShoppingBag size={18} /> View in My Dashboard
-            </button>
-          </div>
-
-        </div>
-      </div>
-    );
-  }
-
-  // CHECKOUT FORM VIEW
   return (
     <div className="container" style={{ padding: '2rem 1rem' }}>
       <h2 style={{ marginBottom: '2rem', fontSize: '2rem' }}>Checkout & Payment</h2>
@@ -405,7 +313,7 @@ const Checkout = () => {
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
               
-              {/* Option 1: Cash on Delivery */}
+              {/* Option 1: Credit / Debit Card (Online Payment Gateway) */}
               <label 
                 style={{ 
                   display: 'flex', 
@@ -413,37 +321,133 @@ const Checkout = () => {
                   gap: '0.9rem', 
                   padding: '1.2rem', 
                   borderRadius: '8px', 
-                  border: `1px solid ${paymentMethod === 'cod' ? 'var(--accent-primary)' : 'var(--border-color)'}`,
-                  background: paymentMethod === 'cod' ? 'rgba(0, 240, 255, 0.07)' : 'rgba(0,0,0,0.2)',
+                  border: `1px solid ${paymentMethod === 'card' ? 'var(--accent-primary)' : 'var(--border-color)'}`,
+                  background: paymentMethod === 'card' ? 'rgba(0, 240, 255, 0.07)' : 'rgba(0,0,0,0.2)',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
-                  boxShadow: paymentMethod === 'cod' ? '0 0 15px rgba(0, 240, 255, 0.1)' : 'none'
+                  boxShadow: paymentMethod === 'card' ? '0 0 15px rgba(0, 240, 255, 0.1)' : 'none'
                 }}
               >
                 <input 
                   type="radio" 
                   name="payment" 
-                  value="cod"
-                  checked={paymentMethod === 'cod'} 
-                  onChange={() => setPaymentMethod('cod')}
+                  value="card"
+                  checked={paymentMethod === 'card'} 
+                  onChange={() => setPaymentMethod('card')}
                   style={{ marginTop: '0.3rem', accentColor: 'var(--accent-primary)' }} 
                 />
                 <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.3rem', flexWrap: 'wrap', gap: '0.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 'bold', fontSize: '1.05rem' }}>
-                      <DollarSign size={18} color="var(--accent-primary)" /> Cash on Delivery (COD)
+                      <CreditCard size={18} color="var(--accent-primary)" /> Credit / Debit Card (Online Gateway)
                     </div>
-                    {paymentMethod === 'cod' && (
-                      <span style={{ fontSize: '0.75rem', background: 'rgba(0, 255, 150, 0.15)', color: 'var(--success)', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: 'bold' }}>
-                        Selected
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <span style={{ fontSize: '0.7rem', background: 'rgba(255, 255, 255, 0.1)', color: '#fff', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: 'bold' }}>
+                        VISA
                       </span>
-                    )}
+                      <span style={{ fontSize: '0.7rem', background: 'rgba(255, 255, 255, 0.1)', color: '#fff', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: 'bold' }}>
+                        Mastercard
+                      </span>
+                      {paymentMethod === 'card' && (
+                        <span style={{ fontSize: '0.75rem', background: 'rgba(0, 240, 255, 0.15)', color: 'var(--accent-primary)', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: 'bold', marginLeft: '0.3rem' }}>
+                          Selected
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-                    Pay in cash directly to the courier upon physical delivery at your doorstep.
+                    Instant & secure encrypted 256-bit checkout with 3D Secure / OTP authorization.
                   </p>
                 </div>
               </label>
+
+              {/* Card Details Form (When Card selected) */}
+              {paymentMethod === 'card' && (
+                <div className="glass-panel" style={{ padding: '1.5rem', marginTop: '-0.5rem', marginBottom: '0.5rem', border: '1px solid rgba(0, 240, 255, 0.3)', background: 'rgba(0, 0, 0, 0.45)', borderRadius: '8px' }}>
+                  
+                  {/* Visual Card Preview Badge */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-primary)', fontSize: '0.9rem', fontWeight: 'bold' }}>
+                      <Lock size={15} /> 256-Bit SSL Encrypted Card Gateway
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
+                      Detected: <span style={{ color: '#fff' }}>{getCardBrand(cardDetails.cardNumber)}</span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
+                        Cardholder Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="NAME AS PRINTED ON CARD"
+                        value={cardDetails.cardholderName}
+                        onChange={(e) => setCardDetails({ ...cardDetails, cardholderName: e.target.value.toUpperCase() })}
+                        className="form-control"
+                        style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
+                        16-Digit Card Number *
+                      </label>
+                      <div style={{ position: 'relative' }}>
+                        <input
+                          type="text"
+                          required
+                          placeholder="4111 2222 3333 4444"
+                          value={cardDetails.cardNumber}
+                          onChange={handleCardNumberChange}
+                          className="form-control"
+                          style={{ fontFamily: 'monospace', fontSize: '1rem', letterSpacing: '1px' }}
+                        />
+                        <CreditCard size={18} style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--accent-primary)', opacity: 0.8 }} />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
+                          Expiration Date *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="MM/YY"
+                          value={cardDetails.expiry}
+                          onChange={handleExpiryChange}
+                          className="form-control"
+                          style={{ fontFamily: 'monospace', textAlign: 'center' }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
+                          CVV / CVC *
+                        </label>
+                        <input
+                          type="password"
+                          required
+                          placeholder="•••"
+                          maxLength="4"
+                          value={cardDetails.cvv}
+                          onChange={handleCvvChange}
+                          className="form-control"
+                          style={{ fontFamily: 'monospace', textAlign: 'center', letterSpacing: '2px' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
+                      <ShieldCheck size={14} color="var(--success)" /> Verified by Visa & Mastercard Identity Check 3DS 2.0
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Option 2: Direct Bank Transfer */}
               <label 
@@ -485,60 +489,100 @@ const Checkout = () => {
                 </div>
               </label>
 
+              {/* Bank Transfer Sub-panel */}
+              {paymentMethod === 'bank_transfer' && (
+                <div className="glass-panel" style={{ padding: '1.3rem', marginTop: '-0.5rem', marginBottom: '0.5rem', border: '1px solid rgba(0, 240, 255, 0.3)', background: 'rgba(0, 0, 0, 0.45)', borderRadius: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <h4 style={{ margin: 0, fontSize: '0.95rem', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <Building2 size={16} /> Official SpecZone Bank Account
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={handleCopyAccount}
+                      className="btn btn-outline"
+                      style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                    >
+                      {copied ? <Check size={12} color="var(--success)" /> : <Copy size={12} />}
+                      {copied ? 'Copied Acc No!' : 'Copy Account'}
+                    </button>
+                  </div>
+
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.6rem', marginBottom: '1.2rem', background: 'rgba(255,255,255,0.03)', padding: '0.8rem', borderRadius: '6px' }}>
+                    <div><strong>Bank:</strong> Commercial Bank of Ceylon</div>
+                    <div><strong>Branch:</strong> Colombo Super Branch</div>
+                    <div><strong>Account Name:</strong> SpecZone Technologies</div>
+                    <div><strong>Account No:</strong> <span style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>8009 2341 5567 01</span></div>
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>
+                      Bank Transfer Reference / Transaction ID <span style={{ color: 'var(--danger)' }}>*</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="e.g. TXN-984210 or Deposit Slip Number"
+                      value={bankRef}
+                      onChange={(e) => setBankRef(e.target.value)}
+                      style={{
+                        borderColor: bankRef.trim() ? 'var(--success)' : undefined,
+                        boxShadow: bankRef.trim() ? '0 0 10px rgba(0, 255, 150, 0.15)' : undefined
+                      }}
+                    />
+                    {bankRef.trim() ? (
+                      <small style={{ color: 'var(--success)', fontSize: '0.8rem', marginTop: '0.3rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        <Check size={14} /> Reference attached: {bankRef.trim()}
+                      </small>
+                    ) : (
+                      <small style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '0.3rem', display: 'block' }}>
+                        Enter the reference code from your online bank transfer or bank deposit slip.
+                      </small>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Option 3: Cash on Delivery */}
+              <label 
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'flex-start', 
+                  gap: '0.9rem', 
+                  padding: '1.2rem', 
+                  borderRadius: '8px', 
+                  border: `1px solid ${paymentMethod === 'cod' ? 'var(--accent-primary)' : 'var(--border-color)'}`,
+                  background: paymentMethod === 'cod' ? 'rgba(0, 240, 255, 0.07)' : 'rgba(0,0,0,0.2)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  boxShadow: paymentMethod === 'cod' ? '0 0 15px rgba(0, 240, 255, 0.1)' : 'none'
+                }}
+              >
+                <input 
+                  type="radio" 
+                  name="payment" 
+                  value="cod"
+                  checked={paymentMethod === 'cod'} 
+                  onChange={() => setPaymentMethod('cod')}
+                  style={{ marginTop: '0.3rem', accentColor: 'var(--accent-primary)' }} 
+                />
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 'bold', fontSize: '1.05rem' }}>
+                      <DollarSign size={18} color="var(--accent-primary)" /> Cash on Delivery (COD)
+                    </div>
+                    {paymentMethod === 'cod' && (
+                      <span style={{ fontSize: '0.75rem', background: 'rgba(0, 255, 150, 0.15)', color: 'var(--success)', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: 'bold' }}>
+                        Selected
+                      </span>
+                    )}
+                  </div>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                    Pay in cash directly to the courier upon physical delivery at your doorstep.
+                  </p>
+                </div>
+              </label>
+
             </div>
-
-            {/* Bank Transfer Sub-panel */}
-            {paymentMethod === 'bank_transfer' && (
-              <div className="glass-panel" style={{ padding: '1.3rem', marginBottom: '1.5rem', border: '1px solid rgba(0, 240, 255, 0.3)', background: 'rgba(0, 0, 0, 0.45)', borderRadius: '8px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <h4 style={{ margin: 0, fontSize: '0.95rem', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Building2 size={16} /> Official SpecZone Bank Account
-                  </h4>
-                  <button
-                    type="button"
-                    onClick={handleCopyAccount}
-                    className="btn btn-outline"
-                    style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
-                  >
-                    {copied ? <Check size={12} color="var(--success)" /> : <Copy size={12} />}
-                    {copied ? 'Copied Acc No!' : 'Copy Account'}
-                  </button>
-                </div>
-
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.6rem', marginBottom: '1.2rem', background: 'rgba(255,255,255,0.03)', padding: '0.8rem', borderRadius: '6px' }}>
-                  <div><strong>Bank:</strong> Commercial Bank of Ceylon</div>
-                  <div><strong>Branch:</strong> Colombo Super Branch</div>
-                  <div><strong>Account Name:</strong> SpecZone Technologies</div>
-                  <div><strong>Account No:</strong> <span style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>8009 2341 5567 01</span></div>
-                </div>
-
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>
-                    Bank Transfer Reference / Transaction ID <span style={{ color: 'var(--danger)' }}>*</span>
-                  </label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="e.g. TXN-984210 or Deposit Slip Number"
-                    value={bankRef}
-                    onChange={(e) => setBankRef(e.target.value)}
-                    style={{
-                      borderColor: bankRef.trim() ? 'var(--success)' : undefined,
-                      boxShadow: bankRef.trim() ? '0 0 10px rgba(0, 255, 150, 0.15)' : undefined
-                    }}
-                  />
-                  {bankRef.trim() ? (
-                    <small style={{ color: 'var(--success)', fontSize: '0.8rem', marginTop: '0.3rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                      <Check size={14} /> Reference attached: {bankRef.trim()}
-                    </small>
-                  ) : (
-                    <small style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '0.3rem', display: 'block' }}>
-                      Enter the reference code from your online bank transfer or bank deposit slip.
-                    </small>
-                  )}
-                </div>
-              </div>
-            )}
 
           </div>
 
@@ -571,9 +615,9 @@ const Checkout = () => {
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.85rem', borderTop: '1px dashed rgba(255,255,255,0.08)', paddingTop: '0.8rem' }}>
-                <span>Payment Type</span>
+                <span>Payment Method</span>
                 <span style={{ color: 'var(--text-primary)', fontWeight: 'bold' }}>
-                  {paymentMethod === 'bank_transfer' ? 'Bank Transfer' : 'Cash on Delivery'}
+                  {paymentMethod === 'card' ? 'Online Card (3DS Secure)' : paymentMethod === 'bank_transfer' ? 'Bank Transfer' : 'Cash on Delivery'}
                 </span>
               </div>
               
@@ -590,6 +634,8 @@ const Checkout = () => {
               >
                 {loading ? (
                   'Processing Order...'
+                ) : paymentMethod === 'card' ? (
+                  <>Pay Rs. {getCartTotal().toLocaleString('en-IN')} Now <ArrowRight size={18} /></>
                 ) : paymentMethod === 'bank_transfer' ? (
                   <>Confirm & Submit Bank Order <ArrowRight size={18} /></>
                 ) : (
@@ -605,6 +651,149 @@ const Checkout = () => {
 
         </div>
       </form>
+
+      {/* 3D Secure / Verified by Visa Simulator Modal */}
+      {show3DSModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            backdropFilter: 'blur(10px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2500,
+            padding: '1.2rem',
+            animation: 'fadeIn 0.2s ease-out'
+          }}
+        >
+          <div
+            className="glass-panel"
+            style={{
+              width: '100%',
+              maxWidth: '460px',
+              padding: '2rem',
+              borderRadius: '16px',
+              border: '1px solid rgba(0, 240, 255, 0.4)',
+              boxShadow: '0 0 40px rgba(0, 240, 255, 0.25)',
+              background: 'linear-gradient(145deg, rgba(16, 20, 32, 0.98), rgba(8, 12, 20, 0.98))',
+              position: 'relative',
+              animation: 'popupScaleIn 0.25s ease-out'
+            }}
+          >
+            {/* Modal Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <ShieldCheck size={24} color="var(--accent-primary)" />
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '1.1rem', color: '#fff' }}>3D Secure Authentication</h4>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Verified by Visa / Mastercard ID Check</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShow3DSModal(false)}
+                style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '0.2rem' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Merchant & Transaction Summary */}
+            <div style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.85rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Merchant:</span>
+                <strong style={{ color: 'var(--text-primary)' }}>SpecZone PC Store</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Card Number:</span>
+                <span style={{ fontFamily: 'monospace', color: 'var(--text-primary)' }}>•••• •••• •••• {cardDetails.cardNumber.slice(-4)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Amount to Charge:</span>
+                <strong style={{ color: 'var(--accent-primary)', fontSize: '1rem' }}>Rs. {getCartTotal().toLocaleString('en-IN')}</strong>
+              </div>
+            </div>
+
+            <form onSubmit={handleVerify3DS}>
+              <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                <Smartphone size={32} color="var(--accent-primary)" style={{ margin: '0 auto 0.75rem' }} />
+                <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                  A one-time passcode (OTP) has been sent to your registered mobile number <strong>(•••••••{shipping.phone ? shipping.phone.slice(-4) : '4567'})</strong>.
+                </p>
+                <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                  For testing, enter code <strong>123456</strong> or click Autofill below.
+                </p>
+              </div>
+
+              {otpError && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--danger)', fontSize: '0.85rem', marginBottom: '1rem', background: 'rgba(239, 68, 68, 0.1)', padding: '0.6rem', borderRadius: '6px' }}>
+                  <AlertCircle size={16} /> {otpError}
+                </div>
+              )}
+
+              <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                <input
+                  type="text"
+                  maxLength="6"
+                  required
+                  placeholder="Enter 6-Digit OTP (123456)"
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                  className="form-control"
+                  style={{
+                    textAlign: 'center',
+                    fontSize: '1.3rem',
+                    letterSpacing: '6px',
+                    fontFamily: 'monospace',
+                    fontWeight: 'bold',
+                    padding: '0.75rem'
+                  }}
+                  autoFocus
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setOtpCode('123456')}
+                  style={{
+                    background: 'rgba(0, 240, 255, 0.1)',
+                    border: '1px dashed var(--accent-primary)',
+                    color: 'var(--accent-primary)',
+                    padding: '0.35rem 0.8rem',
+                    borderRadius: '4px',
+                    fontSize: '0.8rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  ⚡ Autofill Demo OTP (123456)
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  style={{ flex: 1, padding: '0.8rem' }}
+                  onClick={() => setShow3DSModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={otpProcessing}
+                  className="btn btn-primary"
+                  style={{ flex: 2, padding: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                >
+                  {otpProcessing ? 'Authorizing Payment...' : 'Authorize & Pay'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Small React Order Success Popup */}
       {showSuccessPopup && (
@@ -677,7 +866,7 @@ const Checkout = () => {
             )}
 
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.92rem', lineHeight: '1.5', margin: '0 0 1.2rem 0' }}>
-              Redirecting to your Orders dashboard...
+              Payment confirmed via <strong>{paymentMethod === 'card' ? 'Online Card 3D Secure' : paymentMethod === 'bank_transfer' ? 'Bank Transfer' : 'Cash on Delivery'}</strong>. Redirecting to your Orders dashboard...
             </p>
 
             {/* Smooth Progress Bar */}

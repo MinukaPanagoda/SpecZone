@@ -23,6 +23,7 @@ const Shop = () => {
 
   // Filter state
   const [selectedCategories, setSelectedCategories] = useState([]);
+  const [selectedBrands, setSelectedBrands] = useState([]);
   const [selectedPriceRange, setSelectedPriceRange] = useState(null);
   const [selectedUseCase, setSelectedUseCase] = useState(null);
 
@@ -149,15 +150,28 @@ const Shop = () => {
     );
   };
 
+  const handleBrandChange = (brandName, checked) => {
+    setSelectedBrands(prev =>
+      checked ? [...prev, brandName] : prev.filter(b => b !== brandName)
+    );
+  };
+
   const handlePriceRangeChange = (range) => {
     setSelectedPriceRange(range);
   };
 
   const handleClearFilters = () => {
     setSelectedCategories([]);
+    setSelectedBrands([]);
     setSelectedPriceRange(null);
     setSelectedUseCase(null);
     setSearchQuery('');
+  };
+
+  const matchesBrand = (product, brands) => {
+    if (!brands || brands.length === 0) return true;
+    const text = `${product.title || ''} ${product.description || ''} ${JSON.stringify(product.specs || {})}`.toLowerCase();
+    return brands.some(b => text.includes(b.toLowerCase()));
   };
 
   const matchesUseCase = (product, useCase) => {
@@ -224,12 +238,13 @@ const Shop = () => {
       const categoryMatch = selectedCategories.length === 0 || selectedCategories.includes(product.category_id);
       const priceMatch = selectedPriceRange === null || matchesPriceRange(product.price, selectedPriceRange);
       const useCaseMatch = selectedUseCase === null || matchesUseCase(product, selectedUseCase);
+      const brandMatch = selectedBrands.length === 0 || matchesBrand(product, selectedBrands);
       const query = searchQuery.trim().toLowerCase();
       const searchMatch = !query || 
         product.title?.toLowerCase().includes(query) ||
         product.description?.toLowerCase().includes(query) ||
         product.category_name?.toLowerCase().includes(query);
-      return categoryMatch && priceMatch && useCaseMatch && searchMatch;
+      return categoryMatch && priceMatch && useCaseMatch && brandMatch && searchMatch;
     })
     .sort((a, b) => {
       if (selectedSort === 'Price: Low to High' || selectedSort === 'Low to High') {
@@ -313,6 +328,24 @@ const Shop = () => {
                 {cat.name}
               </label>
             ))}
+          </div>
+
+          <div className="filter-group">
+            <h4>Brand</h4>
+            <div style={{ maxHeight: '180px', overflowY: 'auto', paddingRight: '0.4rem' }}>
+              {['ASUS', 'MSI', 'Gigabyte', 'Corsair', 'Kingston', 'Intel', 'AMD', 'NVIDIA', 'Samsung', 'Crucial', 'DeepCool'].map(brand => (
+                <label key={brand} className="filter-label">
+                  <input
+                    type="checkbox"
+                    value={brand}
+                    className="speczone-control"
+                    checked={selectedBrands.includes(brand)}
+                    onChange={(e) => handleBrandChange(brand, e.target.checked)}
+                  />
+                  {brand}
+                </label>
+              ))}
+            </div>
           </div>
 
           <div className="filter-group">

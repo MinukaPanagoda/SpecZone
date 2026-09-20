@@ -59,7 +59,130 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             http_response_code(400);
             echo json_encode(array("message" => "Missing user_id."));
         }
-    } else {
+    } 
+    else if ($action === 'delete_product') {
+        if (!empty($data->product_id)) {
+            $query = "DELETE FROM products WHERE id = :id";
+            $stmt = $conn->prepare($query);
+            $stmt->bindParam(':id', $data->product_id);
+            if ($stmt->execute()) {
+                http_response_code(200);
+                echo json_encode(array("message" => "Product removed successfully."));
+            } else {
+                http_response_code(503);
+                echo json_encode(array("message" => "Unable to remove product."));
+            }
+        } else {
+            http_response_code(400);
+            echo json_encode(array("message" => "Missing product_id."));
+        }
+    }
+    else if ($action === 'toggle_seller_verify') {
+        if (!empty($data->seller_id)) {
+            // Check if seller_info exists
+            $checkQuery = "SELECT id, is_verified FROM sellers_info WHERE user_id = :uid LIMIT 1";
+            $stmt = $conn->prepare($checkQuery);
+            $stmt->bindParam(':uid', $data->seller_id);
+            $stmt->execute();
+            $sellerInfo = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($sellerInfo) {
+                $newStatus = $sellerInfo['is_verified'] ? 0 : 1;
+                $updateQuery = "UPDATE sellers_info SET is_verified = :v WHERE id = :id";
+                $upStmt = $conn->prepare($updateQuery);
+                $upStmt->bindParam(':v', $newStatus);
+                $upStmt->bindParam(':id', $sellerInfo['id']);
+                $upStmt->execute();
+            } else {
+                $newStatus = 1;
+                $insertQuery = "INSERT INTO sellers_info (user_id, shop_name, is_verified) VALUES (:uid, 'Verified Merchant', 1)";
+                $inStmt = $conn->prepare($insertQuery);
+                $inStmt->bindParam(':uid', $data->seller_id);
+                $inStmt->execute();
+            }
+
+            http_response_code(200);
+            echo json_encode(array(
+                "message" => $newStatus ? "Seller verified successfully." : "Seller verification revoked.",
+                "is_verified" => $newStatus
+            ));
+        } else {
+            http_response_code(400);
+            echo json_encode(array("message" => "Missing seller_id."));
+        }
+    }
+    else if ($action === 'warn_seller') {
+        if (!empty($data->seller_id)) {
+            $checkQuery = "SELECT id, warning_count FROM sellers_info WHERE user_id = :uid LIMIT 1";
+            $stmt = $conn->prepare($checkQuery);
+            $stmt->bindParam(':uid', $data->seller_id);
+            $stmt->execute();
+            $sellerInfo = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($sellerInfo) {
+                $newCount = intval($sellerInfo['warning_count']) + 1;
+                $updateQuery = "UPDATE sellers_info SET warning_count = :w WHERE id = :id";
+                $upStmt = $conn->prepare($updateQuery);
+                $upStmt->bindParam(':w', $newCount);
+                $upStmt->bindParam(':id', $sellerInfo['id']);
+                $upStmt->execute();
+            } else {
+                $newCount = 1;
+                $insertQuery = "INSERT INTO sellers_info (user_id, shop_name, warning_count) VALUES (:uid, 'Independent Merchant', 1)";
+                $inStmt = $conn->prepare($insertQuery);
+                $inStmt->bindParam(':uid', $data->seller_id);
+                $inStmt->execute();
+            }
+
+            http_response_code(200);
+            echo json_encode(array(
+                "message" => "Warning issued to seller (Total warnings: {$newCount}).",
+                "warning_count" => $newCount
+            ));
+        } else {
+            http_response_code(400);
+            echo json_encode(array("message" => "Missing seller_id."));
+        }
+    }
+    else if ($action === 'add_category') {
+        if (!empty($data->name)) {
+            $name = htmlspecialchars(strip_tags(trim($data->name)));
+            $desc = !empty($data->description) ? htmlspecialchars(strip_tags(trim($data->description))) : '';
+            
+            $query = "INSERT INTO categories (name, description) VALUES (:name, :desc)";
+            $stmt = $conn->prepare($query);
+            $stmt->bindParam(':name', $name);
+            $stmt->bindParam(':desc', $desc);
+            if ($stmt->execute()) {
+                http_response_code(201);
+                echo json_encode(array("message" => "Category created successfully.", "id" => $conn->lastInsertId()));
+            } else {
+                http_response_code(503);
+                echo json_encode(array("message" => "Unable to create category."));
+            }
+        } else {
+            http_response_code(400);
+            echo json_encode(array("message" => "Category name is required."));
+        }
+    }
+    else if ($action === 'delete_category') {
+        if (!empty($data->category_id)) {
+            $query = "DELETE FROM categories WHERE id = :id";
+            $stmt = $conn->prepare($query);
+            $stmt->bindParam(':id', $data->category_id);
+            if ($stmt->execute()) {
+                http_response_code(200);
+                echo json_encode(array("message" => "Category deleted successfully."));
+            } else {
+                http_response_code(503);
+                echo json_encode(array("message" => "Unable to delete category."));
+            }
+        } else {
+            http_response_code(400);
+            echo json_encode(array("message" => "Missing category_id."));
+        }
+    }
+    else {
         http_response_code(404);
         echo json_encode(array("message" => "Action not found."));
     }
@@ -79,24 +202,29 @@ else if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             "total_buyers" => 0,
             "total_sellers" => 0,
             "total_products" => 0,
-            "total_orders" => 0
+            "total_orders" => 0,
+            "total_categories" => 0
         ];
 
         // Buyers Count
         $stmt = $conn->query("SELECT COUNT(*) as count FROM users WHERE role = 'buyer'");
-        $stats["total_buyers"] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+        $stats["total_buyers"] = intval($stmt->fetch(PDO::FETCH_ASSOC)['count']);
 
         // Sellers Count
         $stmt = $conn->query("SELECT COUNT(*) as count FROM users WHERE role = 'seller'");
-        $stats["total_sellers"] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+        $stats["total_sellers"] = intval($stmt->fetch(PDO::FETCH_ASSOC)['count']);
 
         // Products Count
         $stmt = $conn->query("SELECT COUNT(*) as count FROM products");
-        $stats["total_products"] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+        $stats["total_products"] = intval($stmt->fetch(PDO::FETCH_ASSOC)['count']);
 
         // Orders Count
         $stmt = $conn->query("SELECT COUNT(*) as count FROM orders");
-        $stats["total_orders"] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+        $stats["total_orders"] = intval($stmt->fetch(PDO::FETCH_ASSOC)['count']);
+
+        // Categories Count
+        $stmt = $conn->query("SELECT COUNT(*) as count FROM categories");
+        $stats["total_categories"] = intval($stmt->fetch(PDO::FETCH_ASSOC)['count']);
 
         http_response_code(200);
         echo json_encode($stats);
@@ -104,11 +232,13 @@ else if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     } else if ($action === 'users') {
         $query = "
             SELECT u.id, u.first_name, u.last_name, u.email, u.role, u.created_at,
+                   s.is_verified, s.shop_name, s.warning_count,
                    (SELECT AVG(r.rating) 
                     FROM reviews r 
                     JOIN products p ON r.product_id = p.id 
                     WHERE p.seller_id = u.id) as avg_rating
             FROM users u 
+            LEFT JOIN sellers_info s ON u.id = s.user_id
             ORDER BY u.created_at DESC
         ";
         $stmt = $conn->prepare($query);
@@ -116,7 +246,6 @@ else if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         
         $users_arr = array();
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            // Format rating to 1 decimal place if it exists
             if ($row['avg_rating'] !== null) {
                 $row['avg_rating'] = number_format((float)$row['avg_rating'], 1, '.', '');
             }
@@ -125,6 +254,39 @@ else if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         
         http_response_code(200);
         echo json_encode($users_arr);
+
+    } else if ($action === 'products') {
+        $query = "
+            SELECT p.id, p.title, p.price, p.stock_quantity, p.created_at,
+                   c.name as category_name,
+                   CONCAT(u.first_name, ' ', u.last_name) as seller_name,
+                   (SELECT image_url FROM product_images WHERE product_id = p.id LIMIT 1) as image_url
+            FROM products p
+            LEFT JOIN categories c ON p.category_id = c.id
+            LEFT JOIN users u ON p.seller_id = u.id
+            ORDER BY p.id DESC
+        ";
+        $stmt = $conn->prepare($query);
+        $stmt->execute();
+        $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        http_response_code(200);
+        echo json_encode($products);
+
+    } else if ($action === 'categories') {
+        $query = "
+            SELECT c.id, c.name, c.description,
+                   (SELECT COUNT(*) FROM products p WHERE p.category_id = c.id) as product_count
+            FROM categories c
+            ORDER BY c.name ASC
+        ";
+        $stmt = $conn->prepare($query);
+        $stmt->execute();
+        $categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        http_response_code(200);
+        echo json_encode($categories);
+
     } else {
         http_response_code(404);
         echo json_encode(array("message" => "Action not found."));

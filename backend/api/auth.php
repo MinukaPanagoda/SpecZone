@@ -37,6 +37,9 @@ if (isset($_GET['action'])) {
             $lastName = trim($data->last_name);
             $email = trim($data->email);
             $password = $data->password;
+            $phone = isset($data->phone) ? trim($data->phone) : '';
+            $address = isset($data->address) ? trim($data->address) : '';
+            $shopName = isset($data->shop_name) ? trim($data->shop_name) : '';
 
             // Validate Name (No numbers allowed)
             if (preg_match('/\d/', $firstName) || preg_match('/\d/', $lastName)) {
@@ -76,11 +79,14 @@ if (isset($_GET['action'])) {
             $user->last_name = $lastName;
             $user->email = $email;
             $user->password = $password;
+            $user->phone = $phone;
+            $user->address = $address;
+            $user->shop_name = $shopName;
             $user->role = isset($data->role) ? $data->role : 'buyer'; // default role is buyer
 
             if ($user->emailExists()) {
                 http_response_code(400); // Bad Request
-                echo json_encode(array("status" => "error", "message" => "Email already exists."));
+                echo json_encode(array("status" => "error", "message" => "Email already exists. Please login or use another email."));
             } else {
                 if ($user->register()) {
                     http_response_code(201); // Created
@@ -113,7 +119,10 @@ if (isset($_GET['action'])) {
                         "first_name" => $user->first_name,
                         "last_name" => $user->last_name,
                         "email" => $user->email,
-                        "role" => $user->role
+                        "role" => $user->role,
+                        "phone" => $user->phone,
+                        "address" => $user->address,
+                        "shop_name" => $user->shop_name
                     )
                 ));
             } else {
@@ -124,7 +133,101 @@ if (isset($_GET['action'])) {
             http_response_code(400);
             echo json_encode(array("status" => "error", "message" => "Incomplete data. Email and password are required."));
         }
-    } 
+    }
+    // -----------------------------------------
+    // FORGOT PASSWORD (REQUEST OTP)
+    // -----------------------------------------
+    elseif ($action === 'forgot_password') {
+        if (!empty($data->email)) {
+            $email = trim($data->email);
+            $stmt = $conn->prepare("SELECT id, first_name, email FROM users WHERE email = :email LIMIT 1");
+            $stmt->bindParam(':email', $email);
+            $stmt->execute();
+
+            if ($stmt->rowCount() > 0) {
+                $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                // Generate 6-digit OTP
+                $otp = sprintf("%06d", mt_rand(100000, 999999));
+                
+                http_response_code(200);
+                echo json_encode(array(
+                    "status" => "success",
+                    "message" => "Password reset OTP has been dispatched to your email address.",
+                    "email" => $email,
+                    "first_name" => $row['first_name'],
+                    "demo_otp" => $otp // In real production sent via SMTP email; returned for demo
+                ));
+            } else {
+                http_response_code(404);
+                echo json_encode(array("status" => "error", "message" => "No account found with this email address."));
+            }
+        } else {
+            http_response_code(400);
+            echo json_encode(array("status" => "error", "message" => "Email address is required."));
+        }
+    }
+    // -----------------------------------------
+    // RESET PASSWORD
+    // -----------------------------------------
+    elseif ($action === 'reset_password') {
+        if (!empty($data->email) && !empty($data->new_password)) {
+            $email = trim($data->email);
+            $newPassword = $data->new_password;
+
+            // Validate Password Complexity
+            if (strlen($newPassword) < 8) {
+                http_response_code(400);
+                echo json_encode(array("status" => "error", "message" => "Password must be at least 8 characters long."));
+                exit();
+            }
+            if (!preg_match('/[A-Z]/', $newPassword)) {
+                http_response_code(400);
+                echo json_encode(array("status" => "error", "message" => "Password must contain at least one capital letter (A-Z)."));
+                exit();
+            }
+            if (!preg_match('/[a-z]/', $newPassword)) {
+                http_response_code(400);
+                echo json_encode(array("status" => "error", "message" => "Password must contain at least one simple letter (a-z)."));
+                exit();
+            }
+            if (!preg_match('/\d/', $newPassword)) {
+                http_response_code(400);
+                echo json_encode(array("status" => "error", "message" => "Password must contain at least one number (0-9)."));
+                exit();
+            }
+            if (!preg_match('/[!@#$%^&*()_+\-=\[\]{};\':"\\\\|,.<>\/?~`]/', $newPassword)) {
+                http_response_code(400);
+                echo json_encode(array("status" => "error", "message" => "Password must contain at least one special character (!@#$%^&*)."));
+                exit();
+            }
+
+            $stmt = $conn->prepare("SELECT id FROM users WHERE email = :email LIMIT 1");
+            $stmt->bindParam(':email', $email);
+            $stmt->execute();
+
+            if ($stmt->rowCount() > 0) {
+                $newHash = password_hash($newPassword, PASSWORD_BCRYPT);
+                $updateStmt = $conn->prepare("UPDATE users SET password = :pwd WHERE email = :email");
+                $updateStmt->bindParam(':pwd', $newHash);
+                $updateStmt->bindParam(':email', $email);
+                
+                if ($updateStmt->execute()) {
+                    http_response_code(200);
+                    echo json_encode(array("status" => "success", "message" => "Password has been reset successfully! You can now log in."));
+                } else {
+                    http_response_code(500);
+                    echo json_encode(array("status" => "error", "message" => "Failed to update password."));
+                }
+            } else {
+                http_response_code(404);
+                echo json_encode(array("status" => "error", "message" => "Account not found."));
+            }
+        } else {
+            http_response_code(400);
+            echo json_encode(array("status" => "error", "message" => "Email and new password are required."));
+        }
+    }
     // -----------------------------------------
     // INVALID ACTION
     // -----------------------------------------
@@ -134,6 +237,6 @@ if (isset($_GET['action'])) {
     }
 } else {
     http_response_code(400);
-    echo json_encode(array("status" => "error", "message" => "Action parameter is missing (use ?action=login or ?action=register)."));
+    echo json_encode(array("status" => "error", "message" => "Action parameter is missing."));
 }
 ?>

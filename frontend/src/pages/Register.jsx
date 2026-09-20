@@ -8,7 +8,10 @@ const Register = () => {
     lastName: '',
     email: '',
     password: '',
-    role: 'buyer'
+    role: 'buyer',
+    phone: '',
+    address: '',
+    shopName: ''
   });
   
   const [status, setStatus] = useState({ type: '', message: '' });
@@ -81,7 +84,10 @@ const Register = () => {
           last_name: formData.lastName.trim(),
           email: formData.email.trim(),
           password: formData.password,
-          role: formData.role
+          role: formData.role,
+          phone: formData.phone.trim(),
+          address: formData.address.trim(),
+          shop_name: formData.role === 'seller' ? (formData.shopName.trim() || `${formData.firstName.trim()}'s PC Store`) : ''
         }),
       });
 
@@ -89,7 +95,7 @@ const Register = () => {
 
       if (response.ok) {
         setStatus({ type: 'success', message: 'Account created successfully! Redirecting to login...' });
-        setFormData({ firstName: '', lastName: '', email: '', password: '', role: 'buyer' });
+        setFormData({ firstName: '', lastName: '', email: '', password: '', role: 'buyer', phone: '', address: '', shopName: '' });
         setTimeout(() => {
           navigate('/login');
         }, 1500);
@@ -357,8 +363,48 @@ const Register = () => {
               )}
             </div>
           </div>
+
+          {formData.role === 'seller' && (
+            <div className="form-group" style={{ marginTop: '1rem' }}>
+              <label className="form-label">Shop / Store Name <span style={{ color: 'var(--accent-primary)' }}>*</span></label>
+              <input 
+                type="text" 
+                name="shopName" 
+                className="form-control" 
+                value={formData.shopName} 
+                onChange={handleChange} 
+                placeholder="e.g. Apex Hardware Store"
+                required={formData.role === 'seller'}
+              />
+            </div>
+          )}
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+            <div className="form-group">
+              <label className="form-label">Phone Number</label>
+              <input 
+                type="tel" 
+                name="phone" 
+                className="form-control" 
+                value={formData.phone} 
+                onChange={handleChange} 
+                placeholder="e.g. +94 77 123 4567"
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">{formData.role === 'seller' ? 'Store / Pickup Address' : 'Shipping Address'}</label>
+              <input 
+                type="text" 
+                name="address" 
+                className="form-control" 
+                value={formData.address} 
+                onChange={handleChange} 
+                placeholder="e.g. 123 Galle Road, Colombo 03"
+              />
+            </div>
+          </div>
           
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }} disabled={isLoading}>
+          <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1.5rem' }} disabled={isLoading}>
             {isLoading ? 'Registering...' : 'Register Now'}
           </button>
         </form>

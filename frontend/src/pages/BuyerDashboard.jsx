@@ -3,10 +3,14 @@ import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, ShoppingBag, Heart, Wrench, Menu, X, Trash2, ShoppingCart, Printer, CheckCircle2, AlertTriangle, Plus, Play, ArrowRight, FileText } from 'lucide-react';
+import { 
+  LayoutDashboard, ShoppingBag, Heart, Wrench, Menu, X, Trash2, 
+  ShoppingCart, Printer, CheckCircle2, AlertTriangle, Plus, Play, 
+  ArrowRight, FileText, User, Lock, Shield, Save, Phone, MapPin, Check, AlertCircle 
+} from 'lucide-react';
 
 const BuyerDashboard = () => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const { wishlistItems, removeFromWishlist, wishlistCount } = useWishlist();
@@ -18,6 +22,26 @@ const BuyerDashboard = () => {
   const [loadingBuilds, setLoadingBuilds] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
+
+  // Profile and Password State
+  const [profileData, setProfileData] = useState({
+    first_name: user?.first_name || '',
+    last_name: user?.last_name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    address: user?.address || ''
+  });
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileUpdating, setProfileUpdating] = useState(false);
+  const [profileStatus, setProfileStatus] = useState({ type: '', message: '' });
+
+  const [pwdData, setPwdData] = useState({
+    current_password: '',
+    new_password: '',
+    confirm_password: ''
+  });
+  const [pwdUpdating, setPwdUpdating] = useState(false);
+  const [pwdStatus, setPwdStatus] = useState({ type: '', message: '' });
 
   const [reportItem, setReportItem] = useState(null);
   const [reportReason, setReportReason] = useState('');
@@ -41,6 +65,133 @@ const BuyerDashboard = () => {
       setActiveTab(location.state.tab);
     }
   }, [location.state]);
+
+  const fetchProfile = async () => {
+    if (user && user.id) {
+      setProfileLoading(true);
+      try {
+        const res = await fetch(`http://localhost/SpecZone/backend/api/profile.php?action=get_profile&user_id=${user.id}`);
+        const data = await res.json();
+        if (res.ok && data.profile) {
+          setProfileData({
+            first_name: data.profile.first_name || '',
+            last_name: data.profile.last_name || '',
+            email: data.profile.email || '',
+            phone: data.profile.phone || '',
+            address: data.profile.address || ''
+          });
+        }
+      } catch (err) {
+        console.error("Error fetching profile:", err);
+      } finally {
+        setProfileLoading(false);
+      }
+    }
+  };
+
+  const handleProfileUpdate = async (e) => {
+    e.preventDefault();
+    setProfileStatus({ type: '', message: '' });
+
+    // Validate Name (no digits)
+    if (/\d/.test(profileData.first_name.trim()) || /\d/.test(profileData.last_name.trim())) {
+      setProfileStatus({ type: 'error', message: 'Name cannot contain numbers or digits. Please enter letters only.' });
+      return;
+    }
+
+    setProfileUpdating(true);
+    try {
+      const res = await fetch('http://localhost/SpecZone/backend/api/profile.php?action=update_profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          first_name: profileData.first_name.trim(),
+          last_name: profileData.last_name.trim(),
+          phone: profileData.phone.trim(),
+          address: profileData.address.trim(),
+          role: 'buyer'
+        })
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        setProfileStatus({ type: 'success', message: 'Profile updated successfully!' });
+        if (updateUser) {
+          updateUser({
+            first_name: profileData.first_name.trim(),
+            last_name: profileData.last_name.trim(),
+            phone: profileData.phone.trim(),
+            address: profileData.address.trim()
+          });
+        }
+      } else {
+        setProfileStatus({ type: 'error', message: data.message || 'Failed to update profile.' });
+      }
+    } catch (err) {
+      console.error(err);
+      setProfileStatus({ type: 'error', message: 'Network error. Please try again.' });
+    } finally {
+      setProfileUpdating(false);
+    }
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    setPwdStatus({ type: '', message: '' });
+
+    if (pwdData.new_password !== pwdData.confirm_password) {
+      setPwdStatus({ type: 'error', message: 'New passwords do not match!' });
+      return;
+    }
+
+    if (pwdData.new_password.length < 8) {
+      setPwdStatus({ type: 'error', message: 'New password must be at least 8 characters long.' });
+      return;
+    }
+    if (!/[A-Z]/.test(pwdData.new_password)) {
+      setPwdStatus({ type: 'error', message: 'New password must contain at least one capital letter (A-Z).' });
+      return;
+    }
+    if (!/[a-z]/.test(pwdData.new_password)) {
+      setPwdStatus({ type: 'error', message: 'New password must contain at least one simple letter (a-z).' });
+      return;
+    }
+    if (!/\d/.test(pwdData.new_password)) {
+      setPwdStatus({ type: 'error', message: 'New password must contain at least one number (0-9).' });
+      return;
+    }
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(pwdData.new_password)) {
+      setPwdStatus({ type: 'error', message: 'New password must contain at least one special character (!@#$%^&*).' });
+      return;
+    }
+
+    setPwdUpdating(true);
+    try {
+      const res = await fetch('http://localhost/SpecZone/backend/api/profile.php?action=change_password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          current_password: pwdData.current_password,
+          new_password: pwdData.new_password
+        })
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        setPwdStatus({ type: 'success', message: 'Password changed successfully!' });
+        setPwdData({ current_password: '', new_password: '', confirm_password: '' });
+      } else {
+        setPwdStatus({ type: 'error', message: data.message || 'Failed to change password.' });
+      }
+    } catch (err) {
+      console.error(err);
+      setPwdStatus({ type: 'error', message: 'Network error. Please try again.' });
+    } finally {
+      setPwdUpdating(false);
+    }
+  };
 
   const fetchOrders = () => {
     if (user && user.role === 'buyer') {
@@ -80,6 +231,7 @@ const BuyerDashboard = () => {
     if (user && user.role === 'buyer') {
       fetchOrders();
       fetchBuilds();
+      fetchProfile();
     }
   }, [user]);
 
@@ -272,6 +424,13 @@ const BuyerDashboard = () => {
             onClick={() => handleTab('builds')}
           >
             <Wrench size={20} /> My PC Builds ({savedBuilds.length})
+          </button>
+          <button 
+            className={`btn ${activeTab === 'profile' ? 'btn-primary' : 'btn-outline'}`}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.8rem', justifyContent: 'flex-start', padding: '0.8rem 1rem', border: activeTab !== 'profile' ? 'none' : '' }}
+            onClick={() => handleTab('profile')}
+          >
+            <User size={20} /> Profile & Settings
           </button>
         </nav>
       </aside>
@@ -710,6 +869,266 @@ const BuyerDashboard = () => {
             )}
           </div>
         )}
+
+        {/* Profile & Settings Tab */}
+        {activeTab === 'profile' && (() => {
+          const pwd = pwdData.new_password;
+          const hasPwdMinLength = pwd.length >= 8;
+          const hasPwdUppercase = /[A-Z]/.test(pwd);
+          const hasPwdLowercase = /[a-z]/.test(pwd);
+          const hasPwdNumber = /\d/.test(pwd);
+          const hasPwdSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(pwd);
+
+          return (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <div>
+                  <h2 style={{ fontSize: '2rem', margin: 0 }}>Profile & Account Settings</h2>
+                  <p style={{ color: 'var(--text-secondary)', margin: '0.3rem 0 0 0' }}>Manage your personal details, delivery address, and login credentials</p>
+                </div>
+              </div>
+
+              {/* Profile Header Card */}
+              <div className="glass-panel" style={{ padding: '1.5rem 2rem', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+                <div style={{
+                  width: '64px',
+                  height: '64px',
+                  borderRadius: '50%',
+                  background: 'rgba(0, 240, 255, 0.12)',
+                  border: '2px solid var(--accent-primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--accent-primary)',
+                  fontSize: '1.5rem',
+                  fontWeight: 'bold'
+                }}>
+                  {profileData.first_name ? profileData.first_name.charAt(0).toUpperCase() : <User size={30} />}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ margin: 0, fontSize: '1.4rem' }}>{profileData.first_name} {profileData.last_name}</h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.4rem', flexWrap: 'wrap', fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
+                    <span>{profileData.email}</span>
+                    <span>•</span>
+                    <span style={{ 
+                      padding: '0.15rem 0.6rem', 
+                      borderRadius: '4px', 
+                      background: 'rgba(0, 240, 255, 0.1)', 
+                      color: 'var(--accent-primary)', 
+                      border: '1px solid rgba(0, 240, 255, 0.25)',
+                      textTransform: 'uppercase',
+                      fontSize: '0.75rem',
+                      fontWeight: 'bold'
+                    }}>
+                      {user?.role || 'Buyer'} Account
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Grid: Edit Profile & Change Password */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '2rem' }}>
+                
+                {/* 1. Edit Profile Information */}
+                <div className="glass-panel" style={{ padding: '2rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.5rem' }}>
+                    <User size={22} color="var(--accent-primary)" />
+                    <h3 style={{ margin: 0, fontSize: '1.25rem' }}>Personal Information</h3>
+                  </div>
+
+                  {profileStatus.message && (
+                    <div style={{
+                      padding: '0.8rem 1rem',
+                      marginBottom: '1.5rem',
+                      borderRadius: 'var(--border-radius-sm)',
+                      backgroundColor: profileStatus.type === 'error' ? 'rgba(255, 51, 102, 0.1)' : 'rgba(0, 230, 118, 0.1)',
+                      border: `1px solid ${profileStatus.type === 'error' ? 'var(--danger)' : 'var(--success)'}`,
+                      color: profileStatus.type === 'error' ? 'var(--danger)' : 'var(--success)',
+                      fontSize: '0.88rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}>
+                      {profileStatus.type === 'error' ? <AlertCircle size={16} /> : <CheckCircle2 size={16} />}
+                      <span>{profileStatus.message}</span>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleProfileUpdate}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                      <div className="form-group">
+                        <label className="form-label">First Name</label>
+                        <input 
+                          type="text" 
+                          className="form-control"
+                          value={profileData.first_name}
+                          onChange={(e) => setProfileData({ ...profileData, first_name: e.target.value })}
+                          pattern="^[^\d]+$"
+                          title="First name cannot contain numbers"
+                          required
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label className="form-label">Last Name</label>
+                        <input 
+                          type="text" 
+                          className="form-control"
+                          value={profileData.last_name}
+                          onChange={(e) => setProfileData({ ...profileData, last_name: e.target.value })}
+                          pattern="^[^\d]+$"
+                          title="Last name cannot contain numbers"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Email Address (Read Only)</label>
+                      <input 
+                        type="email" 
+                        className="form-control"
+                        value={profileData.email}
+                        disabled
+                        style={{ opacity: 0.6, cursor: 'not-allowed' }}
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <Phone size={14} color="var(--accent-primary)" /> Phone Number
+                        </span>
+                      </label>
+                      <input 
+                        type="tel" 
+                        className="form-control"
+                        value={profileData.phone}
+                        onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                        placeholder="e.g. +94 77 123 4567"
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <MapPin size={14} color="var(--accent-primary)" /> Default Shipping Address
+                        </span>
+                      </label>
+                      <textarea 
+                        className="form-control"
+                        rows={3}
+                        value={profileData.address}
+                        onChange={(e) => setProfileData({ ...profileData, address: e.target.value })}
+                        placeholder="e.g. No 45, Flower Road, Colombo 07, Sri Lanka"
+                      />
+                    </div>
+
+                    <button 
+                      type="submit" 
+                      className="btn btn-primary" 
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}
+                      disabled={profileUpdating}
+                    >
+                      <Save size={16} /> {profileUpdating ? 'Saving Profile...' : 'Save Profile Changes'}
+                    </button>
+                  </form>
+                </div>
+
+                {/* 2. Change Password */}
+                <div className="glass-panel" style={{ padding: '2rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.5rem' }}>
+                    <Lock size={22} color="var(--accent-primary)" />
+                    <h3 style={{ margin: 0, fontSize: '1.25rem' }}>Change Password</h3>
+                  </div>
+
+                  {pwdStatus.message && (
+                    <div style={{
+                      padding: '0.8rem 1rem',
+                      marginBottom: '1.5rem',
+                      borderRadius: 'var(--border-radius-sm)',
+                      backgroundColor: pwdStatus.type === 'error' ? 'rgba(255, 51, 102, 0.1)' : 'rgba(0, 230, 118, 0.1)',
+                      border: `1px solid ${pwdStatus.type === 'error' ? 'var(--danger)' : 'var(--success)'}`,
+                      color: pwdStatus.type === 'error' ? 'var(--danger)' : 'var(--success)',
+                      fontSize: '0.88rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}>
+                      {pwdStatus.type === 'error' ? <AlertCircle size={16} /> : <CheckCircle2 size={16} />}
+                      <span>{pwdStatus.message}</span>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleChangePassword}>
+                    <div className="form-group">
+                      <label className="form-label">Current Password</label>
+                      <input 
+                        type="password" 
+                        className="form-control"
+                        placeholder="••••••••"
+                        value={pwdData.current_password}
+                        onChange={(e) => setPwdData({ ...pwdData, current_password: e.target.value })}
+                        required
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">New Password</label>
+                      <input 
+                        type="password" 
+                        className="form-control"
+                        placeholder="Enter strong password"
+                        value={pwdData.new_password}
+                        onChange={(e) => setPwdData({ ...pwdData, new_password: e.target.value })}
+                        required
+                      />
+                      {/* Live Password Checklist */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.4rem', marginTop: '0.6rem', fontSize: '0.78rem' }}>
+                        <span style={{ color: hasPwdMinLength ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: hasPwdMinLength ? '600' : 'normal' }}>
+                          {hasPwdMinLength ? '✓' : '○'} Min. 8 Chars
+                        </span>
+                        <span style={{ color: hasPwdUppercase ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: hasPwdUppercase ? '600' : 'normal' }}>
+                          {hasPwdUppercase ? '✓' : '○'} Capital (A-Z)
+                        </span>
+                        <span style={{ color: hasPwdLowercase ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: hasPwdLowercase ? '600' : 'normal' }}>
+                          {hasPwdLowercase ? '✓' : '○'} Simple (a-z)
+                        </span>
+                        <span style={{ color: hasPwdNumber ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: hasPwdNumber ? '600' : 'normal' }}>
+                          {hasPwdNumber ? '✓' : '○'} Number (0-9)
+                        </span>
+                        <span style={{ color: hasPwdSpecial ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: hasPwdSpecial ? '600' : 'normal' }}>
+                          {hasPwdSpecial ? '✓' : '○'} Special (!@#$)
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Confirm New Password</label>
+                      <input 
+                        type="password" 
+                        className="form-control"
+                        placeholder="Re-enter new password"
+                        value={pwdData.confirm_password}
+                        onChange={(e) => setPwdData({ ...pwdData, confirm_password: e.target.value })}
+                        required
+                      />
+                    </div>
+
+                    <button 
+                      type="submit" 
+                      className="btn btn-primary" 
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}
+                      disabled={pwdUpdating}
+                    >
+                      <Shield size={16} /> {pwdUpdating ? 'Updating Password...' : 'Update Password'}
+                    </button>
+                  </form>
+                </div>
+
+              </div>
+            </div>
+          );
+        })()}
 
       </main>
 

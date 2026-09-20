@@ -15,6 +15,7 @@ import SellerDashboard from './pages/SellerDashboard';
 import SellerOrders from './pages/SellerOrders';
 import SellerProducts from './pages/SellerProducts';
 import SellerAnalytics from './pages/SellerAnalytics';
+import SellerProfile from './pages/SellerProfile';
 import AddProduct from './pages/AddProduct';
 import Cart from './pages/Cart';
 import Wishlist from './pages/Wishlist';
@@ -51,6 +52,7 @@ const AppLayout = () => {
           <Route path="/seller/orders" element={<SellerOrders />} />
           <Route path="/seller/products" element={<SellerProducts />} />
           <Route path="/seller/analytics" element={<SellerAnalytics />} />
+          <Route path="/seller/profile" element={<SellerProfile />} />
           <Route path="/seller/add-product" element={<AddProduct />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
         </Routes>

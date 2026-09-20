@@ -2,8 +2,8 @@ import React, { createContext, useState, useEffect, useContext, useRef, useCallb
 
 const AuthContext = createContext();
 
-// Session Timeout Duration: 2 Minutes (120,000 ms) of Inactivity
-const SESSION_TIMEOUT_MS = 2 * 60 * 1000;
+// Session Timeout Duration: 4 Minutes (240,000 ms) of Inactivity
+const SESSION_TIMEOUT_MS = 4 * 60 * 1000;
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -50,7 +50,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, [user]);
 
-  // Session Inactivity Monitoring (Auto logout to Home after 2 minutes of idle time)
+  // Session Inactivity Monitoring (Auto logout to Home after 4 minutes of idle time)
   useEffect(() => {
     if (!user) return;
 
@@ -80,8 +80,16 @@ export const AuthProvider = ({ children }) => {
     };
   }, [user, recordActivity, logout]);
 
+  const updateUser = (updatedData) => {
+    setUser(prev => {
+      const newUser = { ...prev, ...updatedData };
+      localStorage.setItem('speczone_user', JSON.stringify(newUser));
+      return newUser;
+    });
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

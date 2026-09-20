@@ -54,7 +54,6 @@ const AdminDashboard = () => {
     }
     setActiveTab(tab);
     setSidebarOpen(false);
-    window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
   useEffect(() => {
@@ -445,7 +444,7 @@ const AdminDashboard = () => {
       </aside>
 
       {/* Main Content Area */}
-      <main style={{ minWidth: 0, minHeight: 'calc(100vh - 120px)' }}>
+      <main style={{ minWidth: 0 }}>
         {/* Mobile/tablet top bar */}
         <div className="dashboard-mobile-header">
           <button
@@ -461,7 +460,7 @@ const AdminDashboard = () => {
 
         {/* 1. OVERVIEW TAB */}
         {activeTab === 'overview' && (
-          <div style={{ minHeight: '650px' }}>
+          <div>
             <div className="admin-toolbar">
               <div>
                 <h2 style={{ margin: 0, fontSize: '1.8rem' }}>Platform Overview</h2>
@@ -608,7 +607,7 @@ const AdminDashboard = () => {
 
         {/* 2. MANAGE USERS TAB */}
         {activeTab === 'users' && (
-          <div style={{ minHeight: '650px' }}>
+          <div>
             <div className="admin-toolbar">
               <div>
                 <h2 style={{ margin: 0, fontSize: '1.8rem' }}>User Management</h2>
@@ -701,16 +700,16 @@ const AdminDashboard = () => {
             {/* Users Table */}
             <div className="glass-panel" style={{ overflow: 'hidden' }}>
               <div className="admin-table-container">
-                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '900px' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ background: 'rgba(255,255,255,0.05)', textAlign: 'left' }}>
-                      <th style={{ padding: '1.2rem 1rem', whiteSpace: 'nowrap' }}>ID</th>
-                      <th style={{ padding: '1.2rem 1rem', whiteSpace: 'nowrap' }}>Name</th>
-                      <th style={{ padding: '1.2rem 1rem' }}>Email</th>
-                      <th style={{ padding: '1.2rem 1rem', whiteSpace: 'nowrap' }}>Role</th>
-                      <th style={{ padding: '1.2rem 1rem' }}>Seller Info / Rating</th>
-                      <th style={{ padding: '1.2rem 1rem', whiteSpace: 'nowrap' }}>Joined Date</th>
-                      <th style={{ padding: '1.2rem 1rem', textAlign: 'center', whiteSpace: 'nowrap' }}>Actions</th>
+                      <th style={{ padding: '1rem 0.8rem', whiteSpace: 'nowrap' }}>ID</th>
+                      <th style={{ padding: '1rem 0.8rem', whiteSpace: 'nowrap' }}>Name</th>
+                      <th style={{ padding: '1rem 0.8rem' }}>Email</th>
+                      <th style={{ padding: '1rem 0.8rem', whiteSpace: 'nowrap' }}>Role</th>
+                      <th style={{ padding: '1rem 0.8rem' }}>Seller Info / Rating</th>
+                      <th style={{ padding: '1rem 0.8rem', whiteSpace: 'nowrap' }}>Joined Date</th>
+                      <th style={{ padding: '1rem 0.8rem', textAlign: 'center', whiteSpace: 'nowrap' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -800,7 +799,7 @@ const AdminDashboard = () => {
 
         {/* 3. SELLER VERIFICATION TAB */}
         {activeTab === 'sellers' && (
-          <div style={{ minHeight: '650px' }}>
+          <div>
             <div className="admin-toolbar">
               <div>
                 <h2 style={{ margin: 0, fontSize: '1.8rem' }}>Seller Verification & Vendor Control</h2>
@@ -859,15 +858,15 @@ const AdminDashboard = () => {
             {/* Sellers Table */}
             <div className="glass-panel" style={{ overflow: 'hidden' }}>
               <div className="admin-table-container">
-                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '950px' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'auto' }}>
                   <thead>
                     <tr style={{ background: 'rgba(255,255,255,0.05)', textAlign: 'left' }}>
-                      <th style={{ padding: '1.2rem 1rem' }}>Seller / Shop</th>
-                      <th style={{ padding: '1.2rem 1rem' }}>Contact</th>
-                      <th style={{ padding: '1.2rem 1rem', whiteSpace: 'nowrap' }}>Rating</th>
-                      <th style={{ padding: '1.2rem 1rem', whiteSpace: 'nowrap' }}>Warnings</th>
-                      <th style={{ padding: '1.2rem 1rem', whiteSpace: 'nowrap' }}>Verification Status</th>
-                      <th style={{ padding: '1.2rem 1rem', textAlign: 'center', whiteSpace: 'nowrap' }}>Actions</th>
+                      <th style={{ padding: '0.8rem 0.6rem' }}>Seller / Shop</th>
+                      <th style={{ padding: '0.8rem 0.6rem' }}>Contact</th>
+                      <th style={{ padding: '0.8rem 0.6rem', whiteSpace: 'nowrap' }}>Rating</th>
+                      <th style={{ padding: '0.8rem 0.6rem', whiteSpace: 'nowrap' }}>Warnings</th>
+                      <th style={{ padding: '0.8rem 0.6rem', whiteSpace: 'nowrap' }}>Verification Status</th>
+                      <th style={{ padding: '0.8rem 0.6rem', textAlign: 'center', whiteSpace: 'nowrap' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -893,39 +892,39 @@ const AdminDashboard = () => {
 
                         return (
                           <tr key={s.id} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                            <td style={{ padding: '1rem' }}>
-                              <div style={{ fontWeight: 'bold', fontSize: '1rem', color: 'var(--text-primary)' }}>
+                            <td style={{ padding: '0.75rem 0.6rem' }}>
+                              <div style={{ fontWeight: 'bold', fontSize: '0.95rem', color: 'var(--text-primary)' }}>
                                 {s.shop_name || 'Independent Merchant'}
                               </div>
-                              <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                              <div style={{ color: 'var(--text-secondary)', fontSize: '0.78rem' }}>
                                 Owner: {s.first_name} {s.last_name} (#{s.id})
                               </div>
                             </td>
-                            <td style={{ padding: '1rem' }}>
-                              <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{s.email}</div>
-                              <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Joined: {new Date(s.created_at).toLocaleDateString()}</div>
+                            <td style={{ padding: '0.75rem 0.6rem' }}>
+                              <div style={{ color: 'var(--text-secondary)', fontSize: '0.82rem' }}>{s.email}</div>
+                              <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Joined: {new Date(s.created_at).toLocaleDateString()}</div>
                             </td>
-                            <td style={{ padding: '1rem', whiteSpace: 'nowrap' }}>
+                            <td style={{ padding: '0.75rem 0.6rem', whiteSpace: 'nowrap' }}>
                               {s.avg_rating !== null ? (
                                 <div style={{ 
-                                  display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontWeight: 'bold', whiteSpace: 'nowrap',
+                                  display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontWeight: 'bold', fontSize: '0.85rem', whiteSpace: 'nowrap',
                                   color: s.avg_rating <= 4 ? 'var(--danger)' : s.avg_rating <= 7 ? 'var(--warning)' : 'var(--success)'
                                 }}>
-                                  <Star size={15} fill="currentColor" />
+                                  <Star size={14} fill="currentColor" />
                                   <span>{s.avg_rating}/10</span>
                                 </div>
                               ) : (
-                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>No Ratings</span>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>No Ratings</span>
                               )}
                             </td>
-                            <td style={{ padding: '1rem', whiteSpace: 'nowrap' }}>
+                            <td style={{ padding: '0.75rem 0.6rem', whiteSpace: 'nowrap' }}>
                               <span style={{
                                 display: 'inline-flex',
                                 alignItems: 'center',
-                                gap: '0.35rem',
-                                padding: '0.35rem 0.75rem',
-                                borderRadius: '12px',
-                                fontSize: '0.8rem',
+                                gap: '0.3rem',
+                                padding: '0.25rem 0.55rem',
+                                borderRadius: '10px',
+                                fontSize: '0.75rem',
                                 fontWeight: 'bold',
                                 whiteSpace: 'nowrap',
                                 background: warnings >= 3 ? 'rgba(239, 68, 68, 0.2)' : warnings > 0 ? 'rgba(245, 158, 11, 0.2)' : 'rgba(255, 255, 255, 0.05)',
@@ -933,47 +932,47 @@ const AdminDashboard = () => {
                               }}>
                                 {warnings > 0 ? (
                                   <>
-                                    <AlertTriangle size={13} color={warnings >= 3 ? 'var(--danger)' : 'var(--warning)'} />
-                                    <span>{warnings} Warning{warnings > 1 ? 's' : ''}</span>
+                                    <AlertTriangle size={12} color={warnings >= 3 ? 'var(--danger)' : 'var(--warning)'} />
+                                    <span>{warnings} Warn{warnings > 1 ? 's' : ''}</span>
                                   </>
                                 ) : (
-                                  <span>Clean Record</span>
+                                  <span>Clean</span>
                                 )}
                               </span>
                             </td>
-                            <td style={{ padding: '1rem', whiteSpace: 'nowrap' }}>
+                            <td style={{ padding: '0.75rem 0.6rem', whiteSpace: 'nowrap' }}>
                               <span style={{
                                 display: 'inline-flex',
                                 alignItems: 'center',
-                                gap: '0.4rem',
-                                padding: '0.35rem 0.75rem',
-                                borderRadius: '20px',
-                                fontSize: '0.8rem',
+                                gap: '0.35rem',
+                                padding: '0.25rem 0.55rem',
+                                borderRadius: '14px',
+                                fontSize: '0.75rem',
                                 fontWeight: 'bold',
                                 whiteSpace: 'nowrap',
                                 background: isVerified ? 'rgba(0, 230, 118, 0.15)' : 'rgba(245, 158, 11, 0.15)',
                                 color: isVerified ? 'var(--success)' : 'var(--warning)'
                               }}>
-                                {isVerified ? <ShieldCheck size={14} /> : <ShieldAlert size={14} />}
-                                <span>{isVerified ? 'Verified Merchant' : 'Pending Verification'}</span>
+                                {isVerified ? <ShieldCheck size={13} /> : <ShieldAlert size={13} />}
+                                <span>{isVerified ? 'Verified' : 'Pending'}</span>
                               </span>
                             </td>
-                            <td style={{ padding: '1rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
-                              <div style={{ display: 'inline-flex', gap: '0.5rem', alignItems: 'center', whiteSpace: 'nowrap' }}>
+                            <td style={{ padding: '0.75rem 0.6rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                              <div style={{ display: 'inline-flex', gap: '0.35rem', alignItems: 'center', whiteSpace: 'nowrap' }}>
                                 {/* Toggle Verification */}
                                 <button
                                   onClick={() => handleToggleSellerVerify(s.id)}
                                   className={`btn ${isVerified ? 'btn-outline' : 'btn-primary'}`}
                                   style={{
-                                    padding: '0.35rem 0.75rem',
-                                    fontSize: '0.8rem',
+                                    padding: '0.28rem 0.55rem',
+                                    fontSize: '0.75rem',
                                     whiteSpace: 'nowrap',
                                     borderColor: isVerified ? 'var(--warning)' : undefined,
                                     color: isVerified ? 'var(--warning)' : undefined
                                   }}
                                   title={isVerified ? "Revoke Verification" : "Verify Seller"}
                                 >
-                                  {isVerified ? 'Revoke' : 'Verify Seller'}
+                                  {isVerified ? 'Revoke' : 'Verify'}
                                 </button>
 
                                 {/* Issue Warning */}
@@ -983,18 +982,18 @@ const AdminDashboard = () => {
                                     background: 'rgba(245, 158, 11, 0.1)',
                                     border: '1px solid rgba(245, 158, 11, 0.3)',
                                     color: 'var(--warning)',
-                                    padding: '0.35rem 0.6rem',
+                                    padding: '0.28rem 0.45rem',
                                     borderRadius: '4px',
                                     cursor: 'pointer',
-                                    fontSize: '0.8rem',
+                                    fontSize: '0.75rem',
                                     display: 'inline-flex',
                                     alignItems: 'center',
-                                    gap: '0.3rem',
+                                    gap: '0.2rem',
                                     whiteSpace: 'nowrap'
                                   }}
                                   title="Issue Policy Warning"
                                 >
-                                  <AlertTriangle size={14} /> Warn
+                                  <AlertTriangle size={12} /> Warn
                                 </button>
 
                                 {/* Delete Seller Account */}
@@ -1005,7 +1004,7 @@ const AdminDashboard = () => {
                                     border: 'none',
                                     color: 'var(--danger)',
                                     cursor: 'pointer',
-                                    padding: '0.4rem',
+                                    padding: '0.3rem',
                                     borderRadius: '4px',
                                     display: 'inline-flex',
                                     alignItems: 'center',
@@ -1013,7 +1012,7 @@ const AdminDashboard = () => {
                                   }}
                                   title="Remove Seller Account"
                                 >
-                                  <Trash2 size={16} />
+                                  <Trash2 size={15} />
                                 </button>
                               </div>
                             </td>
@@ -1029,7 +1028,7 @@ const AdminDashboard = () => {
 
         {/* 4. PRODUCT MODERATION TAB */}
         {activeTab === 'products' && (
-          <div style={{ minHeight: '650px' }}>
+          <div>
             <div className="admin-toolbar">
               <div>
                 <h2 style={{ margin: 0, fontSize: '1.8rem' }}>Product Moderation</h2>
@@ -1069,15 +1068,15 @@ const AdminDashboard = () => {
             {/* Products Table */}
             <div className="glass-panel" style={{ overflow: 'hidden' }}>
               <div className="admin-table-container">
-                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '900px' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ background: 'rgba(255,255,255,0.05)', textAlign: 'left' }}>
-                      <th style={{ padding: '1.2rem 1rem' }}>Product</th>
-                      <th style={{ padding: '1.2rem 1rem', whiteSpace: 'nowrap' }}>Category</th>
-                      <th style={{ padding: '1.2rem 1rem' }}>Seller</th>
-                      <th style={{ padding: '1.2rem 1rem', whiteSpace: 'nowrap' }}>Price</th>
-                      <th style={{ padding: '1.2rem 1rem', whiteSpace: 'nowrap' }}>Stock</th>
-                      <th style={{ padding: '1.2rem 1rem', textAlign: 'center', whiteSpace: 'nowrap' }}>Actions</th>
+                      <th style={{ padding: '1rem 0.8rem' }}>Product</th>
+                      <th style={{ padding: '1rem 0.8rem', whiteSpace: 'nowrap' }}>Category</th>
+                      <th style={{ padding: '1rem 0.8rem' }}>Seller</th>
+                      <th style={{ padding: '1rem 0.8rem', whiteSpace: 'nowrap' }}>Price</th>
+                      <th style={{ padding: '1rem 0.8rem', whiteSpace: 'nowrap' }}>Stock</th>
+                      <th style={{ padding: '1rem 0.8rem', textAlign: 'center', whiteSpace: 'nowrap' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1176,7 +1175,7 @@ const AdminDashboard = () => {
 
         {/* 5. CATEGORY MANAGEMENT TAB */}
         {activeTab === 'categories' && (
-          <div style={{ minHeight: '650px' }}>
+          <div>
             <div className="admin-toolbar">
               <div>
                 <h2 style={{ margin: 0, fontSize: '1.8rem' }}>Hardware Category Management</h2>
@@ -1301,7 +1300,7 @@ const AdminDashboard = () => {
 
         {/* 6. DISPUTES & COMPLAINTS TAB */}
         {activeTab === 'disputes' && (
-          <div style={{ minHeight: '650px' }}>
+          <div>
             <div className="admin-toolbar">
               <div>
                 <h2 style={{ margin: 0, fontSize: '1.8rem' }}>Disputes & Complaints Resolution</h2>
@@ -1345,15 +1344,15 @@ const AdminDashboard = () => {
             ) : (
               <div className="glass-panel" style={{ overflow: 'hidden' }}>
                 <div className="admin-table-container">
-                  <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '850px' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr style={{ background: 'rgba(255,255,255,0.05)', textAlign: 'left' }}>
-                        <th style={{ padding: '1.2rem 1rem', whiteSpace: 'nowrap' }}>ID</th>
-                        <th style={{ padding: '1.2rem 1rem' }}>Buyer Details</th>
-                        <th style={{ padding: '1.2rem 1rem' }}>Seller Details</th>
-                        <th style={{ padding: '1.2rem 1rem' }}>Grievance / Reason</th>
-                        <th style={{ padding: '1.2rem 1rem', whiteSpace: 'nowrap' }}>Status</th>
-                        <th style={{ padding: '1.2rem 1rem', textAlign: 'center', whiteSpace: 'nowrap' }}>Action</th>
+                        <th style={{ padding: '1rem 0.8rem', whiteSpace: 'nowrap' }}>ID</th>
+                        <th style={{ padding: '1rem 0.8rem' }}>Buyer Details</th>
+                        <th style={{ padding: '1rem 0.8rem' }}>Seller Details</th>
+                        <th style={{ padding: '1rem 0.8rem' }}>Grievance / Reason</th>
+                        <th style={{ padding: '1rem 0.8rem', whiteSpace: 'nowrap' }}>Status</th>
+                        <th style={{ padding: '1rem 0.8rem', textAlign: 'center', whiteSpace: 'nowrap' }}>Action</th>
                       </tr>
                     </thead>
                     <tbody>

@@ -2,18 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { 
-  CreditCard, 
-  Truck, 
-  CheckCircle2, 
-  Building2, 
-  DollarSign, 
-  Copy, 
-  Check, 
-  Printer, 
-  ShoppingBag, 
-  ArrowRight, 
-  PackageCheck, 
+import {
+  CreditCard,
+  Truck,
+  CheckCircle2,
+  Building2,
+  DollarSign,
+  Copy,
+  Check,
+  Printer,
+  ShoppingBag,
+  ArrowRight,
+  PackageCheck,
   ShieldCheck,
   Lock,
   Smartphone,
@@ -32,9 +32,9 @@ const Checkout = () => {
     postalCode: '',
     phone: ''
   });
-  
+
   const [paymentMethod, setPaymentMethod] = useState('card'); // 'card' | 'bank_transfer' | 'cod'
-  
+
   // Card Details State
   const [cardDetails, setCardDetails] = useState({
     cardholderName: '',
@@ -42,7 +42,7 @@ const Checkout = () => {
     expiry: '',
     cvv: ''
   });
-  
+
   // 3D Secure OTP Modal State
   const [show3DSModal, setShow3DSModal] = useState(false);
   const [otpCode, setOtpCode] = useState('');
@@ -65,7 +65,7 @@ const Checkout = () => {
     if (cartItems.length === 0 && !success && !showSuccessPopup) {
       navigate('/cart');
     }
-    
+
     // Prefill name if available
     if (user && !shipping.fullName) {
       const name = `${user.first_name || ''} ${user.last_name || ''}`.trim();
@@ -175,21 +175,21 @@ const Checkout = () => {
       const res = await fetch(`http://localhost/SpecZone/backend/api/checkout.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          buyer_id: user.id, 
+        body: JSON.stringify({
+          buyer_id: user.id,
           payment_method: paymentMethod,
           payment_ref: paymentRefData || bankRef || (paymentMethod === 'card' ? `CARD-${cardDetails.cardNumber.slice(-4)}-3DS` : 'COD'),
-          shipping_details: shipping 
+          shipping_details: shipping
         })
       });
-      
+
       const data = await res.json();
-      
+
       if (res.ok) {
         setPlacedOrderId(data.order_id || null);
         setShowSuccessPopup(true);
         await fetchCart(); // clears the local cart context
-        
+
         setTimeout(() => {
           navigate('/buyer/dashboard', { state: { tab: 'orders' } });
         }, 2200);
@@ -232,95 +232,95 @@ const Checkout = () => {
           {error}
         </div>
       )}
-      
+
       <form onSubmit={handlePlaceOrder}>
         <div className="checkout-layout">
-          
+
           {/* Shipping & Payment Form */}
           <div className="glass-panel checkout-shipping">
             <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.8rem' }}>
               <Truck size={20} color="var(--accent-primary)" /> 1. Shipping Details
             </h3>
-            
+
             <div className="form-group">
               <label className="form-label">Full Name *</label>
-              <input 
-                type="text" 
-                name="fullName" 
-                className="form-control" 
-                value={shipping.fullName} 
-                onChange={handleChange} 
-                required 
-                placeholder="Recipient's Full Name" 
+              <input
+                type="text"
+                name="fullName"
+                className="form-control"
+                value={shipping.fullName}
+                onChange={handleChange}
+                required
+                placeholder="Recipient's Full Name"
               />
             </div>
-            
+
             <div className="form-group">
               <label className="form-label">Delivery Address *</label>
-              <textarea 
-                name="address" 
-                className="form-control" 
-                value={shipping.address} 
-                onChange={handleChange} 
-                required 
-                rows="3" 
+              <textarea
+                name="address"
+                className="form-control"
+                value={shipping.address}
+                onChange={handleChange}
+                required
+                rows="3"
                 placeholder="Street address, apartment, suite, etc."
               ></textarea>
             </div>
-            
+
             <div className="checkout-city-postal">
               <div className="form-group">
                 <label className="form-label">City / Town *</label>
-                <input 
-                  type="text" 
-                  name="city" 
-                  className="form-control" 
-                  value={shipping.city} 
-                  onChange={handleChange} 
-                  required 
-                  placeholder="e.g. Colombo, Kandy" 
+                <input
+                  type="text"
+                  name="city"
+                  className="form-control"
+                  value={shipping.city}
+                  onChange={handleChange}
+                  required
+                  placeholder="e.g. Colombo, Kandy"
                 />
               </div>
               <div className="form-group">
                 <label className="form-label">Postal Code</label>
-                <input 
-                  type="text" 
-                  name="postalCode" 
-                  className="form-control" 
-                  value={shipping.postalCode} 
-                  onChange={handleChange} 
-                  placeholder="e.g. 00100" 
+                <input
+                  type="text"
+                  name="postalCode"
+                  className="form-control"
+                  value={shipping.postalCode}
+                  onChange={handleChange}
+                  placeholder="e.g. 00100"
                 />
               </div>
             </div>
-            
+
             <div className="form-group">
               <label className="form-label">Contact Phone Number *</label>
-              <input 
-                type="tel" 
-                name="phone" 
-                className="form-control" 
-                value={shipping.phone} 
-                onChange={handleChange} 
-                required 
-                placeholder="e.g. 077 123 4567" 
+              <input
+                type="tel"
+                name="phone"
+                className="form-control"
+                value={shipping.phone}
+                onChange={handleChange}
+                required
+                placeholder="e.g. 077 123 4567"
               />
             </div>
 
             <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '2rem 0 1.2rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.8rem' }}>
               <CreditCard size={20} color="var(--accent-primary)" /> 2. Payment Method
             </h3>
-            
+
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
-              
+
               {/* Option 1: Credit / Debit Card (Online Payment Gateway) */}
-              <label 
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'flex-start', 
-                  gap: '0.9rem', 
-                  padding: '1.2rem', 
-                  borderRadius: '8px', 
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '0.9rem',
+                  padding: '1.2rem',
+                  borderRadius: '8px',
                   border: `1px solid ${paymentMethod === 'card' ? 'var(--accent-primary)' : 'var(--border-color)'}`,
                   background: paymentMethod === 'card' ? 'rgba(0, 240, 255, 0.07)' : 'rgba(0,0,0,0.2)',
                   cursor: 'pointer',
@@ -328,13 +328,13 @@ const Checkout = () => {
                   boxShadow: paymentMethod === 'card' ? '0 0 15px rgba(0, 240, 255, 0.1)' : 'none'
                 }}
               >
-                <input 
-                  type="radio" 
-                  name="payment" 
+                <input
+                  type="radio"
+                  name="payment"
                   value="card"
-                  checked={paymentMethod === 'card'} 
+                  checked={paymentMethod === 'card'}
                   onChange={() => setPaymentMethod('card')}
-                  style={{ marginTop: '0.3rem', accentColor: 'var(--accent-primary)' }} 
+                  style={{ marginTop: '0.3rem', accentColor: 'var(--accent-primary)' }}
                 />
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.3rem', flexWrap: 'wrap', gap: '0.5rem' }}>
@@ -364,7 +364,7 @@ const Checkout = () => {
               {/* Card Details Form (When Card selected) */}
               {paymentMethod === 'card' && (
                 <div className="glass-panel" style={{ padding: '1.5rem', marginTop: '-0.5rem', marginBottom: '0.5rem', border: '1px solid rgba(0, 240, 255, 0.3)', background: 'rgba(0, 0, 0, 0.45)', borderRadius: '8px' }}>
-                  
+
                   {/* Visual Card Preview Badge */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-primary)', fontSize: '0.9rem', fontWeight: 'bold' }}>
@@ -450,13 +450,13 @@ const Checkout = () => {
               )}
 
               {/* Option 2: Direct Bank Transfer */}
-              <label 
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'flex-start', 
-                  gap: '0.9rem', 
-                  padding: '1.2rem', 
-                  borderRadius: '8px', 
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '0.9rem',
+                  padding: '1.2rem',
+                  borderRadius: '8px',
                   border: `1px solid ${paymentMethod === 'bank_transfer' ? 'var(--accent-primary)' : 'var(--border-color)'}`,
                   background: paymentMethod === 'bank_transfer' ? 'rgba(0, 240, 255, 0.07)' : 'rgba(0,0,0,0.2)',
                   cursor: 'pointer',
@@ -464,13 +464,13 @@ const Checkout = () => {
                   boxShadow: paymentMethod === 'bank_transfer' ? '0 0 15px rgba(0, 240, 255, 0.1)' : 'none'
                 }}
               >
-                <input 
-                  type="radio" 
-                  name="payment" 
+                <input
+                  type="radio"
+                  name="payment"
                   value="bank_transfer"
-                  checked={paymentMethod === 'bank_transfer'} 
+                  checked={paymentMethod === 'bank_transfer'}
                   onChange={() => setPaymentMethod('bank_transfer')}
-                  style={{ marginTop: '0.3rem', accentColor: 'var(--accent-primary)' }} 
+                  style={{ marginTop: '0.3rem', accentColor: 'var(--accent-primary)' }}
                 />
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
@@ -543,13 +543,13 @@ const Checkout = () => {
               )}
 
               {/* Option 3: Cash on Delivery */}
-              <label 
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'flex-start', 
-                  gap: '0.9rem', 
-                  padding: '1.2rem', 
-                  borderRadius: '8px', 
+              <label
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '0.9rem',
+                  padding: '1.2rem',
+                  borderRadius: '8px',
                   border: `1px solid ${paymentMethod === 'cod' ? 'var(--accent-primary)' : 'var(--border-color)'}`,
                   background: paymentMethod === 'cod' ? 'rgba(0, 240, 255, 0.07)' : 'rgba(0,0,0,0.2)',
                   cursor: 'pointer',
@@ -557,13 +557,13 @@ const Checkout = () => {
                   boxShadow: paymentMethod === 'cod' ? '0 0 15px rgba(0, 240, 255, 0.1)' : 'none'
                 }}
               >
-                <input 
-                  type="radio" 
-                  name="payment" 
+                <input
+                  type="radio"
+                  name="payment"
                   value="cod"
-                  checked={paymentMethod === 'cod'} 
+                  checked={paymentMethod === 'cod'}
                   onChange={() => setPaymentMethod('cod')}
-                  style={{ marginTop: '0.3rem', accentColor: 'var(--accent-primary)' }} 
+                  style={{ marginTop: '0.3rem', accentColor: 'var(--accent-primary)' }}
                 />
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
@@ -592,7 +592,7 @@ const Checkout = () => {
               <h3 style={{ marginBottom: '1.5rem', fontSize: '1.2rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.8rem' }}>
                 Order Summary
               </h3>
-              
+
               <div style={{ maxHeight: '250px', overflowY: 'auto', marginBottom: '1rem', paddingRight: '0.5rem' }}>
                 {cartItems.map(item => (
                   <div key={item.cart_id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.8rem', fontSize: '0.9rem' }}>
@@ -603,12 +603,12 @@ const Checkout = () => {
                   </div>
                 ))}
               </div>
-              
+
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.8rem', color: 'var(--text-secondary)' }}>
                 <span>Subtotal</span>
                 <span>Rs. {getCartTotal().toLocaleString('en-IN')}</span>
               </div>
-              
+
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.8rem', color: 'var(--text-secondary)' }}>
                 <span>Delivery Shipping</span>
                 <span style={{ color: 'var(--success)', fontWeight: 'bold' }}>Free</span>
@@ -620,15 +620,15 @@ const Checkout = () => {
                   {paymentMethod === 'card' ? 'Online Card (3DS Secure)' : paymentMethod === 'bank_transfer' ? 'Bank Transfer' : 'Cash on Delivery'}
                 </span>
               </div>
-              
+
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)', fontSize: '1.2rem', fontWeight: 'bold' }}>
                 <span>Total Amount</span>
                 <span style={{ color: 'var(--accent-primary)' }}>Rs. {getCartTotal().toLocaleString('en-IN')}</span>
               </div>
-              
-              <button 
+
+              <button
                 type="submit"
-                className="btn btn-primary" 
+                className="btn btn-primary"
                 style={{ width: '100%', marginTop: '1.5rem', padding: '1rem', fontSize: '1.05rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', cursor: 'pointer' }}
                 disabled={loading}
               >
@@ -848,7 +848,7 @@ const Checkout = () => {
             <h3 style={{ fontSize: '1.35rem', fontWeight: 'bold', margin: '0 0 0.5rem 0', color: '#ffffff' }}>
               Order Placed Successfully!
             </h3>
-            
+
             {placedOrderId && (
               <div style={{
                 display: 'inline-block',

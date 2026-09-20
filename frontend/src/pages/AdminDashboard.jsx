@@ -48,6 +48,15 @@ const AdminDashboard = () => {
   // Complaints State
   const [complaintFilter, setComplaintFilter] = useState('all'); // all, pending, resolved
 
+  const handleTabChange = (tab, customFilter = null) => {
+    if (customFilter) {
+      setSellerFilter(customFilter);
+    }
+    setActiveTab(tab);
+    setSidebarOpen(false);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  };
+
   useEffect(() => {
     if (!user || user.role !== 'admin') {
       navigate('/login');
@@ -364,7 +373,7 @@ const AdminDashboard = () => {
           <button 
             className={`btn ${activeTab === 'overview' ? 'btn-primary' : 'btn-outline'}`}
             style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.8rem', justifyContent: 'flex-start', padding: '0.75rem 1rem', border: activeTab !== 'overview' ? 'none' : '' }}
-            onClick={() => { setActiveTab('overview'); setSidebarOpen(false); }}
+            onClick={() => handleTabChange('overview')}
           >
             <LayoutDashboard size={18} /> Overview
           </button>
@@ -372,7 +381,7 @@ const AdminDashboard = () => {
           <button 
             className={`btn ${activeTab === 'users' ? 'btn-primary' : 'btn-outline'}`}
             style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.8rem', justifyContent: 'flex-start', padding: '0.75rem 1rem', border: activeTab !== 'users' ? 'none' : '' }}
-            onClick={() => { setActiveTab('users'); setSidebarOpen(false); }}
+            onClick={() => handleTabChange('users')}
           >
             <Users size={18} /> Manage Users
           </button>
@@ -380,7 +389,7 @@ const AdminDashboard = () => {
           <button 
             className={`btn ${activeTab === 'sellers' ? 'btn-primary' : 'btn-outline'}`}
             style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.8rem', justifyContent: 'flex-start', padding: '0.75rem 1rem', border: activeTab !== 'sellers' ? 'none' : '' }}
-            onClick={() => { setActiveTab('sellers'); setSidebarOpen(false); }}
+            onClick={() => handleTabChange('sellers')}
           >
             <ShieldCheck size={18} /> Seller Verification
             {unverifiedSellersCount > 0 && (
@@ -393,7 +402,7 @@ const AdminDashboard = () => {
           <button 
             className={`btn ${activeTab === 'products' ? 'btn-primary' : 'btn-outline'}`}
             style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.8rem', justifyContent: 'flex-start', padding: '0.75rem 1rem', border: activeTab !== 'products' ? 'none' : '' }}
-            onClick={() => { setActiveTab('products'); setSidebarOpen(false); }}
+            onClick={() => handleTabChange('products')}
           >
             <Package size={18} /> Product Moderation
           </button>
@@ -401,7 +410,7 @@ const AdminDashboard = () => {
           <button 
             className={`btn ${activeTab === 'categories' ? 'btn-primary' : 'btn-outline'}`}
             style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.8rem', justifyContent: 'flex-start', padding: '0.75rem 1rem', border: activeTab !== 'categories' ? 'none' : '' }}
-            onClick={() => { setActiveTab('categories'); setSidebarOpen(false); }}
+            onClick={() => handleTabChange('categories')}
           >
             <Layers size={18} /> Category Management
           </button>
@@ -409,7 +418,7 @@ const AdminDashboard = () => {
           <button 
             className={`btn ${activeTab === 'disputes' ? 'btn-primary' : 'btn-outline'}`}
             style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.8rem', justifyContent: 'flex-start', padding: '0.75rem 1rem', border: activeTab !== 'disputes' ? 'none' : '' }}
-            onClick={() => { setActiveTab('disputes'); setSidebarOpen(false); }}
+            onClick={() => handleTabChange('disputes')}
           >
             <MessageSquareWarning size={18} /> Disputes & Complaints
             {pendingComplaintsCount > 0 && (
@@ -436,7 +445,7 @@ const AdminDashboard = () => {
       </aside>
 
       {/* Main Content Area */}
-      <main style={{ minWidth: 0 }}>
+      <main style={{ minWidth: 0, minHeight: 'calc(100vh - 120px)' }}>
         {/* Mobile/tablet top bar */}
         <div className="dashboard-mobile-header">
           <button
@@ -452,7 +461,7 @@ const AdminDashboard = () => {
 
         {/* 1. OVERVIEW TAB */}
         {activeTab === 'overview' && (
-          <div>
+          <div style={{ minHeight: '650px' }}>
             <div className="admin-toolbar">
               <div>
                 <h2 style={{ margin: 0, fontSize: '1.8rem' }}>Platform Overview</h2>
@@ -511,7 +520,7 @@ const AdminDashboard = () => {
                         <div style={{ fontWeight: '600', color: 'var(--danger)', fontSize: '0.95rem' }}>{pendingComplaintsCount} Unresolved Dispute(s)</div>
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Buyers waiting for complaint resolution.</div>
                       </div>
-                      <button className="btn btn-outline" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderColor: 'var(--danger)', color: 'var(--danger)' }} onClick={() => setActiveTab('disputes')}>
+                      <button className="btn btn-outline" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderColor: 'var(--danger)', color: 'var(--danger)' }} onClick={() => handleTabChange('disputes')}>
                         Review
                       </button>
                     </div>
@@ -527,7 +536,7 @@ const AdminDashboard = () => {
                         <div style={{ fontWeight: '600', color: 'var(--warning)', fontSize: '0.95rem' }}>{unverifiedSellersCount} Unverified Seller(s)</div>
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Sellers pending credential verification.</div>
                       </div>
-                      <button className="btn btn-outline" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderColor: 'var(--warning)', color: 'var(--warning)' }} onClick={() => setActiveTab('sellers')}>
+                      <button className="btn btn-outline" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderColor: 'var(--warning)', color: 'var(--warning)' }} onClick={() => handleTabChange('sellers')}>
                         Verify
                       </button>
                     </div>
@@ -543,7 +552,7 @@ const AdminDashboard = () => {
                         <div style={{ fontWeight: '600', color: 'var(--danger)', fontSize: '0.95rem' }}>{criticalSellersCount} Seller(s) with Low Rating/Warnings</div>
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Rating ≤ 4.0 or active warnings recorded.</div>
                       </div>
-                      <button className="btn btn-outline" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderColor: 'var(--danger)', color: 'var(--danger)' }} onClick={() => { setSellerFilter('critical'); setActiveTab('sellers'); }}>
+                      <button className="btn btn-outline" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderColor: 'var(--danger)', color: 'var(--danger)' }} onClick={() => handleTabChange('sellers', 'critical')}>
                         Inspect
                       </button>
                     </div>
@@ -556,7 +565,7 @@ const AdminDashboard = () => {
                 <h3 style={{ margin: '0 0 1.25rem 0', fontSize: '1.2rem' }}>Quick Admin Actions</h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem' }}>
                   <button 
-                    onClick={() => setActiveTab('users')} 
+                    onClick={() => handleTabChange('users')} 
                     className="btn btn-outline" 
                     style={{ padding: '0.8rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', textAlign: 'center', fontSize: '0.85rem' }}
                   >
@@ -565,7 +574,7 @@ const AdminDashboard = () => {
                   </button>
 
                   <button 
-                    onClick={() => setActiveTab('sellers')} 
+                    onClick={() => handleTabChange('sellers')} 
                     className="btn btn-outline" 
                     style={{ padding: '0.8rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', textAlign: 'center', fontSize: '0.85rem' }}
                   >
@@ -574,7 +583,7 @@ const AdminDashboard = () => {
                   </button>
 
                   <button 
-                    onClick={() => setActiveTab('products')} 
+                    onClick={() => handleTabChange('products')} 
                     className="btn btn-outline" 
                     style={{ padding: '0.8rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', textAlign: 'center', fontSize: '0.85rem' }}
                   >
@@ -583,7 +592,7 @@ const AdminDashboard = () => {
                   </button>
 
                   <button 
-                    onClick={() => setActiveTab('categories')} 
+                    onClick={() => handleTabChange('categories')} 
                     className="btn btn-outline" 
                     style={{ padding: '0.8rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', textAlign: 'center', fontSize: '0.85rem' }}
                   >
@@ -599,7 +608,7 @@ const AdminDashboard = () => {
 
         {/* 2. MANAGE USERS TAB */}
         {activeTab === 'users' && (
-          <div>
+          <div style={{ minHeight: '650px' }}>
             <div className="admin-toolbar">
               <div>
                 <h2 style={{ margin: 0, fontSize: '1.8rem' }}>User Management</h2>
@@ -791,7 +800,7 @@ const AdminDashboard = () => {
 
         {/* 3. SELLER VERIFICATION TAB */}
         {activeTab === 'sellers' && (
-          <div>
+          <div style={{ minHeight: '650px' }}>
             <div className="admin-toolbar">
               <div>
                 <h2 style={{ margin: 0, fontSize: '1.8rem' }}>Seller Verification & Vendor Control</h2>
@@ -1020,7 +1029,7 @@ const AdminDashboard = () => {
 
         {/* 4. PRODUCT MODERATION TAB */}
         {activeTab === 'products' && (
-          <div>
+          <div style={{ minHeight: '650px' }}>
             <div className="admin-toolbar">
               <div>
                 <h2 style={{ margin: 0, fontSize: '1.8rem' }}>Product Moderation</h2>
@@ -1167,7 +1176,7 @@ const AdminDashboard = () => {
 
         {/* 5. CATEGORY MANAGEMENT TAB */}
         {activeTab === 'categories' && (
-          <div>
+          <div style={{ minHeight: '650px' }}>
             <div className="admin-toolbar">
               <div>
                 <h2 style={{ margin: 0, fontSize: '1.8rem' }}>Hardware Category Management</h2>
@@ -1292,7 +1301,7 @@ const AdminDashboard = () => {
 
         {/* 6. DISPUTES & COMPLAINTS TAB */}
         {activeTab === 'disputes' && (
-          <div>
+          <div style={{ minHeight: '650px' }}>
             <div className="admin-toolbar">
               <div>
                 <h2 style={{ margin: 0, fontSize: '1.8rem' }}>Disputes & Complaints Resolution</h2>

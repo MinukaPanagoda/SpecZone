@@ -49,7 +49,8 @@ body {
   position: relative;
   font-family: 'Outfit', sans-serif;
   color: var(--text-primary);
-  background-color: #0a0a0c;
+  background-color: transparent;
+  min-height: 100vh;
   line-height: 1.6;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
@@ -57,22 +58,23 @@ body {
 }
 
 body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-
-    background: 
-    linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
-    url("img/wallhaven-833q1o.jpg");
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-    
-    filter: blur(10px);
-    transform: scale(1.05);
-
-    z-index: -1;
+  content: "";
+  position: fixed;
+  top: -10px;
+  left: -10px;
+  right: -10px;
+  bottom: -10px;
+  background: 
+    linear-gradient(rgba(10, 10, 12, 0.65), rgba(10, 10, 12, 0.65)),
+    url("./img/wallhaven-833q1o.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: blur(8px);
+  transform: scale(1.04);
+  pointer-events: none;
+  z-index: -1;
+  will-change: transform;
 }
 
 /* Custom Scrollbar */

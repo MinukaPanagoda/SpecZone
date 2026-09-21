@@ -67,7 +67,7 @@ class Product {
 
     // Get all products
     public function read() {
-        $query = "SELECT p.*, c.name as category_name, u.first_name as seller_name, s.shop_name,
+        $query = "SELECT p.*, c.name as category_name, u.first_name as seller_name, u.phone as seller_phone, u.address as seller_address, s.shop_name,
                          COALESCE(s.warning_count, 0) as seller_warning_count,
                          COALESCE(s.is_verified, 0) as seller_is_verified,
                          (SELECT image_url FROM product_images WHERE product_id = p.id LIMIT 1) as image_url,
@@ -99,7 +99,7 @@ class Product {
 
     // Get single product
     public function readSingle() {
-        $query = "SELECT p.*, c.name as category_name, u.first_name as seller_name, s.shop_name,
+        $query = "SELECT p.*, c.name as category_name, u.first_name as seller_name, u.phone as seller_phone, u.address as seller_address, s.shop_name,
                          COALESCE(s.warning_count, 0) as seller_warning_count,
                          COALESCE(s.is_verified, 0) as seller_is_verified,
                          (SELECT image_url FROM product_images WHERE product_id = p.id LIMIT 1) as image_url,

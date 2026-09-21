@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { KeyRound, ShieldCheck, Mail, ArrowLeft, CheckCircle2, AlertCircle, X } from 'lucide-react';
+import { KeyRound, ShieldCheck, Mail, ArrowLeft, CheckCircle2, AlertCircle, X, Copy, Check, Inbox, ChevronDown, ChevronRight } from 'lucide-react';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -21,6 +21,9 @@ const Login = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [recoveryStatus, setRecoveryStatus] = useState({ type: '', message: '' });
   const [recoveryLoading, setRecoveryLoading] = useState(false);
+  const [showEmailToast, setShowEmailToast] = useState(false);
+  const [isEmailOpened, setIsEmailOpened] = useState(false);
+  const [copiedOtp, setCopiedOtp] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -80,11 +83,14 @@ const Login = () => {
       const data = await response.json();
 
       if (response.ok) {
-        setServerOtp(data.demo_otp || '123456');
+        const otpCode = data.demo_otp || '123456';
+        setServerOtp(otpCode);
         setRecoveryStep(2);
+        setIsEmailOpened(false);
+        setShowEmailToast(true);
         setRecoveryStatus({
           type: 'success',
-          message: `OTP sent! (Demo Code: ${data.demo_otp})`
+          message: 'Verification code simulated to your inbox!'
         });
       } else {
         setRecoveryStatus({ type: 'error', message: data.message || 'Failed to request reset.' });
@@ -167,6 +173,8 @@ const Login = () => {
 
   const resetModalState = () => {
     setShowForgotModal(false);
+    setShowEmailToast(false);
+    setIsEmailOpened(false);
     setRecoveryStep(1);
     setRecoveryEmail('');
     setRecoveryOtp('');
@@ -185,6 +193,173 @@ const Login = () => {
 
   return (
     <div className="container auth-container">
+      {/* --- IN-APP SIMULATED EMAIL TOAST (DEMO OTP) --- */}
+      {showEmailToast && (
+        <div 
+          className="glass-panel"
+          style={{
+            position: 'fixed',
+            top: '24px',
+            right: '24px',
+            zIndex: 99999,
+            width: isEmailOpened ? '400px' : '360px',
+            maxWidth: 'calc(100vw - 32px)',
+            padding: isEmailOpened ? '1.2rem' : '0.9rem 1.1rem',
+            borderRadius: '12px',
+            border: isEmailOpened ? '1px solid var(--accent-primary)' : '1px solid rgba(0, 240, 255, 0.4)',
+            background: 'rgba(10, 15, 29, 0.96)',
+            boxShadow: '0 12px 36px rgba(0, 0, 0, 0.7), 0 0 20px rgba(0, 240, 255, 0.2)',
+            backdropFilter: 'blur(16px)',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            animation: 'fadeIn 0.3s ease'
+          }}
+        >
+          {!isEmailOpened ? (
+            /* --- 1. COLLAPSED: NEW EMAIL ARRIVAL NOTIFICATION --- */
+            <div 
+              onClick={() => setIsEmailOpened(true)}
+              style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.8rem' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1 }}>
+                <div style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '10px',
+                  background: 'rgba(0, 240, 255, 0.12)',
+                  border: '1px solid rgba(0, 240, 255, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--accent-primary)',
+                  flexShrink: 0
+                }}>
+                  <Mail size={20} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.15rem' }}>
+                    <span style={{ fontSize: '0.88rem', fontWeight: 'bold', color: '#fff' }}>New Email Received</span>
+                    <span style={{
+                      fontSize: '0.68rem',
+                      background: 'rgba(0, 240, 255, 0.18)',
+                      color: 'var(--accent-primary)',
+                      padding: '1px 6px',
+                      borderRadius: '4px',
+                      fontWeight: '600'
+                    }}>
+                      Inbox
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    SpecZone Security • Password Reset Code
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--accent-primary)', marginTop: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.2rem', fontWeight: '500' }}>
+                    Click to open & view code <ChevronRight size={12} />
+                  </div>
+                </div>
+              </div>
+
+              <button 
+                onClick={(e) => { e.stopPropagation(); setShowEmailToast(false); }} 
+                style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}
+                title="Dismiss Notification"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          ) : (
+            /* --- 2. EXPANDED: FULL SIMULATED EMAIL VIEWER --- */
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.8rem', paddingBottom: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-primary)', fontSize: '0.86rem', fontWeight: 'bold' }}>
+                  <Inbox size={16} />
+                  <span>SpecZone Mail Client</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <button 
+                    onClick={() => setIsEmailOpened(false)} 
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--text-secondary)',
+                      cursor: 'pointer',
+                      fontSize: '0.75rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.2rem',
+                      padding: '2px 4px'
+                    }}
+                    title="Minimize Email"
+                  >
+                    <ChevronDown size={14} /> Minimize
+                  </button>
+                  <button 
+                    onClick={() => setShowEmailToast(false)} 
+                    style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '2px' }}
+                    title="Close"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.45', marginBottom: '0.8rem', background: 'rgba(255,255,255,0.02)', padding: '0.6rem 0.8rem', borderRadius: '6px' }}>
+                <div><strong style={{ color: 'var(--text-primary)' }}>From:</strong> SpecZone Security &lt;security@speczone.com&gt;</div>
+                <div><strong style={{ color: 'var(--text-primary)' }}>To:</strong> {recoveryEmail}</div>
+                <div><strong style={{ color: 'var(--text-primary)' }}>Subject:</strong> Password Reset Verification Code</div>
+              </div>
+
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: '0 0 0.8rem 0', lineHeight: '1.4' }}>
+                Hello, we received a request to reset your SpecZone password. Use the verification code below:
+              </p>
+
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                background: 'rgba(0, 240, 255, 0.08)',
+                border: '1px dashed rgba(0, 240, 255, 0.35)',
+                borderRadius: '8px',
+                padding: '0.6rem 0.9rem',
+                marginBottom: '0.6rem'
+              }}>
+                <div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>One-Time Password (OTP)</div>
+                  <div style={{ fontSize: '1.35rem', fontWeight: 'bold', letterSpacing: '4px', color: 'var(--accent-primary)', fontFamily: 'monospace' }}>
+                    {serverOtp}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRecoveryOtp(serverOtp);
+                    setCopiedOtp(true);
+                    setTimeout(() => setCopiedOtp(false), 2000);
+                  }}
+                  className="btn btn-outline"
+                  style={{
+                    padding: '0.4rem 0.8rem',
+                    fontSize: '0.78rem',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    borderColor: copiedOtp ? 'var(--success)' : 'var(--accent-primary)',
+                    color: copiedOtp ? 'var(--success)' : 'var(--accent-primary)',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  {copiedOtp ? <Check size={14} /> : <Copy size={14} />}
+                  {copiedOtp ? 'Applied!' : 'Auto-fill'}
+                </button>
+              </div>
+
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', textAlign: 'center', opacity: 0.8 }}>
+                Security Notice: This OTP code is valid for 10 minutes.
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="glass-panel auth-card">
         <h2 style={{ fontSize: '2rem', marginBottom: '0.5rem', textAlign: 'center' }}>
           Welcome Back
@@ -380,53 +555,25 @@ const Login = () => {
             {/* Step 2: Verify OTP */}
             {recoveryStep === 2 && (
               <form onSubmit={handleVerifyOtp}>
-                <div style={{
-                  padding: '0.75rem',
-                  marginBottom: '1rem',
-                  background: 'rgba(0, 240, 255, 0.08)',
-                  border: '1px dashed rgba(0, 240, 255, 0.3)',
-                  borderRadius: '6px',
-                  fontSize: '0.85rem'
-                }}>
-                  <div style={{ color: 'var(--accent-primary)', fontWeight: '600', marginBottom: '0.2rem' }}>
-                    Demo Environment Notice:
-                  </div>
-                  <div style={{ color: 'var(--text-secondary)' }}>
-                    Your OTP code is <strong style={{ color: '#fff', fontSize: '1.05rem', letterSpacing: '2px' }}>{serverOtp}</strong>
-                  </div>
-                  <button 
-                    type="button"
-                    onClick={() => setRecoveryOtp(serverOtp)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: 'var(--accent-primary)',
-                      fontSize: '0.8rem',
-                      cursor: 'pointer',
-                      padding: 0,
-                      marginTop: '0.4rem',
-                      textDecoration: 'underline'
-                    }}
-                  >
-                    Auto-fill OTP
-                  </button>
-                </div>
+                <p style={{ fontSize: '0.86rem', color: 'var(--text-secondary)', marginBottom: '1.2rem', lineHeight: '1.5' }}>
+                  A 6-digit verification code has been simulated to <strong style={{ color: 'var(--accent-primary)' }}>{recoveryEmail}</strong>. Check the top simulated email inbox or paste the code below.
+                </p>
 
                 <div className="form-group">
                   <label className="form-label">Enter 6-Digit OTP</label>
                   <input 
                     type="text"
                     className="form-control"
-                    placeholder="6-digit code"
+                    placeholder="••••••"
                     maxLength={6}
                     value={recoveryOtp}
                     onChange={(e) => setRecoveryOtp(e.target.value)}
-                    style={{ textAlign: 'center', letterSpacing: '4px', fontSize: '1.2rem', fontWeight: 'bold' }}
+                    style={{ textAlign: 'center', letterSpacing: '6px', fontSize: '1.3rem', fontWeight: 'bold', fontFamily: 'monospace' }}
                     required
                   />
                 </div>
 
-                <div style={{ display: 'flex', gap: '0.8rem', marginTop: '1rem' }}>
+                <div style={{ display: 'flex', gap: '0.8rem', marginTop: '1.2rem' }}>
                   <button 
                     type="button" 
                     className="btn btn-outline" 

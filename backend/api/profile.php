@@ -35,8 +35,6 @@ try {
         `id` int(11) NOT NULL AUTO_INCREMENT,
         `user_id` int(11) NOT NULL,
         `shop_name` varchar(100) NOT NULL,
-        `address` text DEFAULT NULL,
-        `phone` varchar(20) DEFAULT NULL,
         `warning_count` int(11) DEFAULT 0,
         `is_verified` tinyint(1) DEFAULT 0,
         PRIMARY KEY (`id`),
@@ -63,7 +61,7 @@ if ($action === 'get_profile' && $_SERVER['REQUEST_METHOD'] === 'GET') {
     try {
         $query = "
             SELECT u.id, u.first_name, u.last_name, u.email, u.role, u.phone, u.address, u.city, u.postal_code, u.created_at,
-                   s.shop_name, s.warning_count, s.is_verified, s.address as shop_address, s.phone as shop_phone
+                   s.shop_name, s.warning_count, s.is_verified
             FROM users u
             LEFT JOIN sellers_info s ON u.id = s.user_id
             WHERE u.id = :id
@@ -89,8 +87,6 @@ if ($action === 'get_profile' && $_SERVER['REQUEST_METHOD'] === 'GET') {
                     "city" => $row['city'] ?? '',
                     "postal_code" => $row['postal_code'] ?? '',
                     "shop_name" => $row['shop_name'] ?? '',
-                    "shop_address" => $row['shop_address'] ?? $row['address'] ?? '',
-                    "shop_phone" => $row['shop_phone'] ?? $row['phone'] ?? '',
                     "is_verified" => ($row['is_verified'] == 1),
                     "warning_count" => intval($row['warning_count'] ?? 0),
                     "created_at" => $row['created_at']
@@ -141,7 +137,7 @@ else if ($action === 'update_profile' && $_SERVER['REQUEST_METHOD'] === 'POST') 
     }
 
     try {
-        // Update users table
+        // Update users table (Single source of truth for contact & address details)
         $query = "UPDATE users SET first_name = :first_name, last_name = :last_name, phone = :phone, address = :address, city = :city, postal_code = :postal_code WHERE id = :id";
         $stmt = $conn->prepare($query);
         $stmt->bindParam(':first_name', $first_name);
@@ -160,20 +156,16 @@ else if ($action === 'update_profile' && $_SERVER['REQUEST_METHOD'] === 'POST') 
             $checkStmt->execute();
 
             if ($checkStmt->rowCount() > 0) {
-                $sellerQuery = "UPDATE sellers_info SET shop_name = :shop_name, phone = :phone, address = :address WHERE user_id = :uid";
+                $sellerQuery = "UPDATE sellers_info SET shop_name = :shop_name WHERE user_id = :uid";
                 $sellerStmt = $conn->prepare($sellerQuery);
                 $sellerStmt->bindParam(':shop_name', $shop_name);
-                $sellerStmt->bindParam(':phone', $phone);
-                $sellerStmt->bindParam(':address', $address);
                 $sellerStmt->bindParam(':uid', $user_id);
                 $sellerStmt->execute();
             } else {
-                $sellerQuery = "INSERT INTO sellers_info (user_id, shop_name, phone, address, is_verified, warning_count) VALUES (:uid, :shop_name, :phone, :address, 0, 0)";
+                $sellerQuery = "INSERT INTO sellers_info (user_id, shop_name, is_verified, warning_count) VALUES (:uid, :shop_name, 0, 0)";
                 $sellerStmt = $conn->prepare($sellerQuery);
                 $sellerStmt->bindParam(':uid', $user_id);
                 $sellerStmt->bindParam(':shop_name', $shop_name);
-                $sellerStmt->bindParam(':phone', $phone);
-                $sellerStmt->bindParam(':address', $address);
                 $sellerStmt->execute();
             }
         }

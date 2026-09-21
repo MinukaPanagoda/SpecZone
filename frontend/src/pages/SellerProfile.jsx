@@ -54,8 +54,8 @@ const SellerProfile = () => {
             first_name: data.profile.first_name || '',
             last_name: data.profile.last_name || '',
             email: data.profile.email || '',
-            phone: data.profile.phone || data.profile.shop_phone || '',
-            address: data.profile.address || data.profile.shop_address || '',
+            phone: data.profile.phone || '',
+            address: data.profile.address || '',
             city: data.profile.city || '',
             postal_code: data.profile.postal_code || '',
             shop_name: data.profile.shop_name || '',
@@ -100,7 +100,7 @@ const SellerProfile = () => {
       const data = await res.json();
 
       if (res.ok) {
-        setProfileStatus({ type: 'success', message: 'Store and profile settings updated successfully!' });
+        setProfileStatus({ type: 'success', message: 'Profile settings updated successfully!' });
         if (updateUser) {
           updateUser({
             first_name: profileData.first_name.trim(),
@@ -295,6 +295,7 @@ const SellerProfile = () => {
             )}
 
             <form onSubmit={handleProfileUpdate}>
+              {/* Store Information */}
               <div className="form-group">
                 <label className="form-label">Shop / Store Display Name</label>
                 <input 
@@ -302,7 +303,7 @@ const SellerProfile = () => {
                   className="form-control"
                   value={profileData.shop_name}
                   onChange={(e) => setProfileData({ ...profileData, shop_name: e.target.value })}
-                  placeholder="e.g. Apex Hardware Store"
+                  placeholder="e.g. Apex Hardware Solutions"
                   required
                 />
               </div>
@@ -349,7 +350,7 @@ const SellerProfile = () => {
                 <div className="form-group">
                   <label className="form-label">
                     <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <Phone size={14} color="var(--accent-primary)" /> Store Contact Phone
+                      <Phone size={14} color="var(--accent-primary)" /> Contact Phone
                     </span>
                   </label>
                   <input 
@@ -357,7 +358,7 @@ const SellerProfile = () => {
                     className="form-control"
                     value={profileData.phone}
                     onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
-                    placeholder="e.g. +94 11 234 5678"
+                    placeholder="e.g. +94 77 123 4567"
                   />
                 </div>
 
@@ -381,7 +382,7 @@ const SellerProfile = () => {
                 <div className="form-group">
                   <label className="form-label">
                     <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <MapPin size={14} color="var(--accent-primary)" /> Store / Pickup Address
+                      <MapPin size={14} color="var(--accent-primary)" /> Address
                     </span>
                   </label>
                   <input 
@@ -389,7 +390,7 @@ const SellerProfile = () => {
                     className="form-control"
                     value={profileData.address}
                     onChange={(e) => setProfileData({ ...profileData, address: e.target.value })}
-                    placeholder="e.g. No 100, Galle Road"
+                    placeholder="e.g. No 45, Galle Road"
                   />
                 </div>
 
@@ -411,7 +412,7 @@ const SellerProfile = () => {
                 style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}
                 disabled={profileUpdating}
               >
-                <Save size={16} /> {profileUpdating ? 'Saving Store Settings...' : 'Save Store Settings'}
+                <Save size={16} /> {profileUpdating ? 'Saving Profile...' : 'Save Profile'}
               </button>
             </form>
           </div>

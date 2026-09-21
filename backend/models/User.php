@@ -14,7 +14,11 @@ class User {
     public $address;
     public $city;
     public $postal_code;
+    
+    // Store / Business Properties (sellers_info)
     public $shop_name;
+    public $is_verified;
+    public $warning_count;
 
     public function __construct($db) {
         $this->conn = $db;
@@ -70,14 +74,12 @@ class User {
             // If seller and shop_name provided, insert into sellers_info
             if ($this->role === 'seller' || !empty($this->shop_name)) {
                 try {
-                    $sellerQuery = "INSERT INTO sellers_info (user_id, shop_name, phone, address, is_verified, warning_count) 
-                                    VALUES (:uid, :shop_name, :phone, :address, 0, 0)";
+                    $sellerQuery = "INSERT INTO sellers_info (user_id, shop_name, is_verified, warning_count) 
+                                    VALUES (:uid, :shop_name, 0, 0)";
                     $sellerStmt = $this->conn->prepare($sellerQuery);
                     $shopName = !empty($this->shop_name) ? $this->shop_name : $this->first_name . "'s Hardware";
                     $sellerStmt->bindParam(":uid", $this->id);
                     $sellerStmt->bindParam(":shop_name", $shopName);
-                    $sellerStmt->bindParam(":phone", $this->phone);
-                    $sellerStmt->bindParam(":address", $this->address);
                     $sellerStmt->execute();
                 } catch(Exception $e) {}
             }
@@ -89,7 +91,8 @@ class User {
 
     // Login user
     public function login() {
-        $query = "SELECT u.id, u.first_name, u.last_name, u.email, u.password, u.role, u.phone, u.address, u.city, u.postal_code, s.shop_name 
+        $query = "SELECT u.id, u.first_name, u.last_name, u.email, u.password, u.role, u.phone, u.address, u.city, u.postal_code, 
+                         s.shop_name, s.is_verified, s.warning_count 
                   FROM " . $this->table_name . " u 
                   LEFT JOIN sellers_info s ON u.id = s.user_id 
                   WHERE u.email = ? LIMIT 0,1";
@@ -112,6 +115,8 @@ class User {
                 $this->city = $row['city'] ?? '';
                 $this->postal_code = $row['postal_code'] ?? '';
                 $this->shop_name = $row['shop_name'] ?? '';
+                $this->is_verified = (bool)($row['is_verified'] ?? 0);
+                $this->warning_count = intval($row['warning_count'] ?? 0);
                 return true;
             }
         }

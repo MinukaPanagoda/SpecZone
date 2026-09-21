@@ -89,8 +89,6 @@ CREATE TABLE `sellers_info` (
   `id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `shop_name` varchar(100) NOT NULL,
-  `address` text DEFAULT NULL,
-  `phone` varchar(20) DEFAULT NULL,
   `warning_count` int(11) DEFAULT 0,
   `is_verified` tinyint(1) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -102,7 +100,11 @@ CREATE TABLE `users` (
   `email` varchar(100) NOT NULL,
   `password` varchar(255) NOT NULL,
   `role` enum('buyer','seller','admin') DEFAULT 'buyer',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `phone` varchar(20) DEFAULT NULL,
+  `address` text DEFAULT NULL,
+  `city` varchar(100) DEFAULT NULL,
+  `postal_code` varchar(20) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `wishlist` (

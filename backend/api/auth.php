@@ -128,7 +128,9 @@ if (isset($_GET['action'])) {
                         "address" => $user->address,
                         "city" => $user->city,
                         "postal_code" => $user->postal_code,
-                        "shop_name" => $user->shop_name
+                        "shop_name" => $user->shop_name,
+                        "is_verified" => $user->is_verified,
+                        "warning_count" => $user->warning_count
                     )
                 ));
             } else {

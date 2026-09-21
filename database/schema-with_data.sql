@@ -36,11 +36,6 @@ CREATE TABLE `cart` (
   `quantity` int(11) DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-INSERT INTO `cart` (`id`, `buyer_id`, `product_id`, `quantity`) VALUES
-(44, 5, 4, 1),
-(45, 5, 9, 1),
-(46, 5, 1, 1);
-
 CREATE TABLE `categories` (
   `id` int(11) NOT NULL,
   `name` varchar(50) NOT NULL,
@@ -73,7 +68,7 @@ INSERT INTO `complaints` (`id`, `seller_id`, `buyer_id`, `reason`, `status`) VAL
 (5, 1, 5, 'late', 'pending'),
 (6, 8, 5, 'oh sheate', 'pending'),
 (7, 8, 5, 'jig', 'pending'),
-(8, 8, 5, 'oh', 'pending');
+(8, 8, 5, 'oh', 'resolved');
 
 CREATE TABLE `orders` (
   `id` int(11) NOT NULL,
@@ -105,7 +100,8 @@ INSERT INTO `orders` (`id`, `buyer_id`, `total_amount`, `created_at`) VALUES
 (20, 5, 500000.00, '2026-08-30 11:29:50'),
 (21, 5, 40000.00, '2026-08-30 11:31:27'),
 (22, 5, 23423.00, '2026-08-30 11:33:11'),
-(23, 5, 40000.00, '2026-08-30 12:44:56');
+(23, 5, 40000.00, '2026-08-30 12:44:56'),
+(24, 5, 269000.00, '2026-09-21 11:34:39');
 
 CREATE TABLE `order_items` (
   `id` int(11) NOT NULL,
@@ -147,7 +143,12 @@ INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `quantity`, `unit_pri
 (28, 20, 12, 1, 500000.00, 'pending'),
 (29, 21, 13, 1, 40000.00, 'shipped'),
 (30, 22, 10, 1, 23423.00, 'delivered'),
-(31, 23, 13, 1, 40000.00, 'pending');
+(31, 23, 13, 1, 40000.00, 'pending'),
+(32, 24, 4, 2, 52000.00, 'pending'),
+(33, 24, 9, 1, 110000.00, 'pending'),
+(34, 24, 1, 1, 12000.00, 'pending'),
+(35, 24, 6, 1, 28000.00, 'pending'),
+(36, 24, 7, 1, 15000.00, 'pending');
 
 CREATE TABLE `products` (
   `id` int(11) NOT NULL,
@@ -162,15 +163,15 @@ CREATE TABLE `products` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 INSERT INTO `products` (`id`, `seller_id`, `category_id`, `title`, `description`, `price`, `stock_quantity`, `specifications`, `created_at`) VALUES
-(1, 2, 7, 'DY470 ATX PC Case', '', 12000.00, 18, '{\"Brand\":\"ASUS\"}', '2026-07-12 19:09:18'),
+(1, 2, 7, 'DY470 ATX PC Case', '', 12000.00, 17, '{\"Brand\":\"ASUS\"}', '2026-07-12 19:09:18'),
 (2, 2, 3, 'ROG Z890', '', 134000.00, 10, '{\"Brand\":\"ASUS\"}', '2026-07-12 20:14:38'),
 (3, 1, 1, 'Intel Core i5-12400F', 'Great budget CPU for gaming.', 45000.00, 0, '{\"Socket\":\"LGA1700\",\"Cores\":\"6 Cores\",\"Threads\":\"12 Threads\",\"Base Clock\":\"2.5 GHz\",\"Boost Clock\":\"4.4 GHz\",\"Power Usage (TDP)\":\"65W\",\"Estimated Gaming FPS\":\"135 FPS (Avg 1080p Ultra)\"}', '2026-07-13 05:15:38'),
-(4, 1, 1, 'AMD Ryzen 5 5600X', 'Fast and reliable AMD processor.', 52000.00, 9, '{\"Socket\":\"AM4\",\"Cores\":\"6 Cores\",\"Threads\":\"12 Threads\",\"Base Clock\":\"3.7 GHz\",\"Boost Clock\":\"4.6 GHz\",\"Power Usage (TDP)\":\"65W\",\"Estimated Gaming FPS\":\"142 FPS (Avg 1080p Ultra)\"}', '2026-07-13 05:15:38'),
+(4, 1, 1, 'AMD Ryzen 5 5600X', 'Fast and reliable AMD processor.', 52000.00, 7, '{\"Socket\":\"AM4\",\"Cores\":\"6 Cores\",\"Threads\":\"12 Threads\",\"Base Clock\":\"3.7 GHz\",\"Boost Clock\":\"4.6 GHz\",\"Power Usage (TDP)\":\"65W\",\"Estimated Gaming FPS\":\"142 FPS (Avg 1080p Ultra)\"}', '2026-07-13 05:15:38'),
 (5, 1, 3, 'MSI PRO H610M-G DDR4', 'LGA1700 motherboard for Intel 12th/13th gen.', 25000.00, 4, '{\"Socket\":\"LGA1700\",\"Memory Type\":\"DDR4\",\"Form Factor\":\"mATX\"}', '2026-07-13 05:15:38'),
-(6, 1, 3, 'ASUS Prime B550M-A', 'AM4 motherboard for Ryzen 5000 series.', 28000.00, 8, '{\"Socket\":\"AM4\",\"Memory Type\":\"DDR4\",\"Form Factor\":\"mATX\"}', '2026-07-13 05:15:38'),
-(7, 1, 4, 'Corsair Vengeance LPX 16GB (2x8GB)', 'Fast DDR4 memory.', 15000.00, 20, '{\"Memory Type\":\"DDR4\",\"Speed\":\"3200MHz\",\"Capacity\":\"16GB\"}', '2026-07-13 05:15:38'),
+(6, 1, 3, 'ASUS Prime B550M-A', 'AM4 motherboard for Ryzen 5000 series.', 28000.00, 7, '{\"Socket\":\"AM4\",\"Memory Type\":\"DDR4\",\"Form Factor\":\"mATX\"}', '2026-07-13 05:15:38'),
+(7, 1, 4, 'Corsair Vengeance LPX 16GB (2x8GB)', 'Fast DDR4 memory.', 15000.00, 19, '{\"Memory Type\":\"DDR4\",\"Speed\":\"3200MHz\",\"Capacity\":\"16GB\"}', '2026-07-13 05:15:38'),
 (8, 1, 4, 'Kingston Fury Beast 16GB', 'Next-gen DDR5 memory.', 22000.00, 12, '{\"Memory Type\":\"DDR5\",\"Speed\":\"5200MHz\",\"Capacity\":\"16GB\"}', '2026-07-13 05:15:38'),
-(9, 1, 2, 'NVIDIA GeForce RTX 3060', 'Great 1080p gaming graphics card.', 110000.00, 3, '{\"Brand\":\"NVIDIA \\/ EVGA\",\"VRAM\":\"12GB GDDR6\",\"Boost Clock\":\"1777 MHz\",\"Power Usage (TDP)\":\"170W\",\"Estimated Gaming FPS\":\"85 FPS (1080p Ultra)\",\"Memory Interface\":\"192-bit\",\"Recommended PSU\":\"550W\",\"Ray Tracing\":\"2nd Gen RT Cores\"}', '2026-07-13 05:15:38'),
+(9, 1, 2, 'NVIDIA GeForce RTX 3060', 'Great 1080p gaming graphics card.', 110000.00, 2, '{\"Brand\":\"NVIDIA \\/ EVGA\",\"VRAM\":\"12GB GDDR6\",\"Boost Clock\":\"1777 MHz\",\"Power Usage (TDP)\":\"170W\",\"Estimated Gaming FPS\":\"85 FPS (1080p Ultra)\",\"Memory Interface\":\"192-bit\",\"Recommended PSU\":\"550W\",\"Ray Tracing\":\"2nd Gen RT Cores\"}', '2026-07-13 05:15:38'),
 (10, 8, 5, 'fromorignl', 'min', 23423.00, 1, '{\"Socket\":\"LGA1700\",\"Cores\":\"6\",\"Threads\":\"12\"}', '2026-08-17 10:28:48'),
 (11, 8, 4, 'formnewSZ', 'RAM within CPU\ncool product huh', 1400.00, 23, '{\"Socket\":\"LGA1700\",\"Cores\":\"6\",\"Threads\":\"12\"}', '2026-08-17 10:39:13'),
 (12, 8, 2, 'GeForce RTX 4090 Vladilena Milize', 'geforce rtx 4090 vladilena milize anime inspired special edition gpu', 500000.00, 7, '{\"Brand\":\"NVIDIA \\/ Special Edition\",\"VRAM\":\"24GB GDDR6X\",\"Boost Clock\":\"2520 MHz\",\"Power Usage (TDP)\":\"450W\",\"Estimated Gaming FPS\":\"185 FPS (1080p Ultra) \\/ 140 FPS (4K)\",\"Memory Interface\":\"384-bit\",\"Recommended PSU\":\"850W\",\"Ray Tracing\":\"3rd Gen RT Cores\"}', '2026-08-17 17:45:10'),
@@ -219,11 +220,15 @@ CREATE TABLE `sellers_info` (
   `id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `shop_name` varchar(100) NOT NULL,
-  `address` text DEFAULT NULL,
-  `phone` varchar(20) DEFAULT NULL,
   `warning_count` int(11) DEFAULT 0,
   `is_verified` tinyint(1) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+INSERT INTO `sellers_info` (`id`, `user_id`, `shop_name`, `warning_count`, `is_verified`) VALUES
+(1, 8, 'Independent Merchant', 4, 1),
+(2, 3, 'Independent Merchant', 1, 0),
+(3, 12, 'HEILT', 0, 0),
+(4, 13, 'ALEXH', 0, 0);
 
 CREATE TABLE `users` (
   `id` int(11) NOT NULL,
@@ -232,19 +237,28 @@ CREATE TABLE `users` (
   `email` varchar(100) NOT NULL,
   `password` varchar(255) NOT NULL,
   `role` enum('buyer','seller','admin') DEFAULT 'buyer',
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `phone` varchar(20) DEFAULT NULL,
+  `address` text DEFAULT NULL,
+  `city` varchar(100) DEFAULT NULL,
+  `postal_code` varchar(20) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-INSERT INTO `users` (`id`, `first_name`, `last_name`, `email`, `password`, `role`, `created_at`) VALUES
-(1, 'Lahiru', 'Gajaweera', 'lahirugajaweera3@gmail.com', '$2y$10$ZUKqqxt2J.LVxtwc5u5Xbu.yGvelmkeJgARjzxLkQjwEc8SKz635S', 'buyer', '2026-07-12 17:52:40'),
-(2, 'Minuka', 'Panagoda', 'minuka@gmail.com', '$2y$10$ZUKqqxt2J.LVxtwc5u5Xbu.yGvelmkeJgARjzxLkQjwEc8SKz635S', 'seller', '2026-07-12 17:55:26'),
-(3, 'Samitha', 'Nipun', 'sami@gmail.com', '$2y$10$ZUKqqxt2J.LVxtwc5u5Xbu.yGvelmkeJgARjzxLkQjwEc8SKz635S', 'seller', '2026-07-13 05:23:05'),
-(4, 'System', 'Admin', 'admin@speczone.com', '$2y$10$ZUKqqxt2J.LVxtwc5u5Xbu.yGvelmkeJgARjzxLkQjwEc8SKz635S', 'admin', '2026-07-13 07:56:14'),
-(5, 'neko', 'kuro', 'neko@gmail.com', '$2y$10$ZUKqqxt2J.LVxtwc5u5Xbu.yGvelmkeJgARjzxLkQjwEc8SKz635S', 'buyer', '2026-08-13 04:32:00'),
-(6, 'erin', 'yogokuro', 'erin@gmail.com', '$2y$10$fR8NCFORvewoI3sVIyp3xO/OOzfvK2d5fjHlsq.2XFMZbM6dOcjWO', 'buyer', '2026-08-13 04:39:58'),
-(7, 'wei', 'helios', 'wei@gmail.com', '$2y$10$j/YO3v4ue4LdzSY5CDjYz.WHnN0BsKAxAMP.dSDz/RhbI6dUsoGdK', 'buyer', '2026-08-15 14:44:31'),
-(8, 'ina', 'nis', 'ina@gmail.com', '$2y$10$dLwbCjkRE7or.ARzspfy5OwiD33Hx4KaXiSgAY2vOKYcwWAEVEyBC', 'seller', '2026-08-15 15:01:11'),
-(9, 'towa', 'takoyami', 'towa@gmail.com', '$2y$10$qQDYaVwbl0obTS4kpWNi8.vS1OlhsJH6ECfmvAMnPj4aI3mTck06K', 'buyer', '2026-08-15 15:02:12');
+INSERT INTO `users` (`id`, `first_name`, `last_name`, `email`, `password`, `role`, `created_at`, `phone`, `address`, `city`, `postal_code`) VALUES
+(1, 'Lahiru', 'Gajaweera', 'lahirugajaweera3@gmail.com', '$2y$10$zsH/y6I5bV1yyix62/JJQO3WcjipO1VsB8Iby7jdbKbByXg2Ax2x.', 'buyer', '2026-07-12 17:52:40', '+94 77 123 4567', 'No. 123, Galle Road, Colombo 03', NULL, NULL),
+(2, 'Minuka', 'Panagoda', 'minuka@gmail.com', '$2y$10$ZUKqqxt2J.LVxtwc5u5Xbu.yGvelmkeJgARjzxLkQjwEc8SKz635S', 'seller', '2026-07-12 17:55:26', NULL, NULL, NULL, NULL),
+(3, 'Samitha', 'Nipun', 'sami@gmail.com', '$2y$10$ZUKqqxt2J.LVxtwc5u5Xbu.yGvelmkeJgARjzxLkQjwEc8SKz635S', 'seller', '2026-07-13 05:23:05', NULL, NULL, NULL, NULL),
+(4, 'System', 'Admin', 'admin@speczone.com', '$2y$10$ZUKqqxt2J.LVxtwc5u5Xbu.yGvelmkeJgARjzxLkQjwEc8SKz635S', 'admin', '2026-07-13 07:56:14', NULL, NULL, NULL, NULL),
+(5, 'neko', 'kuro', 'neko@gmail.com', '$2y$10$VOCxC5e18skAhiUNUwgU6OlnriPvpT1nPWJH4Vx2taj4X9.lnsqS2', 'buyer', '2026-08-13 04:32:00', '0707645243', 'No 45, Flower Road, Colombo 07, Sri Lanka', 'Galle', '39800'),
+(6, 'erin', 'yogokuro', 'erin@gmail.com', '$2y$10$fR8NCFORvewoI3sVIyp3xO/OOzfvK2d5fjHlsq.2XFMZbM6dOcjWO', 'buyer', '2026-08-13 04:39:58', NULL, NULL, NULL, NULL),
+(7, 'wei', 'helios', 'wei@gmail.com', '$2y$10$j/YO3v4ue4LdzSY5CDjYz.WHnN0BsKAxAMP.dSDz/RhbI6dUsoGdK', 'buyer', '2026-08-15 14:44:31', NULL, NULL, NULL, NULL),
+(8, 'ina', 'nis', 'ina@gmail.com', '$2y$10$dLwbCjkRE7or.ARzspfy5OwiD33Hx4KaXiSgAY2vOKYcwWAEVEyBC', 'seller', '2026-08-15 15:01:11', '0765435434', 'No 100, Galle Road, Bambalapitiya, Colombo 04', NULL, NULL),
+(9, 'towa', 'takoyami', 'towa@gmail.com', '$2y$10$qQDYaVwbl0obTS4kpWNi8.vS1OlhsJH6ECfmvAMnPj4aI3mTck06K', 'buyer', '2026-08-15 15:02:12', NULL, NULL, NULL, NULL),
+(10, 'Prmila', 'Amma', 'uiiigeputha@gmail.com', '$2y$10$kPbEyEHe8B7nunM2xbbLjeQb3tE.N9szHn9ZGvxw2WDDCpaBE.rRa', 'buyer', '2026-09-20 11:46:09', NULL, NULL, NULL, NULL),
+(11, 'Ruchini', 'Pana', 'minukapana@gmail.com', '$2y$10$aM1xq/ZOHh6hfn6CLR7LrO/ML/t7Db9ROC8V/rWWIbyh6UOvkTqZ2', 'buyer', '2026-09-20 11:54:11', NULL, NULL, NULL, NULL),
+(12, 'senuth', 'verahera', 'Seller23@gmail.com', '$2y$10$nG0vPnhaT.RRSyRWBN8fuO3SKp5Npc/smYXvlL22MPZDFzjNElOVy', 'seller', '2026-09-21 03:54:51', '0718712233', '12,kesbewa, Piliyandala', 'Piliyandala', '10320'),
+(13, 'Sethum', 'Rathnayake', 'buyer12@gmail.com', '$2y$10$X.TplMMn71S6UvJ1J9kjGugZ1LDQI83YIaYdmqhj3j2dIdmIcWs4e', 'seller', '2026-09-21 03:57:15', '0718723322', '12,Kesbewa,Piliyandala', 'Piliyandala', '10320'),
+(14, 'Minuka', 'Panagoda', 'minukapanagoda39@gmail.com', '$2y$10$YkoLqC5KT1TemI/3TtWoOO6Uyuj.3/eNTymtOI.g8D2U5WvbN9KoK', 'buyer', '2026-09-21 04:00:42', '0703989366', '35,Kesbewa, Piliyandala', 'Piliyandala', '10320');
 
 CREATE TABLE `wishlist` (
   `id` int(11) NOT NULL,
@@ -324,7 +338,7 @@ ALTER TABLE `build_lists`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 ALTER TABLE `cart`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=47;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=49;
 
 ALTER TABLE `categories`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
@@ -333,10 +347,10 @@ ALTER TABLE `complaints`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 ALTER TABLE `orders`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 ALTER TABLE `order_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
 
 ALTER TABLE `products`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
@@ -348,10 +362,10 @@ ALTER TABLE `reviews`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 ALTER TABLE `sellers_info`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 ALTER TABLE `wishlist`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;

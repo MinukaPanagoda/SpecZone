@@ -218,7 +218,7 @@ const ProductDetails = () => {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}>
               <ShieldCheck size={20} color="var(--accent-primary)" />
-              Genuine Product
+              {product.seller_is_verified ? <span style={{ color: 'var(--success)' }}>Verified Seller</span> : 'Genuine Product'}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}>
               <Truck size={20} color="var(--accent-primary)" />

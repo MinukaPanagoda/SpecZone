@@ -55,7 +55,10 @@ CREATE TABLE `order_items` (
   `product_id` int(11) NOT NULL,
   `quantity` int(11) NOT NULL,
   `unit_price` decimal(10,2) NOT NULL,
-  `status` enum('pending','shipped','delivered') NOT NULL DEFAULT 'pending'
+  `status` enum('pending','shipped','delivered') NOT NULL DEFAULT 'pending',
+  `payout_status` enum('pending','paid') NOT NULL DEFAULT 'pending',
+  `payout_date` datetime DEFAULT NULL,
+  `payout_ref` varchar(100) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `products` (
@@ -90,7 +93,11 @@ CREATE TABLE `sellers_info` (
   `user_id` int(11) NOT NULL,
   `shop_name` varchar(100) NOT NULL,
   `warning_count` int(11) DEFAULT 0,
-  `is_verified` tinyint(1) DEFAULT 0
+  `is_verified` tinyint(1) DEFAULT 0,
+  `bank_name` varchar(100) DEFAULT NULL,
+  `bank_account_number` varchar(50) DEFAULT NULL,
+  `bank_account_name` varchar(100) DEFAULT NULL,
+  `bank_branch` varchar(100) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `users` (

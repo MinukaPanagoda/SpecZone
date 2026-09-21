@@ -101,7 +101,8 @@ INSERT INTO `orders` (`id`, `buyer_id`, `total_amount`, `created_at`) VALUES
 (21, 5, 40000.00, '2026-08-30 11:31:27'),
 (22, 5, 23423.00, '2026-08-30 11:33:11'),
 (23, 5, 40000.00, '2026-08-30 12:44:56'),
-(24, 5, 269000.00, '2026-09-21 11:34:39');
+(24, 5, 269000.00, '2026-09-21 11:34:39'),
+(25, 5, 23423.00, '2026-09-21 19:04:50');
 
 CREATE TABLE `order_items` (
   `id` int(11) NOT NULL,
@@ -109,46 +110,50 @@ CREATE TABLE `order_items` (
   `product_id` int(11) NOT NULL,
   `quantity` int(11) NOT NULL,
   `unit_price` decimal(10,2) NOT NULL,
-  `status` enum('pending','shipped','delivered') NOT NULL DEFAULT 'pending'
+  `status` enum('pending','shipped','delivered') NOT NULL DEFAULT 'pending',
+  `payout_status` enum('pending','paid') NOT NULL DEFAULT 'pending',
+  `payout_date` datetime DEFAULT NULL,
+  `payout_ref` varchar(100) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `quantity`, `unit_price`, `status`) VALUES
-(1, 1, 1, 1, 12000.00, 'pending'),
-(2, 2, 1, 1, 12000.00, 'delivered'),
-(3, 2, 2, 1, 134.00, 'pending'),
-(4, 3, 3, 3, 45000.00, 'pending'),
-(5, 3, 4, 3, 52000.00, 'pending'),
-(6, 4, 4, 1, 52000.00, 'pending'),
-(7, 4, 3, 2, 45000.00, 'pending'),
-(8, 5, 3, 1, 45000.00, 'pending'),
-(9, 5, 4, 1, 52000.00, 'pending'),
-(10, 6, 10, 1, 23423.00, 'shipped'),
-(11, 7, 11, 1, 1400.00, 'pending'),
-(12, 8, 12, 1, 500000.00, 'delivered'),
-(13, 9, 12, 1, 500000.00, 'shipped'),
-(14, 9, 11, 1, 1400.00, 'pending'),
-(15, 10, 12, 1, 500000.00, 'delivered'),
-(16, 10, 11, 1, 1400.00, 'pending'),
-(17, 10, 3, 1, 45000.00, 'pending'),
-(18, 11, 5, 1, 25000.00, 'pending'),
-(19, 12, 2, 2, 134.00, 'shipped'),
-(20, 13, 12, 1, 500000.00, 'shipped'),
-(21, 14, 13, 1, 40000.00, 'pending'),
-(22, 15, 13, 2, 40000.00, 'delivered'),
-(23, 16, 3, 1, 45000.00, 'pending'),
-(24, 16, 4, 1, 52000.00, 'pending'),
-(25, 17, 9, 1, 110000.00, 'pending'),
-(26, 18, 3, 1, 45000.00, 'pending'),
-(27, 19, 3, 1, 45000.00, 'pending'),
-(28, 20, 12, 1, 500000.00, 'pending'),
-(29, 21, 13, 1, 40000.00, 'shipped'),
-(30, 22, 10, 1, 23423.00, 'delivered'),
-(31, 23, 13, 1, 40000.00, 'pending'),
-(32, 24, 4, 2, 52000.00, 'pending'),
-(33, 24, 9, 1, 110000.00, 'pending'),
-(34, 24, 1, 1, 12000.00, 'pending'),
-(35, 24, 6, 1, 28000.00, 'pending'),
-(36, 24, 7, 1, 15000.00, 'pending');
+INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `quantity`, `unit_price`, `status`, `payout_status`, `payout_date`, `payout_ref`) VALUES
+(1, 1, 1, 1, 12000.00, 'pending', 'pending', NULL, NULL),
+(2, 2, 1, 1, 12000.00, 'delivered', 'pending', NULL, NULL),
+(3, 2, 2, 1, 134.00, 'pending', 'pending', NULL, NULL),
+(4, 3, 3, 3, 45000.00, 'pending', 'pending', NULL, NULL),
+(5, 3, 4, 3, 52000.00, 'pending', 'pending', NULL, NULL),
+(6, 4, 4, 1, 52000.00, 'pending', 'pending', NULL, NULL),
+(7, 4, 3, 2, 45000.00, 'pending', 'pending', NULL, NULL),
+(8, 5, 3, 1, 45000.00, 'pending', 'pending', NULL, NULL),
+(9, 5, 4, 1, 52000.00, 'pending', 'pending', NULL, NULL),
+(10, 6, 10, 1, 23423.00, 'shipped', 'pending', NULL, NULL),
+(11, 7, 11, 1, 1400.00, 'pending', 'pending', NULL, NULL),
+(12, 8, 12, 1, 500000.00, 'delivered', 'pending', NULL, NULL),
+(13, 9, 12, 1, 500000.00, 'shipped', 'pending', NULL, NULL),
+(14, 9, 11, 1, 1400.00, 'pending', 'pending', NULL, NULL),
+(15, 10, 12, 1, 500000.00, 'delivered', 'pending', NULL, NULL),
+(16, 10, 11, 1, 1400.00, 'pending', 'pending', NULL, NULL),
+(17, 10, 3, 1, 45000.00, 'pending', 'pending', NULL, NULL),
+(18, 11, 5, 1, 25000.00, 'pending', 'pending', NULL, NULL),
+(19, 12, 2, 2, 134.00, 'shipped', 'pending', NULL, NULL),
+(20, 13, 12, 1, 500000.00, 'shipped', 'pending', NULL, NULL),
+(21, 14, 13, 1, 40000.00, 'pending', 'pending', NULL, NULL),
+(22, 15, 13, 2, 40000.00, 'delivered', 'pending', NULL, NULL),
+(23, 16, 3, 1, 45000.00, 'pending', 'pending', NULL, NULL),
+(24, 16, 4, 1, 52000.00, 'pending', 'pending', NULL, NULL),
+(25, 17, 9, 1, 110000.00, 'pending', 'pending', NULL, NULL),
+(26, 18, 3, 1, 45000.00, 'pending', 'pending', NULL, NULL),
+(27, 19, 3, 1, 45000.00, 'pending', 'pending', NULL, NULL),
+(28, 20, 12, 1, 500000.00, 'shipped', 'pending', NULL, NULL),
+(29, 21, 13, 1, 40000.00, 'delivered', 'paid', '2026-09-21 18:36:33', 'EFT-SZ-20260921-9340'),
+(30, 22, 10, 1, 23423.00, 'delivered', 'pending', NULL, NULL),
+(31, 23, 13, 1, 40000.00, 'delivered', 'pending', NULL, NULL),
+(32, 24, 4, 2, 52000.00, 'pending', 'pending', NULL, NULL),
+(33, 24, 9, 1, 110000.00, 'pending', 'pending', NULL, NULL),
+(34, 24, 1, 1, 12000.00, 'pending', 'pending', NULL, NULL),
+(35, 24, 6, 1, 28000.00, 'pending', 'pending', NULL, NULL),
+(36, 24, 7, 1, 15000.00, 'pending', 'pending', NULL, NULL),
+(37, 25, 10, 1, 23423.00, 'pending', 'pending', NULL, NULL);
 
 CREATE TABLE `products` (
   `id` int(11) NOT NULL,
@@ -172,7 +177,7 @@ INSERT INTO `products` (`id`, `seller_id`, `category_id`, `title`, `description`
 (7, 1, 4, 'Corsair Vengeance LPX 16GB (2x8GB)', 'Fast DDR4 memory.', 15000.00, 19, '{\"Memory Type\":\"DDR4\",\"Speed\":\"3200MHz\",\"Capacity\":\"16GB\"}', '2026-07-13 05:15:38'),
 (8, 1, 4, 'Kingston Fury Beast 16GB', 'Next-gen DDR5 memory.', 22000.00, 12, '{\"Memory Type\":\"DDR5\",\"Speed\":\"5200MHz\",\"Capacity\":\"16GB\"}', '2026-07-13 05:15:38'),
 (9, 1, 2, 'NVIDIA GeForce RTX 3060', 'Great 1080p gaming graphics card.', 110000.00, 2, '{\"Brand\":\"NVIDIA \\/ EVGA\",\"VRAM\":\"12GB GDDR6\",\"Boost Clock\":\"1777 MHz\",\"Power Usage (TDP)\":\"170W\",\"Estimated Gaming FPS\":\"85 FPS (1080p Ultra)\",\"Memory Interface\":\"192-bit\",\"Recommended PSU\":\"550W\",\"Ray Tracing\":\"2nd Gen RT Cores\"}', '2026-07-13 05:15:38'),
-(10, 8, 5, 'fromorignl', 'min', 23423.00, 1, '{\"Socket\":\"LGA1700\",\"Cores\":\"6\",\"Threads\":\"12\"}', '2026-08-17 10:28:48'),
+(10, 8, 5, 'fromorignl', 'min', 23423.00, 0, '{\"Socket\":\"LGA1700\",\"Cores\":\"6\",\"Threads\":\"12\"}', '2026-08-17 10:28:48'),
 (11, 8, 4, 'formnewSZ', 'RAM within CPU\ncool product huh', 1400.00, 23, '{\"Socket\":\"LGA1700\",\"Cores\":\"6\",\"Threads\":\"12\"}', '2026-08-17 10:39:13'),
 (12, 8, 2, 'GeForce RTX 4090 Vladilena Milize', 'geforce rtx 4090 vladilena milize anime inspired special edition gpu', 500000.00, 7, '{\"Brand\":\"NVIDIA \\/ Special Edition\",\"VRAM\":\"24GB GDDR6X\",\"Boost Clock\":\"2520 MHz\",\"Power Usage (TDP)\":\"450W\",\"Estimated Gaming FPS\":\"185 FPS (1080p Ultra) \\/ 140 FPS (4K)\",\"Memory Interface\":\"384-bit\",\"Recommended PSU\":\"850W\",\"Ray Tracing\":\"3rd Gen RT Cores\"}', '2026-08-17 17:45:10'),
 (13, 8, 4, 'XPS D50 Long Yao ROG STRIX', 'Asia-exclusive', 40000.00, 1, '{\"Capacity\":\"32GB\",\"gen\":\"DDR4\"}', '2026-08-18 16:11:18');
@@ -221,14 +226,18 @@ CREATE TABLE `sellers_info` (
   `user_id` int(11) NOT NULL,
   `shop_name` varchar(100) NOT NULL,
   `warning_count` int(11) DEFAULT 0,
-  `is_verified` tinyint(1) DEFAULT 0
+  `is_verified` tinyint(1) DEFAULT 0,
+  `bank_name` varchar(100) DEFAULT NULL,
+  `bank_account_number` varchar(50) DEFAULT NULL,
+  `bank_account_name` varchar(100) DEFAULT NULL,
+  `bank_branch` varchar(100) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-INSERT INTO `sellers_info` (`id`, `user_id`, `shop_name`, `warning_count`, `is_verified`) VALUES
-(1, 8, 'Independent Merchant', 4, 1),
-(2, 3, 'Independent Merchant', 1, 0),
-(3, 12, 'HEILT', 0, 0),
-(4, 13, 'ALEXH', 0, 0);
+INSERT INTO `sellers_info` (`id`, `user_id`, `shop_name`, `warning_count`, `is_verified`, `bank_name`, `bank_account_number`, `bank_account_name`, `bank_branch`) VALUES
+(1, 8, 'Independent Merchant', 4, 0, NULL, NULL, NULL, NULL),
+(2, 3, 'Independent Merchant', 1, 0, NULL, NULL, NULL, NULL),
+(3, 12, 'HEILT', 0, 0, NULL, NULL, NULL, NULL),
+(4, 13, 'ALEXH', 0, 0, NULL, NULL, NULL, NULL);
 
 CREATE TABLE `users` (
   `id` int(11) NOT NULL,
@@ -338,7 +347,7 @@ ALTER TABLE `build_lists`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 ALTER TABLE `cart`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=49;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=51;
 
 ALTER TABLE `categories`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
@@ -347,10 +356,10 @@ ALTER TABLE `complaints`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 ALTER TABLE `orders`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
 
 ALTER TABLE `order_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
 
 ALTER TABLE `products`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;

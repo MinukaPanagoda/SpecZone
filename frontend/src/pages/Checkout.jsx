@@ -3,20 +3,14 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import {
-  CreditCard,
   Truck,
   CheckCircle2,
-  Building2,
   DollarSign,
-  Copy,
   Check,
-  Printer,
   ShoppingBag,
   ArrowRight,
-  PackageCheck,
   ShieldCheck,
-  Lock,
-  Smartphone,
+  Package,
   AlertCircle
 } from 'lucide-react';
 
@@ -34,29 +28,11 @@ const Checkout = () => {
   });
 
   const [hasAutofilled, setHasAutofilled] = useState(false);
+  const paymentMethod = 'cod'; // Only Cash on Delivery supported
 
-  const [paymentMethod, setPaymentMethod] = useState('card'); // 'card' | 'bank_transfer' | 'cod'
-
-  // Card Details State
-  const [cardDetails, setCardDetails] = useState({
-    cardholderName: user ? `${user.first_name || ''} ${user.last_name || ''}`.trim().toUpperCase() : '',
-    cardNumber: '',
-    expiry: '',
-    cvv: ''
-  });
-
-  // 3D Secure OTP Modal State
-  const [show3DSModal, setShow3DSModal] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
-  const [otpProcessing, setOtpProcessing] = useState(false);
-  const [otpError, setOtpError] = useState('');
-
-  const [bankRef, setBankRef] = useState('');
-  const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
-  const [orderSnapshot, setOrderSnapshot] = useState(null);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [placedOrderId, setPlacedOrderId] = useState(null);
 
@@ -80,10 +56,6 @@ const Checkout = () => {
       postalCode: prev.postalCode || user.postal_code || user.postalCode || ''
     }));
 
-    if (!cardDetails.cardholderName && name) {
-      setCardDetails(prev => ({ ...prev, cardholderName: name.toUpperCase() }));
-    }
-
     // Fetch freshest profile from database to ensure fresh autofill
     if (user.id) {
       fetch(`http://localhost/SpecZone/backend/api/profile.php?action=get_profile&user_id=${user.id}`)
@@ -102,10 +74,6 @@ const Checkout = () => {
             if (p.phone || p.address || p.city || p.postal_code) {
               setHasAutofilled(true);
             }
-            setCardDetails(prev => ({
-              ...prev,
-              cardholderName: prev.cardholderName || (pName || name).toUpperCase()
-            }));
           }
         })
         .catch(err => console.error("Error autofilling checkout profile:", err));
@@ -116,74 +84,11 @@ const Checkout = () => {
     setShipping({ ...shipping, [e.target.name]: e.target.value });
   };
 
-  // Format Card Number (XXXX XXXX XXXX XXXX)
-  const handleCardNumberChange = (e) => {
-    const raw = e.target.value.replace(/\D/g, '').slice(0, 16);
-    const formatted = raw.replace(/(\d{4})(?=\d)/g, '$1 ');
-    setCardDetails(prev => ({ ...prev, cardNumber: formatted }));
-  };
-
-  // Format Expiry (MM/YY)
-  const handleExpiryChange = (e) => {
-    let val = e.target.value.replace(/\D/g, '').slice(0, 4);
-    if (val.length >= 2) {
-      val = `${val.slice(0, 2)}/${val.slice(2)}`;
-    }
-    setCardDetails(prev => ({ ...prev, expiry: val }));
-  };
-
-  // Format CVV (3-4 digits)
-  const handleCvvChange = (e) => {
-    const val = e.target.value.replace(/\D/g, '').slice(0, 4);
-    setCardDetails(prev => ({ ...prev, cvv: val }));
-  };
-
-  // Detect Card Brand
-  const getCardBrand = (num) => {
-    const clean = num.replace(/\s/g, '');
-    if (clean.startsWith('4')) return 'Visa';
-    if (/^5[1-5]/.test(clean) || /^2[2-7]/.test(clean)) return 'Mastercard';
-    if (/^3[47]/.test(clean)) return 'American Express';
-    return 'Credit/Debit Card';
-  };
-
-  const handleCopyAccount = () => {
-    navigator.clipboard.writeText('80092341556701');
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   const validateCheckoutForm = () => {
     if (!shipping.fullName || !shipping.address || !shipping.city || !shipping.phone) {
       setError('Please fill in all required shipping details.');
       return false;
     }
-
-    if (paymentMethod === 'bank_transfer' && !bankRef.trim()) {
-      setError('Please enter your Bank Transfer Reference / Transaction ID before submitting.');
-      return false;
-    }
-
-    if (paymentMethod === 'card') {
-      const cleanNum = cardDetails.cardNumber.replace(/\s/g, '');
-      if (cleanNum.length < 16) {
-        setError('Please enter a valid 16-digit card number.');
-        return false;
-      }
-      if (!cardDetails.cardholderName.trim()) {
-        setError('Cardholder name is required.');
-        return false;
-      }
-      if (!cardDetails.expiry || cardDetails.expiry.length < 5) {
-        setError('Please enter a valid expiration date (MM/YY).');
-        return false;
-      }
-      if (!cardDetails.cvv || cardDetails.cvv.length < 3) {
-        setError('Please enter a valid 3 or 4-digit CVV / CVC code.');
-        return false;
-      }
-    }
-
     return true;
   };
 
@@ -195,16 +100,6 @@ const Checkout = () => {
 
     if (!validateCheckoutForm()) return;
 
-    // If online card payment, open 3D Secure modal first
-    if (paymentMethod === 'card') {
-      setShow3DSModal(true);
-      return;
-    }
-
-    await executeOrderSubmission();
-  };
-
-  const executeOrderSubmission = async (paymentRefData = null) => {
     setLoading(true);
 
     try {
@@ -213,8 +108,8 @@ const Checkout = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           buyer_id: user.id,
-          payment_method: paymentMethod,
-          payment_ref: paymentRefData || bankRef || (paymentMethod === 'card' ? `CARD-${cardDetails.cardNumber.slice(-4)}-3DS` : 'COD'),
+          payment_method: 'cod',
+          payment_ref: 'COD',
           shipping_details: shipping
         })
       });
@@ -239,390 +134,187 @@ const Checkout = () => {
     }
   };
 
-  // 3D Secure OTP verification handler
-  const handleVerify3DS = async (e) => {
-    e.preventDefault();
-    setOtpError('');
-
-    if (!otpCode || otpCode.length < 4) {
-      setOtpError('Please enter the 6-digit OTP code sent to your registered mobile device.');
-      return;
-    }
-
-    setOtpProcessing(true);
-
-    // Simulate authentic 3D Secure Gateway verification latency
-    setTimeout(async () => {
-      setOtpProcessing(false);
-      setShow3DSModal(false);
-      await executeOrderSubmission(`CARD-${cardDetails.cardNumber.slice(-4)}-AUTH-${Math.floor(100000 + Math.random() * 900000)}`);
-    }, 1200);
-  };
-
   return (
-    <div className="container" style={{ padding: '2rem 1rem' }}>
-      <h2 style={{ marginBottom: '2rem', fontSize: '2rem' }}>Checkout & Payment</h2>
+    <div className="container" style={{ padding: '4rem 1rem', maxWidth: '1000px', minHeight: '80vh' }}>
+      
+      {/* Checkout Header */}
+      <div style={{ marginBottom: '2.5rem', textAlign: 'center' }}>
+        <h2 style={{ fontSize: '2.4rem', margin: '0 0 0.5rem 0', fontWeight: '800' }}>
+          Secure Checkout
+        </h2>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', margin: 0 }}>
+          Confirm your delivery address and finalize your order with Cash on Delivery
+        </p>
+      </div>
 
       {error && (
-        <div className="alert alert-error" style={{ padding: '1rem', marginBottom: '1.5rem', borderRadius: '8px', background: 'rgba(255,50,50,0.1)', color: '#ff6b6b', border: '1px solid rgba(255,50,50,0.2)' }}>
-          {error}
+        <div style={{
+          padding: '1rem 1.25rem',
+          marginBottom: '2rem',
+          borderRadius: '8px',
+          backgroundColor: 'rgba(255, 51, 102, 0.12)',
+          border: '1px solid var(--danger)',
+          color: 'var(--danger)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem'
+        }}>
+          <AlertCircle size={20} />
+          <span>{error}</span>
         </div>
       )}
 
       <form onSubmit={handlePlaceOrder}>
-        <div className="checkout-layout">
-
-          {/* Shipping & Payment Form */}
-          <div className="glass-panel checkout-shipping">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.2rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.8rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-              <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem', alignItems: 'start' }}>
+          
+          {/* Shipping & Payment Column */}
+          <div className="glass-panel" style={{ padding: '2rem' }}>
+            
+            {/* Step 1: Shipping Details */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.8rem' }}>
+              <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, fontSize: '1.25rem' }}>
                 <Truck size={20} color="var(--accent-primary)" /> 1. Shipping Details
               </h3>
-              <span style={{ fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', color: 'var(--accent-primary)', background: 'rgba(0, 240, 255, 0.1)', padding: '0.25rem 0.6rem', borderRadius: '4px', border: '1px solid rgba(0, 240, 255, 0.25)' }}>
-                <CheckCircle2 size={13} /> Auto-filled from your profile
-              </span>
+              {hasAutofilled && (
+                <span style={{ fontSize: '0.75rem', background: 'rgba(0, 240, 255, 0.1)', color: 'var(--accent-primary)', padding: '0.2rem 0.5rem', borderRadius: '4px', border: '1px solid rgba(0, 240, 255, 0.2)' }}>
+                  ✓ Autofilled from Profile
+                </span>
+              )}
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Full Name *</label>
-              <input
-                type="text"
-                name="fullName"
-                className="form-control"
-                value={shipping.fullName}
-                onChange={handleChange}
-                required
-                placeholder="Recipient's Full Name"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Delivery Address *</label>
-              <textarea
-                name="address"
-                className="form-control"
-                value={shipping.address}
-                onChange={handleChange}
-                required
-                rows="3"
-                placeholder="Street address, apartment, suite, etc."
-              ></textarea>
-            </div>
-
-            <div className="checkout-city-postal">
-              <div className="form-group">
-                <label className="form-label">City / Town *</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', marginBottom: '2.5rem' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
+                  Full Recipient Name *
+                </label>
                 <input
                   type="text"
-                  name="city"
-                  className="form-control"
-                  value={shipping.city}
-                  onChange={handleChange}
                   required
-                  placeholder="e.g. Colombo, Kandy"
-                />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Postal Code</label>
-                <input
-                  type="text"
-                  name="postalCode"
-                  className="form-control"
-                  value={shipping.postalCode}
+                  name="fullName"
+                  placeholder="e.g. John Doe"
+                  value={shipping.fullName}
                   onChange={handleChange}
-                  placeholder="e.g. 00100"
+                  className="form-control"
                 />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
+                  Phone Number (For Delivery Confirmation) *
+                </label>
+                <input
+                  type="tel"
+                  required
+                  name="phone"
+                  placeholder="e.g. +94 77 123 4567"
+                  value={shipping.phone}
+                  onChange={handleChange}
+                  className="form-control"
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
+                  Delivery Street Address *
+                </label>
+                <textarea
+                  required
+                  name="address"
+                  rows="3"
+                  placeholder="e.g. No 45/A, Lotus Avenue, Galle Road"
+                  value={shipping.address}
+                  onChange={handleChange}
+                  className="form-control"
+                  style={{ resize: 'vertical' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
+                    City / Town *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    name="city"
+                    placeholder="e.g. Colombo, Kandy"
+                    value={shipping.city}
+                    onChange={handleChange}
+                    className="form-control"
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
+                    Postal Code
+                  </label>
+                  <input
+                    type="text"
+                    name="postalCode"
+                    placeholder="e.g. 00400"
+                    value={shipping.postalCode}
+                    onChange={handleChange}
+                    className="form-control"
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="form-group">
-              <label className="form-label">Contact Phone Number *</label>
-              <input
-                type="tel"
-                name="phone"
-                className="form-control"
-                value={shipping.phone}
-                onChange={handleChange}
-                required
-                placeholder="e.g. 077 123 4567"
-              />
-            </div>
-
+            {/* Step 2: Payment Method */}
             <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: '2rem 0 1.2rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.8rem' }}>
-              <CreditCard size={20} color="var(--accent-primary)" /> 2. Payment Method
+              <DollarSign size={20} color="var(--accent-primary)" /> 2. Payment Method
             </h3>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
-
-              {/* Option 1: Credit / Debit Card (Online Payment Gateway) */}
-              <label
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {/* Cash on Delivery Only Option */}
+              <div
                 style={{
                   display: 'flex',
                   alignItems: 'flex-start',
-                  gap: '0.9rem',
-                  padding: '1.2rem',
-                  borderRadius: '8px',
-                  border: `1px solid ${paymentMethod === 'card' ? 'var(--accent-primary)' : 'var(--border-color)'}`,
-                  background: paymentMethod === 'card' ? 'rgba(0, 240, 255, 0.07)' : 'rgba(0,0,0,0.2)',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  boxShadow: paymentMethod === 'card' ? '0 0 15px rgba(0, 240, 255, 0.1)' : 'none'
+                  gap: '1rem',
+                  padding: '1.4rem',
+                  borderRadius: '10px',
+                  border: '1px solid var(--accent-primary)',
+                  background: 'rgba(0, 240, 255, 0.08)',
+                  boxShadow: '0 0 20px rgba(0, 240, 255, 0.12)'
                 }}
               >
-                <input
-                  type="radio"
-                  name="payment"
-                  value="card"
-                  checked={paymentMethod === 'card'}
-                  onChange={() => setPaymentMethod('card')}
-                  style={{ marginTop: '0.3rem', accentColor: 'var(--accent-primary)' }}
-                />
+                <div
+                  style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '50%',
+                    background: 'rgba(0, 240, 255, 0.15)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--accent-primary)',
+                    flexShrink: 0
+                  }}
+                >
+                  <DollarSign size={22} />
+                </div>
+
                 <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.3rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 'bold', fontSize: '1.05rem' }}>
-                      <CreditCard size={18} color="var(--accent-primary)" /> Credit / Debit Card (Online Gateway)
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '1.1rem', color: '#fff' }}>
+                      Cash on Delivery (COD)
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <span style={{ fontSize: '0.7rem', background: 'rgba(255, 255, 255, 0.1)', color: '#fff', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: 'bold' }}>
-                        VISA
-                      </span>
-                      <span style={{ fontSize: '0.7rem', background: 'rgba(255, 255, 255, 0.1)', color: '#fff', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: 'bold' }}>
-                        Mastercard
-                      </span>
-                      {paymentMethod === 'card' && (
-                        <span style={{ fontSize: '0.75rem', background: 'rgba(0, 240, 255, 0.15)', color: 'var(--accent-primary)', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: 'bold', marginLeft: '0.3rem' }}>
-                          Selected
-                        </span>
-                      )}
-                    </div>
+                    <span style={{ fontSize: '0.75rem', background: 'rgba(0, 255, 150, 0.15)', color: 'var(--success)', padding: '0.2rem 0.6rem', borderRadius: '20px', fontWeight: 'bold', border: '1px solid rgba(0, 255, 150, 0.3)' }}>
+                      ✓ Guaranteed Delivery
+                    </span>
                   </div>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-                    Instant & secure encrypted 256-bit checkout with 3D Secure / OTP authorization.
+
+                  <p style={{ margin: '0 0 0.6rem 0', fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
+                    Pay in cash directly to the delivery courier upon physical handover and inspection at your doorstep.
                   </p>
-                </div>
-              </label>
 
-              {/* Card Details Form (When Card selected) */}
-              {paymentMethod === 'card' && (
-                <div className="glass-panel" style={{ padding: '1.5rem', marginTop: '-0.5rem', marginBottom: '0.5rem', border: '1px solid rgba(0, 240, 255, 0.3)', background: 'rgba(0, 0, 0, 0.45)', borderRadius: '8px' }}>
-
-                  {/* Visual Card Preview Badge */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', paddingBottom: '0.75rem', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-primary)', fontSize: '0.9rem', fontWeight: 'bold' }}>
-                      <Lock size={15} /> 256-Bit SSL Encrypted Card Gateway
-                    </div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
-                      Detected: <span style={{ color: '#fff' }}>{getCardBrand(cardDetails.cardNumber)}</span>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
-                        Cardholder Name *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="NAME AS PRINTED ON CARD"
-                        value={cardDetails.cardholderName}
-                        onChange={(e) => setCardDetails({ ...cardDetails, cardholderName: e.target.value.toUpperCase() })}
-                        className="form-control"
-                        style={{ textTransform: 'uppercase', letterSpacing: '0.5px' }}
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
-                        16-Digit Card Number *
-                      </label>
-                      <div style={{ position: 'relative' }}>
-                        <input
-                          type="text"
-                          required
-                          placeholder="4111 2222 3333 4444"
-                          value={cardDetails.cardNumber}
-                          onChange={handleCardNumberChange}
-                          className="form-control"
-                          style={{ fontFamily: 'monospace', fontSize: '1rem', letterSpacing: '1px' }}
-                        />
-                        <CreditCard size={18} style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--accent-primary)', opacity: 0.8 }} />
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                      <div>
-                        <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
-                          Expiration Date *
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="MM/YY"
-                          value={cardDetails.expiry}
-                          onChange={handleExpiryChange}
-                          className="form-control"
-                          style={{ fontFamily: 'monospace', textAlign: 'center' }}
-                        />
-                      </div>
-
-                      <div>
-                        <label style={{ display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: '600' }}>
-                          CVV / CVC *
-                        </label>
-                        <input
-                          type="password"
-                          required
-                          placeholder="•••"
-                          maxLength="4"
-                          value={cardDetails.cvv}
-                          onChange={handleCvvChange}
-                          className="form-control"
-                          style={{ fontFamily: 'monospace', textAlign: 'center', letterSpacing: '2px' }}
-                        />
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
-                      <ShieldCheck size={14} color="var(--success)" /> Verified by Visa & Mastercard Identity Check 3DS 2.0
-                    </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--success)', fontSize: '0.8rem', fontWeight: '500' }}>
+                    <ShieldCheck size={15} /> Zero advance payment required. Safe and trusted delivery.
                   </div>
                 </div>
-              )}
-
-              {/* Option 2: Direct Bank Transfer */}
-              <label
-                style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '0.9rem',
-                  padding: '1.2rem',
-                  borderRadius: '8px',
-                  border: `1px solid ${paymentMethod === 'bank_transfer' ? 'var(--accent-primary)' : 'var(--border-color)'}`,
-                  background: paymentMethod === 'bank_transfer' ? 'rgba(0, 240, 255, 0.07)' : 'rgba(0,0,0,0.2)',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  boxShadow: paymentMethod === 'bank_transfer' ? '0 0 15px rgba(0, 240, 255, 0.1)' : 'none'
-                }}
-              >
-                <input
-                  type="radio"
-                  name="payment"
-                  value="bank_transfer"
-                  checked={paymentMethod === 'bank_transfer'}
-                  onChange={() => setPaymentMethod('bank_transfer')}
-                  style={{ marginTop: '0.3rem', accentColor: 'var(--accent-primary)' }}
-                />
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 'bold', fontSize: '1.05rem' }}>
-                      <Building2 size={18} color="var(--accent-primary)" /> Direct Bank Transfer / Deposit
-                    </div>
-                    {paymentMethod === 'bank_transfer' && (
-                      <span style={{ fontSize: '0.75rem', background: 'rgba(0, 240, 255, 0.15)', color: 'var(--accent-primary)', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: 'bold' }}>
-                        Selected
-                      </span>
-                    )}
-                  </div>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-                    Transfer amount to SpecZone bank account and enter your deposit / reference number.
-                  </p>
-                </div>
-              </label>
-
-              {/* Bank Transfer Sub-panel */}
-              {paymentMethod === 'bank_transfer' && (
-                <div className="glass-panel" style={{ padding: '1.3rem', marginTop: '-0.5rem', marginBottom: '0.5rem', border: '1px solid rgba(0, 240, 255, 0.3)', background: 'rgba(0, 0, 0, 0.45)', borderRadius: '8px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <h4 style={{ margin: 0, fontSize: '0.95rem', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <Building2 size={16} /> Official SpecZone Bank Account
-                    </h4>
-                    <button
-                      type="button"
-                      onClick={handleCopyAccount}
-                      className="btn btn-outline"
-                      style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
-                    >
-                      {copied ? <Check size={12} color="var(--success)" /> : <Copy size={12} />}
-                      {copied ? 'Copied Acc No!' : 'Copy Account'}
-                    </button>
-                  </div>
-
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.6rem', marginBottom: '1.2rem', background: 'rgba(255,255,255,0.03)', padding: '0.8rem', borderRadius: '6px' }}>
-                    <div><strong>Bank:</strong> Commercial Bank of Ceylon</div>
-                    <div><strong>Branch:</strong> Colombo Super Branch</div>
-                    <div><strong>Account Name:</strong> SpecZone Technologies</div>
-                    <div><strong>Account No:</strong> <span style={{ color: 'var(--accent-primary)', fontWeight: 'bold' }}>8009 2341 5567 01</span></div>
-                  </div>
-
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label" style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>
-                      Bank Transfer Reference / Transaction ID <span style={{ color: 'var(--danger)' }}>*</span>
-                    </label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder="e.g. TXN-984210 or Deposit Slip Number"
-                      value={bankRef}
-                      onChange={(e) => setBankRef(e.target.value)}
-                      style={{
-                        borderColor: bankRef.trim() ? 'var(--success)' : undefined,
-                        boxShadow: bankRef.trim() ? '0 0 10px rgba(0, 255, 150, 0.15)' : undefined
-                      }}
-                    />
-                    {bankRef.trim() ? (
-                      <small style={{ color: 'var(--success)', fontSize: '0.8rem', marginTop: '0.3rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                        <Check size={14} /> Reference attached: {bankRef.trim()}
-                      </small>
-                    ) : (
-                      <small style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '0.3rem', display: 'block' }}>
-                        Enter the reference code from your online bank transfer or bank deposit slip.
-                      </small>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Option 3: Cash on Delivery */}
-              <label
-                style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '0.9rem',
-                  padding: '1.2rem',
-                  borderRadius: '8px',
-                  border: `1px solid ${paymentMethod === 'cod' ? 'var(--accent-primary)' : 'var(--border-color)'}`,
-                  background: paymentMethod === 'cod' ? 'rgba(0, 240, 255, 0.07)' : 'rgba(0,0,0,0.2)',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  boxShadow: paymentMethod === 'cod' ? '0 0 15px rgba(0, 240, 255, 0.1)' : 'none'
-                }}
-              >
-                <input
-                  type="radio"
-                  name="payment"
-                  value="cod"
-                  checked={paymentMethod === 'cod'}
-                  onChange={() => setPaymentMethod('cod')}
-                  style={{ marginTop: '0.3rem', accentColor: 'var(--accent-primary)' }}
-                />
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 'bold', fontSize: '1.05rem' }}>
-                      <DollarSign size={18} color="var(--accent-primary)" /> Cash on Delivery (COD)
-                    </div>
-                    {paymentMethod === 'cod' && (
-                      <span style={{ fontSize: '0.75rem', background: 'rgba(0, 255, 150, 0.15)', color: 'var(--success)', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: 'bold' }}>
-                        Selected
-                      </span>
-                    )}
-                  </div>
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-                    Pay in cash directly to the courier upon physical delivery at your doorstep.
-                  </p>
-                </div>
-              </label>
-
+              </div>
             </div>
 
           </div>
@@ -657,8 +349,8 @@ const Checkout = () => {
 
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.85rem', borderTop: '1px dashed rgba(255,255,255,0.08)', paddingTop: '0.8rem' }}>
                 <span>Payment Method</span>
-                <span style={{ color: 'var(--text-primary)', fontWeight: 'bold' }}>
-                  {paymentMethod === 'card' ? 'Online Card (3DS Secure)' : paymentMethod === 'bank_transfer' ? 'Bank Transfer' : 'Cash on Delivery'}
+                <span style={{ color: 'var(--success)', fontWeight: 'bold' }}>
+                  Cash on Delivery (COD)
                 </span>
               </div>
 
@@ -675,17 +367,13 @@ const Checkout = () => {
               >
                 {loading ? (
                   'Processing Order...'
-                ) : paymentMethod === 'card' ? (
-                  <>Pay Rs. {getCartTotal().toLocaleString('en-IN')} Now <ArrowRight size={18} /></>
-                ) : paymentMethod === 'bank_transfer' ? (
-                  <>Confirm & Submit Bank Order <ArrowRight size={18} /></>
                 ) : (
-                  <>Confirm Order (Pay on Delivery) <ArrowRight size={18} /></>
+                  <>Confirm & Place Order (COD) <ArrowRight size={18} /></>
                 )}
               </button>
 
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', marginTop: '1rem', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
-                <ShieldCheck size={14} color="var(--success)" /> 100% Secure Checkout & Genuine Components
+                <ShieldCheck size={14} color="var(--success)" /> 100% Genuine Hardware & Buyer Protection
               </div>
             </div>
           </div>
@@ -693,162 +381,19 @@ const Checkout = () => {
         </div>
       </form>
 
-      {/* 3D Secure / Verified by Visa Simulator Modal */}
-      {show3DSModal && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.85)',
-            backdropFilter: 'blur(10px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 2500,
-            padding: '1.2rem',
-            animation: 'fadeIn 0.2s ease-out'
-          }}
-        >
-          <div
-            className="glass-panel"
-            style={{
-              width: '100%',
-              maxWidth: '460px',
-              padding: '2rem',
-              borderRadius: '16px',
-              border: '1px solid rgba(0, 240, 255, 0.4)',
-              boxShadow: '0 0 40px rgba(0, 240, 255, 0.25)',
-              background: 'linear-gradient(145deg, rgba(16, 20, 32, 0.98), rgba(8, 12, 20, 0.98))',
-              position: 'relative',
-              animation: 'popupScaleIn 0.25s ease-out'
-            }}
-          >
-            {/* Modal Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                <ShieldCheck size={24} color="var(--accent-primary)" />
-                <div>
-                  <h4 style={{ margin: 0, fontSize: '1.1rem', color: '#fff' }}>3D Secure Authentication</h4>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Verified by Visa / Mastercard ID Check</span>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShow3DSModal(false)}
-                style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '0.2rem' }}
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Merchant & Transaction Summary */}
-            <div style={{ background: 'rgba(255, 255, 255, 0.04)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.85rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>Merchant:</span>
-                <strong style={{ color: 'var(--text-primary)' }}>SpecZone PC Store</strong>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>Card Number:</span>
-                <span style={{ fontFamily: 'monospace', color: 'var(--text-primary)' }}>•••• •••• •••• {cardDetails.cardNumber.slice(-4)}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>Amount to Charge:</span>
-                <strong style={{ color: 'var(--accent-primary)', fontSize: '1rem' }}>Rs. {getCartTotal().toLocaleString('en-IN')}</strong>
-              </div>
-            </div>
-
-            <form onSubmit={handleVerify3DS}>
-              <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-                <Smartphone size={32} color="var(--accent-primary)" style={{ margin: '0 auto 0.75rem' }} />
-                <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.9rem', color: 'var(--text-primary)' }}>
-                  A one-time passcode (OTP) has been sent to your registered mobile number <strong>(•••••••{shipping.phone ? shipping.phone.slice(-4) : '4567'})</strong>.
-                </p>
-                <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                  For testing, enter code <strong>123456</strong> or click Autofill below.
-                </p>
-              </div>
-
-              {otpError && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--danger)', fontSize: '0.85rem', marginBottom: '1rem', background: 'rgba(239, 68, 68, 0.1)', padding: '0.6rem', borderRadius: '6px' }}>
-                  <AlertCircle size={16} /> {otpError}
-                </div>
-              )}
-
-              <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                <input
-                  type="text"
-                  maxLength="6"
-                  required
-                  placeholder="Enter 6-Digit OTP (123456)"
-                  value={otpCode}
-                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                  className="form-control"
-                  style={{
-                    textAlign: 'center',
-                    fontSize: '1.3rem',
-                    letterSpacing: '6px',
-                    fontFamily: 'monospace',
-                    fontWeight: 'bold',
-                    padding: '0.75rem'
-                  }}
-                  autoFocus
-                />
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
-                <button
-                  type="button"
-                  onClick={() => setOtpCode('123456')}
-                  style={{
-                    background: 'rgba(0, 240, 255, 0.1)',
-                    border: '1px dashed var(--accent-primary)',
-                    color: 'var(--accent-primary)',
-                    padding: '0.35rem 0.8rem',
-                    borderRadius: '4px',
-                    fontSize: '0.8rem',
-                    cursor: 'pointer'
-                  }}
-                >
-                  ⚡ Autofill Demo OTP (123456)
-                </button>
-              </div>
-
-              <div style={{ display: 'flex', gap: '0.75rem' }}>
-                <button
-                  type="button"
-                  className="btn btn-outline"
-                  style={{ flex: 1, padding: '0.8rem' }}
-                  onClick={() => setShow3DSModal(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={otpProcessing}
-                  className="btn btn-primary"
-                  style={{ flex: 2, padding: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
-                >
-                  {otpProcessing ? 'Authorizing Payment...' : 'Authorize & Pay'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Small React Order Success Popup */}
+      {/* Order Success Popup Modal */}
       {showSuccessPopup && (
         <div
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.78)',
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
             backdropFilter: 'blur(8px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 2000,
-            padding: '1.2rem',
+            padding: '1rem',
             animation: 'fadeIn 0.2s ease-out'
           }}
         >
@@ -856,25 +401,23 @@ const Checkout = () => {
             className="glass-panel"
             style={{
               width: '100%',
-              maxWidth: '420px',
-              padding: '2.2rem 1.8rem',
-              borderRadius: '16px',
-              border: '1px solid rgba(0, 240, 255, 0.3)',
-              boxShadow: '0 0 35px rgba(0, 240, 255, 0.2)',
-              background: 'linear-gradient(145deg, rgba(18, 22, 34, 0.98), rgba(10, 14, 22, 0.98))',
+              maxWidth: '440px',
+              padding: '2.5rem 2rem',
               textAlign: 'center',
-              position: 'relative',
-              animation: 'popupScaleIn 0.25s ease-out'
+              borderRadius: '16px',
+              border: '1px solid rgba(0, 230, 118, 0.4)',
+              boxShadow: '0 0 35px rgba(0, 230, 118, 0.25)',
+              background: 'linear-gradient(145deg, rgba(20, 26, 38, 0.98), rgba(10, 14, 22, 0.98))',
+              animation: 'popupScaleIn 0.3s ease-out'
             }}
           >
-            {/* Animated Success Badge Icon */}
+            {/* Success Icon */}
             <div
               style={{
-                width: '64px',
-                height: '64px',
+                width: '72px',
+                height: '72px',
                 borderRadius: '50%',
                 background: 'rgba(0, 230, 118, 0.15)',
-                border: '2px solid var(--success)',
                 color: 'var(--success)',
                 display: 'flex',
                 alignItems: 'center',
@@ -907,7 +450,7 @@ const Checkout = () => {
             )}
 
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.92rem', lineHeight: '1.5', margin: '0 0 1.2rem 0' }}>
-              Payment confirmed via <strong>{paymentMethod === 'card' ? 'Online Card 3D Secure' : paymentMethod === 'bank_transfer' ? 'Bank Transfer' : 'Cash on Delivery'}</strong>. Redirecting to your Orders dashboard...
+              Payment method: <strong>Cash on Delivery (COD)</strong>. Please have cash ready upon parcel delivery. Redirecting to your Orders dashboard...
             </p>
 
             {/* Smooth Progress Bar */}

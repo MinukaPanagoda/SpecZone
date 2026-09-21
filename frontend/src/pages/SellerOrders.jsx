@@ -96,9 +96,9 @@ const SellerOrders = () => {
                   <th style={{ padding: '1.2rem 1rem' }}>Order Info</th>
                   <th style={{ padding: '1.2rem 1rem' }}>Product</th>
                   <th style={{ padding: '1.2rem 1rem' }}>Customer</th>
-                  <th style={{ padding: '1.2rem 1rem' }}>Total</th>
-                  <th style={{ padding: '1.2rem 1rem' }}>Status</th>
-                  <th style={{ padding: '1.2rem 1rem', textAlign: 'center' }}>Action</th>
+                  <th style={{ padding: '1.2rem 1rem' }}>Total & Payout</th>
+                  <th style={{ padding: '1.2rem 1rem' }}>Delivery Status</th>
+                  <th style={{ padding: '1.2rem 1rem', textAlign: 'center' }}>Fulfillment Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -123,20 +123,49 @@ const SellerOrders = () => {
                       <div>{item.buyer_name}</div>
                       <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{item.buyer_email}</div>
                     </td>
-                    <td style={{ padding: '1rem', fontWeight: 'bold' }}>
-                      Rs. {(item.quantity * item.unit_price).toLocaleString('en-IN')}
+                    <td style={{ padding: '1rem' }}>
+                      <div style={{ fontWeight: 'bold', fontSize: '1rem', color: 'var(--accent-primary)' }}>
+                        Rs. {(item.quantity * item.unit_price).toLocaleString('en-IN')}
+                      </div>
+                      <div style={{ marginTop: '0.3rem' }}>
+                        {item.payout_status === 'paid' ? (
+                          <span style={{ 
+                            padding: '0.15rem 0.5rem', 
+                            borderRadius: '4px', 
+                            fontSize: '0.72rem', 
+                            fontWeight: 'bold',
+                            background: 'rgba(0, 255, 150, 0.15)',
+                            color: 'var(--success)',
+                            border: '1px solid rgba(0, 255, 150, 0.3)'
+                          }} title={`Paid via ${item.payout_ref || 'Bank Transfer'}`}>
+                            ✓ Payout Released
+                          </span>
+                        ) : (
+                          <span style={{ 
+                            padding: '0.15rem 0.5rem', 
+                            borderRadius: '4px', 
+                            fontSize: '0.72rem', 
+                            fontWeight: 'bold',
+                            background: 'rgba(255, 180, 0, 0.15)',
+                            color: 'var(--warning)',
+                            border: '1px solid rgba(255, 180, 0, 0.3)'
+                          }}>
+                            ⏳ In Escrow
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td style={{ padding: '1rem' }}>
                       <span style={{ 
                         padding: '0.3rem 0.6rem', 
                         borderRadius: '20px', 
-                        fontSize: '0.8rem', 
+                        fontSize: '0.78rem', 
                         fontWeight: 'bold',
                         textTransform: 'uppercase',
                         background: 'rgba(255,255,255,0.1)',
                         color: getStatusColor(item.status)
                       }}>
-                        {item.status}
+                        {item.status === 'delivered' ? '✓ Received' : item.status === 'shipped' ? '🚚 Shipped' : '⏳ Pending'}
                       </span>
                     </td>
                     <td style={{ padding: '1rem', textAlign: 'center' }}>
@@ -146,24 +175,22 @@ const SellerOrders = () => {
                           style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem', margin: '0 auto' }}
                           onClick={() => handleStatusChange(item.item_id, 'shipped')}
                         >
-                          <Truck size={14} /> Ship Item
+                          <Truck size={14} /> Ship Package
                         </button>
                       )}
                       {item.status === 'shipped' && (
-                        <button 
-                          className="btn btn-outline" 
-                          style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.4rem', margin: '0 auto', color: 'var(--success)' }}
-                          onClick={() => handleStatusChange(item.item_id, 'delivered')}
-                        >
-                          <CheckCircle size={14} /> Mark Delivered
-                        </button>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}>
+                          <Truck size={14} /> In Transit
+                        </div>
                       )}
                       {item.status === 'delivered' && (
-                        <span style={{ color: 'var(--success)', fontSize: '0.9rem' }}>Completed</span>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--success)', fontWeight: 'bold' }}>
+                          ✓ Delivered
+                        </div>
                       )}
                     </td>
                   </tr>
-                )                )}
+                ))}
               </tbody>
             </table>
             </div>

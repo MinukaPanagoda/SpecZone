@@ -29,7 +29,7 @@ try {
     $conn->exec("ALTER TABLE `users` ADD COLUMN `postal_code` VARCHAR(20) NULL AFTER `city`");
 } catch (Exception $e) {}
 
-// Ensure sellers_info table exists
+// Ensure sellers_info table exists with bank columns
 try {
     $conn->exec("CREATE TABLE IF NOT EXISTS `sellers_info` (
         `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -37,12 +37,14 @@ try {
         `shop_name` varchar(100) NOT NULL,
         `warning_count` int(11) DEFAULT 0,
         `is_verified` tinyint(1) DEFAULT 0,
+        `bank_name` varchar(100) DEFAULT NULL,
+        `bank_account_number` varchar(50) DEFAULT NULL,
+        `bank_account_name` varchar(100) DEFAULT NULL,
+        `bank_branch` varchar(100) DEFAULT NULL,
         PRIMARY KEY (`id`),
         KEY `user_id` (`user_id`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
-} catch (Exception $e) {
-    // Ignore
-}
+} catch (Exception $e) {}
 
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
@@ -61,7 +63,8 @@ if ($action === 'get_profile' && $_SERVER['REQUEST_METHOD'] === 'GET') {
     try {
         $query = "
             SELECT u.id, u.first_name, u.last_name, u.email, u.role, u.phone, u.address, u.city, u.postal_code, u.created_at,
-                   s.shop_name, s.warning_count, s.is_verified
+                   s.shop_name, s.warning_count, s.is_verified,
+                   s.bank_name, s.bank_account_number, s.bank_account_name, s.bank_branch
             FROM users u
             LEFT JOIN sellers_info s ON u.id = s.user_id
             WHERE u.id = :id
@@ -89,6 +92,10 @@ if ($action === 'get_profile' && $_SERVER['REQUEST_METHOD'] === 'GET') {
                     "shop_name" => $row['shop_name'] ?? '',
                     "is_verified" => ($row['is_verified'] == 1),
                     "warning_count" => intval($row['warning_count'] ?? 0),
+                    "bank_name" => $row['bank_name'] ?? '',
+                    "bank_account_number" => $row['bank_account_number'] ?? '',
+                    "bank_account_name" => $row['bank_account_name'] ?? '',
+                    "bank_branch" => $row['bank_branch'] ?? '',
                     "created_at" => $row['created_at']
                 ]
             ]);
@@ -122,6 +129,10 @@ else if ($action === 'update_profile' && $_SERVER['REQUEST_METHOD'] === 'POST') 
     $city = isset($data->city) ? trim($data->city) : '';
     $postal_code = isset($data->postal_code) ? trim($data->postal_code) : (isset($data->postalCode) ? trim($data->postalCode) : '');
     $shop_name = isset($data->shop_name) ? trim($data->shop_name) : '';
+    $bank_name = isset($data->bank_name) ? trim($data->bank_name) : null;
+    $bank_account_number = isset($data->bank_account_number) ? trim($data->bank_account_number) : null;
+    $bank_account_name = isset($data->bank_account_name) ? trim($data->bank_account_name) : null;
+    $bank_branch = isset($data->bank_branch) ? trim($data->bank_branch) : null;
 
     // Validate Name (no digits)
     if (preg_match('/\d/', $first_name) || preg_match('/\d/', $last_name)) {
@@ -137,7 +148,7 @@ else if ($action === 'update_profile' && $_SERVER['REQUEST_METHOD'] === 'POST') 
     }
 
     try {
-        // Update users table (Single source of truth for contact & address details)
+        // Update users table
         $query = "UPDATE users SET first_name = :first_name, last_name = :last_name, phone = :phone, address = :address, city = :city, postal_code = :postal_code WHERE id = :id";
         $stmt = $conn->prepare($query);
         $stmt->bindParam(':first_name', $first_name);
@@ -150,22 +161,37 @@ else if ($action === 'update_profile' && $_SERVER['REQUEST_METHOD'] === 'POST') 
         $stmt->execute();
 
         // If user is seller or shop_name provided, update sellers_info
-        if (!empty($shop_name) || (isset($data->role) && $data->role === 'seller')) {
+        if (!empty($shop_name) || (isset($data->role) && $data->role === 'seller') || $bank_name !== null) {
             $checkStmt = $conn->prepare("SELECT id FROM sellers_info WHERE user_id = :uid LIMIT 1");
             $checkStmt->bindParam(':uid', $user_id);
             $checkStmt->execute();
 
             if ($checkStmt->rowCount() > 0) {
-                $sellerQuery = "UPDATE sellers_info SET shop_name = :shop_name WHERE user_id = :uid";
+                $sellerQuery = "UPDATE sellers_info 
+                                SET shop_name = :shop_name,
+                                    bank_name = :bank_name,
+                                    bank_account_number = :bank_account_number,
+                                    bank_account_name = :bank_account_name,
+                                    bank_branch = :bank_branch
+                                WHERE user_id = :uid";
                 $sellerStmt = $conn->prepare($sellerQuery);
                 $sellerStmt->bindParam(':shop_name', $shop_name);
+                $sellerStmt->bindParam(':bank_name', $bank_name);
+                $sellerStmt->bindParam(':bank_account_number', $bank_account_number);
+                $sellerStmt->bindParam(':bank_account_name', $bank_account_name);
+                $sellerStmt->bindParam(':bank_branch', $bank_branch);
                 $sellerStmt->bindParam(':uid', $user_id);
                 $sellerStmt->execute();
             } else {
-                $sellerQuery = "INSERT INTO sellers_info (user_id, shop_name, is_verified, warning_count) VALUES (:uid, :shop_name, 0, 0)";
+                $sellerQuery = "INSERT INTO sellers_info (user_id, shop_name, is_verified, warning_count, bank_name, bank_account_number, bank_account_name, bank_branch) 
+                                VALUES (:uid, :shop_name, 0, 0, :bank_name, :bank_account_number, :bank_account_name, :bank_branch)";
                 $sellerStmt = $conn->prepare($sellerQuery);
                 $sellerStmt->bindParam(':uid', $user_id);
                 $sellerStmt->bindParam(':shop_name', $shop_name);
+                $sellerStmt->bindParam(':bank_name', $bank_name);
+                $sellerStmt->bindParam(':bank_account_number', $bank_account_number);
+                $sellerStmt->bindParam(':bank_account_name', $bank_account_name);
+                $sellerStmt->bindParam(':bank_branch', $bank_branch);
                 $sellerStmt->execute();
             }
         }
@@ -235,38 +261,39 @@ else if ($action === 'change_password' && $_SERVER['REQUEST_METHOD'] === 'POST')
     }
 
     try {
-        $stmt = $conn->prepare("SELECT password FROM users WHERE id = :id LIMIT 1");
+        // Fetch current password hash
+        $query = "SELECT password FROM users WHERE id = :id LIMIT 1";
+        $stmt = $conn->prepare($query);
         $stmt->bindParam(':id', $user_id);
         $stmt->execute();
 
         if ($stmt->rowCount() > 0) {
             $userRow = $stmt->fetch(PDO::FETCH_ASSOC);
-            if (!password_verify($current_password, $userRow['password'])) {
+
+            if (password_verify($current_password, $userRow['password'])) {
+                $new_hash = password_hash($new_password, PASSWORD_BCRYPT);
+                $updateQuery = "UPDATE users SET password = :password WHERE id = :id";
+                $updateStmt = $conn->prepare($updateQuery);
+                $updateStmt->bindParam(':password', $new_hash);
+                $updateStmt->bindParam(':id', $user_id);
+                $updateStmt->execute();
+
+                http_response_code(200);
+                echo json_encode(["status" => "success", "message" => "Password changed successfully."]);
+            } else {
                 http_response_code(400);
-                echo json_encode(["status" => "error", "message" => "Incorrect current password."]);
-                exit();
+                echo json_encode(["status" => "error", "message" => "Current password does not match our records."]);
             }
-
-            // Hash new password
-            $new_hash = password_hash($new_password, PASSWORD_BCRYPT);
-            $updateStmt = $conn->prepare("UPDATE users SET password = :pwd WHERE id = :id");
-            $updateStmt->bindParam(':pwd', $new_hash);
-            $updateStmt->bindParam(':id', $user_id);
-            $updateStmt->execute();
-
-            http_response_code(200);
-            echo json_encode(["status" => "success", "message" => "Password changed successfully!"]);
         } else {
             http_response_code(404);
             echo json_encode(["status" => "error", "message" => "User not found."]);
         }
     } catch (Exception $e) {
         http_response_code(500);
-        echo json_encode(["status" => "error", "message" => "Failed to update password: " . $e->getMessage()]);
+        echo json_encode(["status" => "error", "message" => "Failed to change password: " . $e->getMessage()]);
     }
-}
-else {
-    http_response_code(400);
-    echo json_encode(["status" => "error", "message" => "Invalid action parameter."]);
+} else {
+    http_response_code(404);
+    echo json_encode(["status" => "error", "message" => "Action not found."]);
 }
 ?>

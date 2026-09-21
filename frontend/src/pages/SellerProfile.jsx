@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import SellerSidebar from '../components/SellerSidebar';
 import { 
   Store, User, Phone, MapPin, ShieldCheck, AlertTriangle, 
-  Lock, Save, Shield, Menu, CheckCircle2, AlertCircle 
+  Lock, Save, Shield, Menu, CheckCircle2, AlertCircle, Building2, CreditCard 
 } from 'lucide-react';
 
 const SellerProfile = () => {
@@ -23,7 +23,11 @@ const SellerProfile = () => {
     postal_code: user?.postal_code || user?.postalCode || '',
     shop_name: user?.shop_name || '',
     is_verified: false,
-    warning_count: 0
+    warning_count: 0,
+    bank_name: '',
+    bank_account_number: '',
+    bank_account_name: '',
+    bank_branch: ''
   });
 
   const [loading, setLoading] = useState(true);
@@ -60,7 +64,11 @@ const SellerProfile = () => {
             postal_code: data.profile.postal_code || '',
             shop_name: data.profile.shop_name || '',
             is_verified: data.profile.is_verified || false,
-            warning_count: data.profile.warning_count || 0
+            warning_count: data.profile.warning_count || 0,
+            bank_name: data.profile.bank_name || '',
+            bank_account_number: data.profile.bank_account_number || '',
+            bank_account_name: data.profile.bank_account_name || '',
+            bank_branch: data.profile.bank_branch || ''
           });
         }
         setLoading(false);
@@ -94,13 +102,17 @@ const SellerProfile = () => {
           city: profileData.city.trim(),
           postal_code: profileData.postal_code.trim(),
           shop_name: profileData.shop_name.trim(),
+          bank_name: profileData.bank_name.trim(),
+          bank_account_number: profileData.bank_account_number.trim(),
+          bank_account_name: profileData.bank_account_name.trim(),
+          bank_branch: profileData.bank_branch.trim(),
           role: 'seller'
         })
       });
       const data = await res.json();
 
       if (res.ok) {
-        setProfileStatus({ type: 'success', message: 'Profile settings updated successfully!' });
+        setProfileStatus({ type: 'success', message: 'Profile & Settlement Bank Settings updated successfully!' });
         if (updateUser) {
           updateUser({
             first_name: profileData.first_name.trim(),
@@ -406,13 +418,70 @@ const SellerProfile = () => {
                 </div>
               </div>
 
+              {/* Bank Settlement Account Details */}
+              <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                  <Building2 size={18} color="var(--success)" />
+                  <h4 style={{ margin: 0, fontSize: '1rem', color: 'var(--success)' }}>Payout & Bank Account Details</h4>
+                </div>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                  SpecZone automatically releases funds to this bank account upon customer delivery confirmation.
+                </p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div className="form-group">
+                    <label className="form-label">Bank Name</label>
+                    <input 
+                      type="text" 
+                      className="form-control"
+                      value={profileData.bank_name}
+                      onChange={(e) => setProfileData({ ...profileData, bank_name: e.target.value })}
+                      placeholder="e.g. Commercial Bank / BOC"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Account Number</label>
+                    <input 
+                      type="text" 
+                      className="form-control"
+                      value={profileData.bank_account_number}
+                      onChange={(e) => setProfileData({ ...profileData, bank_account_number: e.target.value })}
+                      placeholder="e.g. 8001234567"
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div className="form-group">
+                    <label className="form-label">Account Holder Name</label>
+                    <input 
+                      type="text" 
+                      className="form-control"
+                      value={profileData.bank_account_name}
+                      onChange={(e) => setProfileData({ ...profileData, bank_account_name: e.target.value })}
+                      placeholder="e.g. A.B. Perera"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Branch Name</label>
+                    <input 
+                      type="text" 
+                      className="form-control"
+                      value={profileData.bank_branch}
+                      onChange={(e) => setProfileData({ ...profileData, bank_branch: e.target.value })}
+                      placeholder="e.g. Colombo Fort Branch"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <button 
                 type="submit" 
                 className="btn btn-primary" 
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginTop: '1rem' }}
                 disabled={profileUpdating}
               >
-                <Save size={16} /> {profileUpdating ? 'Saving Profile...' : 'Save Profile'}
+                <Save size={16} /> {profileUpdating ? 'Saving Profile...' : 'Save Settings'}
               </button>
             </form>
           </div>

@@ -34,7 +34,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 
                 // Get items for this order
                 $item_query = "
-                    SELECT oi.id as item_id, oi.quantity, oi.unit_price, oi.status, p.title, p.seller_id,
+                    SELECT oi.id as item_id, oi.quantity, oi.unit_price, oi.status, oi.payout_status, oi.payout_date,
+                           p.title, p.seller_id,
                            (SELECT image_url FROM product_images WHERE product_id = p.id LIMIT 1) as image_url, 
                            u.first_name as seller_name
                     FROM order_items oi
@@ -65,6 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         if ($seller_id > 0) {
             $query = "
                 SELECT oi.id as item_id, oi.order_id, oi.quantity, oi.unit_price, oi.status, 
+                       oi.payout_status, oi.payout_date, oi.payout_ref,
                        p.title, (SELECT image_url FROM product_images WHERE product_id = p.id LIMIT 1) as image_url, 
                        o.created_at, u.first_name as buyer_name, u.email as buyer_email
                 FROM order_items oi
@@ -94,7 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 else if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data = json_decode(file_get_contents("php://input"));
     
-    // UPDATE ITEM STATUS (By Seller)
+    // 1. UPDATE ITEM STATUS (By Seller e.g. ship)
     if ($action === 'update_item_status') {
         if (!empty($data->item_id) && !empty($data->status) && !empty($data->seller_id)) {
             
@@ -119,7 +121,7 @@ else if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 if ($update_stmt->execute()) {
                     http_response_code(200);
-                    echo json_encode(array("message" => "Item status updated."));
+                    echo json_encode(array("status" => "success", "message" => "Item status updated to " . $data->status . "."));
                 } else {
                     http_response_code(503);
                     echo json_encode(array("message" => "Unable to update status."));
@@ -132,7 +134,46 @@ else if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             http_response_code(400);
             echo json_encode(array("message" => "Incomplete data."));
         }
-    } else {
+    }
+    
+    // 2. BUYER CONFIRMS DELIVERY (Received Item)
+    else if ($action === 'buyer_confirm_received') {
+        if (!empty($data->item_id) && !empty($data->buyer_id)) {
+            // Verify that this order item belongs to this buyer
+            $verify_query = "
+                SELECT oi.id 
+                FROM order_items oi
+                JOIN orders o ON oi.order_id = o.id
+                WHERE oi.id = :item_id AND o.buyer_id = :buyer_id
+            ";
+            $verify_stmt = $conn->prepare($verify_query);
+            $verify_stmt->bindParam(':item_id', $data->item_id);
+            $verify_stmt->bindParam(':buyer_id', $data->buyer_id);
+            $verify_stmt->execute();
+            
+            if ($verify_stmt->rowCount() > 0) {
+                // Mark item as delivered
+                $update_query = "UPDATE order_items SET status = 'delivered' WHERE id = :item_id";
+                $update_stmt = $conn->prepare($update_query);
+                $update_stmt->bindParam(':item_id', $data->item_id);
+                
+                if ($update_stmt->execute()) {
+                    http_response_code(200);
+                    echo json_encode(array("status" => "success", "message" => "Package confirmed as received. Payout is now queued for seller release."));
+                } else {
+                    http_response_code(503);
+                    echo json_encode(array("message" => "Unable to confirm delivery."));
+                }
+            } else {
+                http_response_code(403);
+                echo json_encode(array("message" => "Unauthorized: Order item does not belong to this buyer."));
+            }
+        } else {
+            http_response_code(400);
+            echo json_encode(array("message" => "Missing item_id or buyer_id."));
+        }
+    }
+    else {
         http_response_code(404);
         echo json_encode(array("message" => "Action not found."));
     }

@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import SellerSidebar from '../components/SellerSidebar';
-import { BarChart2, TrendingUp, Package, Award, Menu } from 'lucide-react';
+import { BarChart2, TrendingUp, Package, Award, Menu, CheckCircle2, Clock, Wallet, ShieldCheck } from 'lucide-react';
 
 const SellerAnalytics = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [analytics, setAnalytics] = useState({
     total_revenue: 0,
+    paid_revenue: 0,
+    pending_payout: 0,
     revenue_this_month: 0,
     total_items_sold: 0,
     monthly_data: [],
@@ -57,33 +59,43 @@ const SellerAnalytics = () => {
           <span className="seller-mobile-title">Sales Analytics</span>
         </div>
 
-        <h2 style={{ fontSize: '2rem', marginBottom: '2rem' }}>Sales Analytics</h2>
+        <h2 style={{ fontSize: '2rem', marginBottom: '2rem' }}>Sales & Settlement Analytics</h2>
         
         {loading ? (
           <div style={{ padding: '3rem', textAlign: 'center' }}>Loading analytics...</div>
         ) : (
           <>
             {/* Top Stat Cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+              <div className="glass-panel stat-card" style={{ borderTop: '4px solid var(--success)', background: 'linear-gradient(180deg, rgba(0,255,150,0.05) 0%, rgba(255,255,255,0.02) 100%)' }}>
+                <div className="stat-icon" style={{ background: 'rgba(0, 255, 150, 0.15)', color: 'var(--success)' }}><CheckCircle2 size={24} /></div>
+                <div className="stat-info">
+                  <h3 style={{ fontSize: '1.7rem', color: 'var(--success)' }}>Rs. {(analytics.paid_revenue || 0).toLocaleString('en-IN')}</h3>
+                  <p style={{ textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.75rem', fontWeight: 'bold' }}>Payouts Received (Bank)</p>
+                </div>
+              </div>
+
+              <div className="glass-panel stat-card" style={{ borderTop: '4px solid var(--warning)', background: 'linear-gradient(180deg, rgba(255,180,0,0.05) 0%, rgba(255,255,255,0.02) 100%)' }}>
+                <div className="stat-icon" style={{ background: 'rgba(255, 180, 0, 0.15)', color: 'var(--warning)' }}><Clock size={24} /></div>
+                <div className="stat-info">
+                  <h3 style={{ fontSize: '1.7rem', color: 'var(--warning)' }}>Rs. {(analytics.pending_payout || 0).toLocaleString('en-IN')}</h3>
+                  <p style={{ textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.75rem', fontWeight: 'bold' }}>Pending in Escrow</p>
+                </div>
+              </div>
+
               <div className="glass-panel stat-card" style={{ borderTop: '4px solid var(--accent-primary)' }}>
                 <div className="stat-icon"><BarChart2 size={24} color="var(--accent-primary)" /></div>
                 <div className="stat-info">
-                  <h3 style={{ fontSize: '1.8rem' }}>Rs. {analytics.total_revenue.toLocaleString('en-IN')}</h3>
-                  <p style={{ textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.8rem' }}>Total Revenue</p>
+                  <h3 style={{ fontSize: '1.7rem' }}>Rs. {analytics.total_revenue.toLocaleString('en-IN')}</h3>
+                  <p style={{ textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.75rem' }}>Total Gross Sales</p>
                 </div>
               </div>
-              <div className="glass-panel stat-card" style={{ borderTop: '4px solid var(--success)' }}>
-                <div className="stat-icon"><TrendingUp size={24} color="var(--success)" /></div>
+
+              <div className="glass-panel stat-card" style={{ borderTop: '4px solid #b388ff' }}>
+                <div className="stat-icon" style={{ color: '#b388ff' }}><Package size={24} /></div>
                 <div className="stat-info">
-                  <h3 style={{ fontSize: '1.8rem' }}>Rs. {analytics.revenue_this_month.toLocaleString('en-IN')}</h3>
-                  <p style={{ textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.8rem' }}>Revenue This Month</p>
-                </div>
-              </div>
-              <div className="glass-panel stat-card" style={{ borderTop: '4px solid var(--warning)' }}>
-                <div className="stat-icon"><Package size={24} color="var(--warning)" /></div>
-                <div className="stat-info">
-                  <h3 style={{ fontSize: '1.8rem' }}>{analytics.total_items_sold}</h3>
-                  <p style={{ textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.8rem' }}>Items Sold</p>
+                  <h3 style={{ fontSize: '1.7rem' }}>{analytics.total_items_sold}</h3>
+                  <p style={{ textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.75rem' }}>Items Sold</p>
                 </div>
               </div>
             </div>

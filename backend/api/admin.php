@@ -182,6 +182,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(array("message" => "Missing category_id."));
         }
     }
+    // RELEASE PAYOUT TO SELLER
+    else if ($action === 'release_payout') {
+        if (!empty($data->item_id)) {
+            $item_id = intval($data->item_id);
+            $payout_ref = !empty($data->payout_ref) ? trim($data->payout_ref) : ('EFT-SZ-' . date('Ymd') . '-' . rand(1000, 9999));
+
+            $query = "UPDATE order_items 
+                      SET payout_status = 'paid', 
+                          payout_date = CURRENT_TIMESTAMP, 
+                          payout_ref = :payout_ref 
+                      WHERE id = :item_id";
+            $stmt = $conn->prepare($query);
+            $stmt->bindParam(':payout_ref', $payout_ref);
+            $stmt->bindParam(':item_id', $item_id);
+
+            if ($stmt->execute()) {
+                http_response_code(200);
+                echo json_encode([
+                    "status" => "success",
+                    "message" => "Payout of funds successfully released to seller bank account.",
+                    "payout_ref" => $payout_ref
+                ]);
+            } else {
+                http_response_code(503);
+                echo json_encode(["message" => "Unable to release payout."]);
+            }
+        } else {
+            http_response_code(400);
+            echo json_encode(["message" => "Missing item_id for payout."]);
+        }
+    }
     else {
         http_response_code(404);
         echo json_encode(array("message" => "Action not found."));
@@ -203,7 +234,11 @@ else if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             "total_sellers" => 0,
             "total_products" => 0,
             "total_orders" => 0,
-            "total_categories" => 0
+            "total_categories" => 0,
+            "pending_payouts_count" => 0,
+            "pending_payouts_amount" => 0,
+            "total_payouts_paid" => 0,
+            "total_marketplace_volume" => 0
         ];
 
         // Buyers Count
@@ -226,8 +261,57 @@ else if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $stmt = $conn->query("SELECT COUNT(*) as count FROM categories");
         $stats["total_categories"] = intval($stmt->fetch(PDO::FETCH_ASSOC)['count']);
 
+        // Pending Payouts (Delivered but not paid to seller)
+        $stmt = $conn->query("SELECT COUNT(*) as count, IFNULL(SUM(quantity * unit_price), 0) as amount 
+                              FROM order_items 
+                              WHERE status = 'delivered' AND payout_status = 'pending'");
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $stats["pending_payouts_count"] = intval($row['count']);
+        $stats["pending_payouts_amount"] = floatval($row['amount']);
+
+        // Total Payouts Paid
+        $stmt = $conn->query("SELECT IFNULL(SUM(quantity * unit_price), 0) as amount 
+                              FROM order_items 
+                              WHERE payout_status = 'paid'");
+        $stats["total_payouts_paid"] = floatval($stmt->fetch(PDO::FETCH_ASSOC)['amount']);
+
+        // Total Marketplace Gross Volume
+        $stmt = $conn->query("SELECT IFNULL(SUM(quantity * unit_price), 0) as amount FROM order_items");
+        $stats["total_marketplace_volume"] = floatval($stmt->fetch(PDO::FETCH_ASSOC)['amount']);
+
         http_response_code(200);
         echo json_encode($stats);
+
+    } else if ($action === 'payouts') {
+        $query = "
+            SELECT oi.id as item_id, oi.order_id, oi.quantity, oi.unit_price, 
+                   (oi.quantity * oi.unit_price) as total_item_price,
+                   oi.status as order_status, 
+                   oi.payout_status, oi.payout_date, oi.payout_ref,
+                   p.id as product_id, p.title as product_title,
+                   o.created_at as order_date,
+                   u_buyer.first_name as buyer_name, u_buyer.email as buyer_email,
+                   u_seller.id as seller_id, CONCAT(u_seller.first_name, ' ', u_seller.last_name) as seller_name,
+                   u_seller.email as seller_email, u_seller.phone as seller_phone,
+                   s.shop_name, s.bank_name, s.bank_account_number, s.bank_account_name, s.bank_branch
+            FROM order_items oi
+            JOIN products p ON oi.product_id = p.id
+            JOIN orders o ON oi.order_id = o.id
+            JOIN users u_buyer ON o.buyer_id = u_buyer.id
+            JOIN users u_seller ON p.seller_id = u_seller.id
+            LEFT JOIN sellers_info s ON u_seller.id = s.user_id
+            ORDER BY 
+                CASE WHEN oi.payout_status = 'pending' AND oi.status = 'delivered' THEN 0 
+                     WHEN oi.payout_status = 'pending' THEN 1 
+                     ELSE 2 END,
+                o.created_at DESC
+        ";
+        $stmt = $conn->prepare($query);
+        $stmt->execute();
+        $payouts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        http_response_code(200);
+        echo json_encode($payouts);
 
     } else if ($action === 'users') {
         $query = "

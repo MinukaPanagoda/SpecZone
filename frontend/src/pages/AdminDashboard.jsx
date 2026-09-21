@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Users, ShoppingBag, Package, LayoutDashboard, Trash2, LogOut, Star, 
   AlertTriangle, ChevronDown, Menu, X, MessageSquareWarning, CheckCircle, 
-  ShieldCheck, ShieldAlert, Layers, Plus, Search, AlertCircle, Store
+  ShieldCheck, ShieldAlert, Layers, Plus, Search, AlertCircle, Store,
+  Building2, DollarSign, Wallet, CheckCircle2, Clock
 } from 'lucide-react';
 
 const AdminDashboard = () => {
@@ -18,13 +19,18 @@ const AdminDashboard = () => {
     total_sellers: 0,
     total_products: 0,
     total_orders: 0,
-    total_categories: 0
+    total_categories: 0,
+    pending_payouts_count: 0,
+    pending_payouts_amount: 0,
+    total_payouts_paid: 0,
+    total_marketplace_volume: 0
   });
   
   const [users, setUsers] = useState([]);
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [complaints, setComplaints] = useState([]);
+  const [payouts, setPayouts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // User Management State
@@ -48,12 +54,73 @@ const AdminDashboard = () => {
   // Complaints State
   const [complaintFilter, setComplaintFilter] = useState('all'); // all, pending, resolved
 
+  // Payout Settlements State
+  const [payoutFilter, setPayoutFilter] = useState('all'); // all, pending_release, paid
+  const [payoutSearch, setPayoutSearch] = useState('');
+  const [releasingId, setReleasingId] = useState(null);
+
   const handleTabChange = (tab, customFilter = null) => {
     if (customFilter) {
       setSellerFilter(customFilter);
     }
     setActiveTab(tab);
     setSidebarOpen(false);
+  };
+
+  const fetchPayouts = async () => {
+    if (!user || user.role !== 'admin') return;
+    try {
+      const res = await fetch(`http://localhost/SpecZone/backend/api/admin.php?action=payouts&admin_id=${user.id}`);
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setPayouts(data);
+      }
+    } catch (err) {
+      console.error("Error fetching payouts:", err);
+    }
+  };
+
+  const fetchAdminStats = async () => {
+    if (!user || user.role !== 'admin') return;
+    try {
+      const res = await fetch(`http://localhost/SpecZone/backend/api/admin.php?action=stats&admin_id=${user.id}`);
+      const data = await res.json();
+      if (data.total_buyers !== undefined) {
+        setStats(data);
+      }
+    } catch (err) {
+      console.error("Error fetching stats:", err);
+    }
+  };
+
+  const handleReleasePayout = async (item) => {
+    const promptMsg = `Are you sure you want to release the escrow payout of Rs. ${parseFloat(item.total_item_price).toLocaleString('en-IN')} to:\n\nMerchant: ${item.seller_name} (${item.shop_name || 'Independent Vendor'})\nBank: ${item.bank_name || 'Direct Bank Settlement'}\nAccount No: ${item.bank_account_number || 'Registered Account'}\nBranch: ${item.bank_branch || 'Primary Branch'}\n\nClick OK to confirm Electronic Funds Transfer (EFT).`;
+    if (!window.confirm(promptMsg)) return;
+
+    setReleasingId(item.item_id);
+    try {
+      const res = await fetch('http://localhost/SpecZone/backend/api/admin.php?action=release_payout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          admin_id: user.id,
+          item_id: item.item_id
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(`✓ Payout of Rs. ${parseFloat(item.total_item_price).toLocaleString('en-IN')} successfully released to ${item.seller_name}!\nReference ID: ${data.payout_ref}`);
+        fetchPayouts();
+        fetchAdminStats();
+      } else {
+        alert(data.message || "Failed to release payout.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error releasing payout.");
+    } finally {
+      setReleasingId(null);
+    }
   };
 
   useEffect(() => {
@@ -66,11 +133,7 @@ const AdminDashboard = () => {
       setLoading(true);
       try {
         // Fetch stats
-        const statsRes = await fetch(`http://localhost/SpecZone/backend/api/admin.php?action=stats&admin_id=${user.id}`);
-        const statsData = await statsRes.json();
-        if (statsData.total_buyers !== undefined) {
-          setStats(statsData);
-        }
+        await fetchAdminStats();
 
         // Fetch users
         const usersRes = await fetch(`http://localhost/SpecZone/backend/api/admin.php?action=users&admin_id=${user.id}`);
@@ -99,6 +162,9 @@ const AdminDashboard = () => {
         if (Array.isArray(complaintsData)) {
           setComplaints(complaintsData);
         }
+
+        // Fetch payouts
+        await fetchPayouts();
       } catch (err) {
         console.error("Error fetching admin data:", err);
       } finally {
@@ -415,6 +481,19 @@ const AdminDashboard = () => {
           </button>
 
           <button 
+            className={`btn ${activeTab === 'payouts' ? 'btn-primary' : 'btn-outline'}`}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.8rem', justifyContent: 'flex-start', padding: '0.75rem 1rem', border: activeTab !== 'payouts' ? 'none' : '' }}
+            onClick={() => handleTabChange('payouts')}
+          >
+            <Building2 size={18} /> Seller Payouts
+            {stats.pending_payouts_count > 0 && (
+              <span style={{ background: 'var(--success)', color: '#000', padding: '0.1rem 0.5rem', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 'bold', marginLeft: 'auto' }}>
+                {stats.pending_payouts_count}
+              </span>
+            )}
+          </button>
+
+          <button 
             className={`btn ${activeTab === 'disputes' ? 'btn-primary' : 'btn-outline'}`}
             style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.8rem', justifyContent: 'flex-start', padding: '0.75rem 1rem', border: activeTab !== 'disputes' ? 'none' : '' }}
             onClick={() => handleTabChange('disputes')}
@@ -448,9 +527,9 @@ const AdminDashboard = () => {
         {/* Mobile/tablet top bar */}
         <div className="dashboard-mobile-header">
           <button
+            type="button"
             className="dashboard-hamburger"
-            aria-label={sidebarOpen ? 'Close menu' : 'Open menu'}
-            aria-expanded={sidebarOpen}
+            aria-label="Toggle admin menu"
             onClick={() => setSidebarOpen((o) => !o)}
           >
             {sidebarOpen ? <X size={22} /> : <Menu size={22} />}
@@ -465,41 +544,47 @@ const AdminDashboard = () => {
               <div>
                 <h2 style={{ margin: 0, fontSize: '1.8rem' }}>Platform Overview</h2>
                 <p style={{ color: 'var(--text-secondary)', margin: '0.3rem 0 0 0', fontSize: '0.95rem' }}>
-                  Real-time status of users, sellers, products, orders, and hardware categories.
+                  Real-time status of users, sellers, products, orders, payouts, and hardware categories.
                 </p>
               </div>
             </div>
 
             {/* Stat Cards Grid */}
-            <div className="admin-stat-grid">
+            <div className="admin-stat-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+              <div className="glass-panel" style={{ padding: '1.5rem', textAlign: 'center', borderTop: '4px solid #00f0ff', transition: 'transform 0.2s', background: 'rgba(0, 240, 255, 0.03)' }}>
+                <Clock size={28} color="#00f0ff" style={{ margin: '0 auto 0.75rem' }} />
+                <h3 className="admin-stat-number" style={{ color: '#00f0ff', fontSize: '1.5rem' }}>Rs. {(stats.pending_payouts_amount || 0).toLocaleString('en-IN')}</h3>
+                <p style={{ color: 'var(--text-secondary)', margin: 0, textTransform: 'uppercase', fontSize: '0.72rem', letterSpacing: '1px', fontWeight: 'bold' }}>Pending Payouts ({stats.pending_payouts_count})</p>
+              </div>
+
+              <div className="glass-panel" style={{ padding: '1.5rem', textAlign: 'center', borderTop: '4px solid #00e676', transition: 'transform 0.2s', background: 'rgba(0, 230, 118, 0.03)' }}>
+                <CheckCircle2 size={28} color="#00e676" style={{ margin: '0 auto 0.75rem' }} />
+                <h3 className="admin-stat-number" style={{ color: '#00e676', fontSize: '1.5rem' }}>Rs. {(stats.total_payouts_paid || 0).toLocaleString('en-IN')}</h3>
+                <p style={{ color: 'var(--text-secondary)', margin: 0, textTransform: 'uppercase', fontSize: '0.72rem', letterSpacing: '1px', fontWeight: 'bold' }}>Paid to Sellers (EFT)</p>
+              </div>
+
               <div className="glass-panel" style={{ padding: '1.5rem', textAlign: 'center', borderTop: '4px solid #3b82f6', transition: 'transform 0.2s' }}>
                 <Users size={28} color="#3b82f6" style={{ margin: '0 auto 0.75rem' }} />
                 <h3 className="admin-stat-number">{stats.total_buyers}</h3>
-                <p style={{ color: 'var(--text-secondary)', margin: 0, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '1px', fontWeight: '600' }}>Total Buyers</p>
+                <p style={{ color: 'var(--text-secondary)', margin: 0, textTransform: 'uppercase', fontSize: '0.72rem', letterSpacing: '1px', fontWeight: '600' }}>Total Buyers</p>
               </div>
 
               <div className="glass-panel" style={{ padding: '1.5rem', textAlign: 'center', borderTop: '4px solid #10b981', transition: 'transform 0.2s' }}>
                 <Store size={28} color="#10b981" style={{ margin: '0 auto 0.75rem' }} />
                 <h3 className="admin-stat-number">{stats.total_sellers}</h3>
-                <p style={{ color: 'var(--text-secondary)', margin: 0, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '1px', fontWeight: '600' }}>Active Sellers</p>
+                <p style={{ color: 'var(--text-secondary)', margin: 0, textTransform: 'uppercase', fontSize: '0.72rem', letterSpacing: '1px', fontWeight: '600' }}>Active Sellers</p>
               </div>
 
               <div className="glass-panel" style={{ padding: '1.5rem', textAlign: 'center', borderTop: '4px solid #8b5cf6', transition: 'transform 0.2s' }}>
                 <Package size={28} color="#8b5cf6" style={{ margin: '0 auto 0.75rem' }} />
                 <h3 className="admin-stat-number">{stats.total_products}</h3>
-                <p style={{ color: 'var(--text-secondary)', margin: 0, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '1px', fontWeight: '600' }}>Live Products</p>
+                <p style={{ color: 'var(--text-secondary)', margin: 0, textTransform: 'uppercase', fontSize: '0.72rem', letterSpacing: '1px', fontWeight: '600' }}>Live Products</p>
               </div>
 
               <div className="glass-panel" style={{ padding: '1.5rem', textAlign: 'center', borderTop: '4px solid #f59e0b', transition: 'transform 0.2s' }}>
                 <ShoppingBag size={28} color="#f59e0b" style={{ margin: '0 auto 0.75rem' }} />
                 <h3 className="admin-stat-number">{stats.total_orders}</h3>
-                <p style={{ color: 'var(--text-secondary)', margin: 0, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '1px', fontWeight: '600' }}>Total Orders</p>
-              </div>
-
-              <div className="glass-panel" style={{ padding: '1.5rem', textAlign: 'center', borderTop: '4px solid #ec4899', transition: 'transform 0.2s' }}>
-                <Layers size={28} color="#ec4899" style={{ margin: '0 auto 0.75rem' }} />
-                <h3 className="admin-stat-number">{stats.total_categories || categories.length}</h3>
-                <p style={{ color: 'var(--text-secondary)', margin: 0, textTransform: 'uppercase', fontSize: '0.75rem', letterSpacing: '1px', fontWeight: '600' }}>Hardware Categories</p>
+                <p style={{ color: 'var(--text-secondary)', margin: 0, textTransform: 'uppercase', fontSize: '0.72rem', letterSpacing: '1px', fontWeight: '600' }}>Total Orders</p>
               </div>
             </div>
 
@@ -513,6 +598,18 @@ const AdminDashboard = () => {
                 </h3>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {stats.pending_payouts_count > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', background: 'rgba(0, 240, 255, 0.08)', borderLeft: '4px solid var(--accent-primary)', borderRadius: '4px', flexWrap: 'wrap', gap: '0.5rem' }}>
+                      <div>
+                        <div style={{ fontWeight: '600', color: 'var(--accent-primary)', fontSize: '0.95rem' }}>{stats.pending_payouts_count} Escrow Payout(s) Ready to Release</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Total: Rs. {(stats.pending_payouts_amount || 0).toLocaleString('en-IN')} (Delivered parcels awaiting merchant payout)</div>
+                      </div>
+                      <button className="btn btn-primary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }} onClick={() => handleTabChange('payouts', 'pending')}>
+                        Release Funds
+                      </button>
+                    </div>
+                  )}
+
                   {pendingComplaintsCount > 0 ? (
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', background: 'rgba(239, 68, 68, 0.1)', borderLeft: '4px solid var(--danger)', borderRadius: '4px', flexWrap: 'wrap', gap: '0.5rem' }}>
                       <div>
@@ -1424,6 +1521,262 @@ const AdminDashboard = () => {
                             </td>
                           </tr>
                         ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 6. SELLER PAYOUTS & SETTLEMENTS TAB */}
+        {activeTab === 'payouts' && (
+          <div>
+            <div className="admin-toolbar">
+              <div>
+                <h2 style={{ margin: 0, fontSize: '1.8rem' }}>Merchant Payout & Escrow Settlements</h2>
+                <p style={{ color: 'var(--text-secondary)', margin: '0.3rem 0 0 0', fontSize: '0.95rem' }}>
+                  Release escrow funds to vendor bank accounts once buyers confirm delivery.
+                </p>
+              </div>
+
+              {/* Payout Filter Buttons */}
+              <div className="admin-filter-scroll">
+                <button
+                  className={`btn ${payoutFilter === 'all' ? 'btn-primary' : 'btn-outline'}`}
+                  style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
+                  onClick={() => setPayoutFilter('all')}
+                >
+                  All ({payouts.length})
+                </button>
+                <button
+                  className={`btn ${payoutFilter === 'pending' ? 'btn-primary' : 'btn-outline'}`}
+                  style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', borderColor: 'var(--warning)', color: payoutFilter === 'pending' ? '#000' : 'var(--warning)', background: payoutFilter === 'pending' ? 'var(--warning)' : 'transparent' }}
+                  onClick={() => setPayoutFilter('pending')}
+                >
+                  Ready for Payout ({payouts.filter(p => p.order_status === 'delivered' && p.payout_status === 'pending').length})
+                </button>
+                <button
+                  className={`btn ${payoutFilter === 'paid' ? 'btn-primary' : 'btn-outline'}`}
+                  style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', borderColor: 'var(--success)', color: payoutFilter === 'paid' ? '#000' : 'var(--success)', background: payoutFilter === 'paid' ? 'var(--success)' : 'transparent' }}
+                  onClick={() => setPayoutFilter('paid')}
+                >
+                  Paid Out ({payouts.filter(p => p.payout_status === 'paid').length})
+                </button>
+              </div>
+            </div>
+
+            {/* Payout Summary Highlights */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+              <div className="glass-panel" style={{ padding: '1.5rem', borderLeft: '4px solid var(--accent-primary)', background: 'rgba(0, 240, 255, 0.03)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', color: 'var(--accent-primary)', marginBottom: '0.5rem' }}>
+                  <Clock size={20} />
+                  <span style={{ fontSize: '0.85rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' }}>Pending Release (Escrow)</span>
+                </div>
+                <h3 style={{ margin: 0, fontSize: '1.8rem', color: 'var(--accent-primary)' }}>Rs. {(stats.pending_payouts_amount || 0).toLocaleString('en-IN')}</h3>
+                <p style={{ margin: '0.3rem 0 0', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>{stats.pending_payouts_count} items received by customers awaiting transfer</p>
+              </div>
+
+              <div className="glass-panel" style={{ padding: '1.5rem', borderLeft: '4px solid var(--success)', background: 'rgba(0, 230, 118, 0.03)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', color: 'var(--success)', marginBottom: '0.5rem' }}>
+                  <CheckCircle2 size={20} />
+                  <span style={{ fontSize: '0.85rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' }}>Total Settled to Merchants</span>
+                </div>
+                <h3 style={{ margin: 0, fontSize: '1.8rem', color: 'var(--success)' }}>Rs. {(stats.total_payouts_paid || 0).toLocaleString('en-IN')}</h3>
+                <p style={{ margin: '0.3rem 0 0', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Direct Bank / EFT transfers processed</p>
+              </div>
+            </div>
+
+            {/* Search filter */}
+            <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+              <div style={{ position: 'relative', flex: 1, minWidth: '260px' }}>
+                <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+                <input
+                  type="text"
+                  placeholder="Search by Seller Name, Shop, Product or Bank..."
+                  className="form-control"
+                  style={{ paddingLeft: '2.8rem' }}
+                  value={payoutSearch}
+                  onChange={(e) => setPayoutSearch(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {payouts.length === 0 ? (
+              <div className="glass-panel" style={{ padding: '4rem 2rem', textAlign: 'center' }}>
+                <Building2 size={48} color="var(--text-secondary)" style={{ margin: '0 auto 1.5rem', opacity: 0.5 }} />
+                <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.5rem' }}>No Orders Found</h3>
+                <p style={{ color: 'var(--text-secondary)', margin: 0 }}>There are currently no items in the settlement pipeline.</p>
+              </div>
+            ) : (
+              <div className="glass-panel" style={{ overflow: 'hidden' }}>
+                <div className="admin-table-container">
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ background: 'rgba(255,255,255,0.05)', textAlign: 'left' }}>
+                        <th style={{ padding: '1rem 0.8rem', whiteSpace: 'nowrap' }}>Order / Item</th>
+                        <th style={{ padding: '1rem 0.8rem' }}>Hardware Product</th>
+                        <th style={{ padding: '1rem 0.8rem' }}>Seller & Shop</th>
+                        <th style={{ padding: '1rem 0.8rem' }}>Bank Account Info</th>
+                        <th style={{ padding: '1rem 0.8rem', whiteSpace: 'nowrap' }}>Amount (LKR)</th>
+                        <th style={{ padding: '1rem 0.8rem', whiteSpace: 'nowrap' }}>Delivery State</th>
+                        <th style={{ padding: '1rem 0.8rem', whiteSpace: 'nowrap' }}>Payout Status</th>
+                        <th style={{ padding: '1rem 0.8rem', textAlign: 'center', whiteSpace: 'nowrap' }}>Settlement Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {payouts
+                        .filter(item => {
+                          if (payoutFilter === 'pending') return item.order_status === 'delivered' && item.payout_status === 'pending';
+                          if (payoutFilter === 'paid') return item.payout_status === 'paid';
+                          return true;
+                        })
+                        .filter(item => {
+                          if (!payoutSearch.trim()) return true;
+                          const q = payoutSearch.toLowerCase();
+                          return (
+                            (item.seller_name && item.seller_name.toLowerCase().includes(q)) ||
+                            (item.shop_name && item.shop_name.toLowerCase().includes(q)) ||
+                            (item.product_title && item.product_title.toLowerCase().includes(q)) ||
+                            (item.bank_name && item.bank_name.toLowerCase().includes(q)) ||
+                            (item.order_id && item.order_id.toString().includes(q))
+                          );
+                        })
+                        .map(item => {
+                          const isReadyForPayout = item.order_status === 'delivered' && item.payout_status === 'pending';
+                          const isPaid = item.payout_status === 'paid';
+
+                          return (
+                            <tr key={item.item_id} style={{ borderTop: '1px solid rgba(255,255,255,0.05)', background: isReadyForPayout ? 'rgba(0, 240, 255, 0.02)' : 'transparent' }}>
+                              <td style={{ padding: '1rem 0.8rem', whiteSpace: 'nowrap' }}>
+                                <div style={{ fontWeight: 'bold' }}>Order #{item.order_id}</div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Item #{item.item_id}</div>
+                              </td>
+                              <td style={{ padding: '1rem 0.8rem' }}>
+                                <div style={{ fontWeight: '600', fontSize: '0.95rem' }}>{item.product_title}</div>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Qty: {item.quantity} × Rs. {parseFloat(item.unit_price).toLocaleString('en-IN')}</div>
+                              </td>
+                              <td style={{ padding: '1rem 0.8rem' }}>
+                                <div style={{ fontWeight: 'bold' }}>{item.seller_name}</div>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--accent-primary)' }}>{item.shop_name || 'Independent Store'}</div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{item.seller_email}</div>
+                              </td>
+                              <td style={{ padding: '1rem 0.8rem', fontSize: '0.85rem' }}>
+                                {item.bank_name ? (
+                                  <div>
+                                    <div style={{ fontWeight: 'bold', color: 'var(--success)' }}>{item.bank_name}</div>
+                                    <div>A/C: <strong>{item.bank_account_number || 'N/A'}</strong></div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{item.bank_account_name || item.seller_name} ({item.bank_branch || 'Branch N/A'})</div>
+                                  </div>
+                                ) : (
+                                  <span style={{ color: 'var(--warning)', fontSize: '0.8rem' }}>
+                                    ⚠️ Default Bank Settlement (Seller ID #{item.seller_id})
+                                  </span>
+                                )}
+                              </td>
+                              <td style={{ padding: '1rem 0.8rem', whiteSpace: 'nowrap' }}>
+                                <div style={{ fontWeight: 'bold', color: 'var(--accent-primary)', fontSize: '1rem' }}>
+                                  Rs. {parseFloat(item.total_item_price).toLocaleString('en-IN')}
+                                </div>
+                              </td>
+                              <td style={{ padding: '1rem 0.8rem', whiteSpace: 'nowrap' }}>
+                                <span style={{
+                                  display: 'inline-block',
+                                  padding: '0.25rem 0.5rem',
+                                  borderRadius: '4px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 'bold',
+                                  background: item.order_status === 'delivered' ? 'rgba(0, 255, 150, 0.15)' : 'rgba(255, 180, 0, 0.15)',
+                                  color: item.order_status === 'delivered' ? 'var(--success)' : 'var(--warning)'
+                                }}>
+                                  {item.order_status === 'delivered' ? '✓ Received by Buyer' : item.order_status === 'shipped' ? '🚚 In Transit' : '⏳ Processing'}
+                                </span>
+                              </td>
+                              <td style={{ padding: '1rem 0.8rem', whiteSpace: 'nowrap' }}>
+                                {isPaid ? (
+                                  <div>
+                                    <span style={{
+                                      display: 'inline-block',
+                                      padding: '0.25rem 0.5rem',
+                                      borderRadius: '4px',
+                                      fontSize: '0.75rem',
+                                      fontWeight: 'bold',
+                                      background: 'rgba(0, 255, 150, 0.15)',
+                                      color: 'var(--success)'
+                                    }}>
+                                      ✓ PAID OUT
+                                    </span>
+                                    {item.payout_ref && (
+                                      <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                                        Ref: {item.payout_ref}
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : isReadyForPayout ? (
+                                  <span style={{
+                                    display: 'inline-block',
+                                    padding: '0.25rem 0.5rem',
+                                    borderRadius: '4px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 'bold',
+                                    background: 'rgba(0, 240, 255, 0.15)',
+                                    color: 'var(--accent-primary)',
+                                    border: '1px solid rgba(0, 240, 255, 0.3)'
+                                  }}>
+                                    ⚡ READY TO PAY
+                                  </span>
+                                ) : (
+                                  <span style={{
+                                    display: 'inline-block',
+                                    padding: '0.25rem 0.5rem',
+                                    borderRadius: '4px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 'bold',
+                                    background: 'rgba(255, 255, 255, 0.08)',
+                                    color: 'var(--text-secondary)'
+                                  }}>
+                                    🔒 In Escrow
+                                  </span>
+                                )}
+                              </td>
+                              <td style={{ padding: '1rem 0.8rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                                {isReadyForPayout ? (
+                                  <button
+                                    type="button"
+                                    className="btn btn-primary"
+                                    style={{
+                                      padding: '0.45rem 0.9rem',
+                                      fontSize: '0.8rem',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '0.4rem',
+                                      background: 'linear-gradient(135deg, #00e676, #00b4d8)',
+                                      color: '#000',
+                                      fontWeight: 'bold',
+                                      border: 'none',
+                                      borderRadius: '6px',
+                                      cursor: 'pointer',
+                                      boxShadow: '0 2px 10px rgba(0, 230, 118, 0.3)'
+                                    }}
+                                    disabled={releasingId === item.item_id}
+                                    onClick={() => handleReleasePayout(item)}
+                                    title="Authorize Electronic Funds Transfer (EFT) to Seller Bank"
+                                  >
+                                    <DollarSign size={15} /> {releasingId === item.item_id ? 'Releasing...' : 'Release Payout'}
+                                  </button>
+                                ) : isPaid ? (
+                                  <span style={{ color: 'var(--success)', fontSize: '0.85rem', fontWeight: '500' }}>
+                                    ✓ Settled ({new Date(item.payout_date || item.order_date).toLocaleDateString()})
+                                  </span>
+                                ) : (
+                                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+                                    Awaiting Buyer Delivery
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
                     </tbody>
                   </table>
                 </div>

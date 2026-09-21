@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Package, ShoppingCart, BarChart2, Star, Menu } from 'lucide-react';
+import { Package, ShoppingCart, BarChart2, Star, Menu, CheckCircle2, Clock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import SellerSidebar from '../components/SellerSidebar';
 
@@ -8,6 +8,7 @@ const SellerDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState({ avg_rating: 0, total_reviews: 0, active_listings: 0 });
+  const [analytics, setAnalytics] = useState({ paid_revenue: 0, pending_payout: 0, total_revenue: 0 });
   const [sales, setSales] = useState([]);
   const [salesLoading, setSalesLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -23,6 +24,15 @@ const SellerDashboard = () => {
       .then(data => {
         if (data && !data.message) {
           setStats(data);
+        }
+      })
+      .catch(err => console.error(err));
+
+    fetch(`http://localhost/SpecZone/backend/api/seller_analytics.php?seller_id=${user.id}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data && !data.message) {
+          setAnalytics(data);
         }
       })
       .catch(err => console.error(err));
@@ -78,7 +88,23 @@ const SellerDashboard = () => {
 
         <h2 style={{ fontSize: '2rem', marginBottom: '2rem' }}>Seller Dashboard</h2>
         
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+          <div className="glass-panel stat-card" style={{ borderTop: '4px solid var(--success)' }}>
+            <div className="stat-icon" style={{ color: 'var(--success)', background: 'rgba(0, 255, 150, 0.15)' }}><CheckCircle2 size={24} /></div>
+            <div className="stat-info">
+              <h3 style={{ color: 'var(--success)' }}>Rs. {(analytics.paid_revenue || 0).toLocaleString('en-IN')}</h3>
+              <p style={{ fontWeight: 'bold' }}>Payouts Received (Bank)</p>
+            </div>
+          </div>
+
+          <div className="glass-panel stat-card" style={{ borderTop: '4px solid var(--warning)' }}>
+            <div className="stat-icon" style={{ color: 'var(--warning)', background: 'rgba(255, 180, 0, 0.15)' }}><Clock size={24} /></div>
+            <div className="stat-info">
+              <h3 style={{ color: 'var(--warning)' }}>Rs. {(analytics.pending_payout || 0).toLocaleString('en-IN')}</h3>
+              <p style={{ fontWeight: 'bold' }}>Pending in Escrow</p>
+            </div>
+          </div>
+
           <div className="glass-panel stat-card">
             <div className="stat-icon"><Package size={24} /></div>
             <div className="stat-info">
@@ -86,6 +112,7 @@ const SellerDashboard = () => {
               <p>Active Listings</p>
             </div>
           </div>
+
           <div className="glass-panel stat-card">
             <div className="stat-icon" style={{ background: ratingBg, color: ratingColor }}>
               <Star size={24} />
@@ -93,13 +120,6 @@ const SellerDashboard = () => {
             <div className="stat-info">
               <h3 style={{ color: ratingColor }}>{stats.avg_rating} <span style={{ fontSize: '1rem', color: 'var(--text-secondary)' }}>/ 10</span></h3>
               <p>{stats.total_reviews} Reviews</p>
-            </div>
-          </div>
-          <div className="glass-panel stat-card">
-            <div className="stat-icon"><BarChart2 size={24} /></div>
-            <div className="stat-info">
-              <h3>Rs. 0</h3>
-              <p>Revenue This Month</p>
             </div>
           </div>
         </div>

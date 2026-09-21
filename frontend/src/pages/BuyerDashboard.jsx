@@ -314,6 +314,32 @@ const BuyerDashboard = () => {
     navigate('/cart');
   };
 
+  const handleConfirmReceived = async (itemId, itemTitle) => {
+    if (!window.confirm(`Have you received "${itemTitle}" in good condition? Confirming will complete the order and enable payout to the vendor.`)) {
+      return;
+    }
+    try {
+      const res = await fetch('http://localhost/SpecZone/backend/api/orders.php?action=buyer_confirm_received', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          item_id: itemId,
+          buyer_id: user.id
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert("✓ Package marked as received! The order item is now completed.");
+        fetchOrders();
+      } else {
+        alert(data.message || "Failed to confirm receipt.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Network error confirming receipt.");
+    }
+  };
+
   const getStatusColor = (status) => {
     if (status === 'delivered') return 'var(--success)';
     if (status === 'shipped') return 'var(--accent-primary)';
@@ -641,8 +667,34 @@ const BuyerDashboard = () => {
                                 background: 'rgba(255,255,255,0.1)',
                                 color: getStatusColor(item.status)
                               }}>
-                                {item.status}
+                                {item.status === 'delivered' ? '✓ RECEIVED' : item.status === 'shipped' ? '🚚 SHIPPED' : '⏳ PENDING'}
                               </span>
+
+                              {item.status === 'shipped' && (
+                                <button
+                                  type="button"
+                                  className="btn"
+                                  style={{
+                                    padding: '0.35rem 0.75rem',
+                                    fontSize: '0.78rem',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '0.35rem',
+                                    background: 'linear-gradient(135deg, #00ff96, #00b4d8)',
+                                    color: '#000',
+                                    fontWeight: 'bold',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    boxShadow: '0 2px 8px rgba(0, 255, 150, 0.3)'
+                                  }}
+                                  onClick={() => handleConfirmReceived(item.item_id, item.title)}
+                                  title="Click to confirm you have received this parcel"
+                                >
+                                  <CheckCircle2 size={14} /> Mark as Received
+                                </button>
+                              )}
+
                               <button
                                 type="button"
                                 className="btn btn-outline"

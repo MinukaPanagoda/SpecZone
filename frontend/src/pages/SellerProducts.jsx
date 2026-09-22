@@ -179,7 +179,7 @@ const SellerProducts = () => {
 
       const data = await res.json();
       if (res.ok) {
-        showToast('✓ Product updated successfully!', 'success');
+        showToast('Product updated successfully!', 'success');
         setEditModalOpen(false);
         setEditingProduct(null);
         fetchProducts(); // Refresh list
@@ -217,7 +217,7 @@ const SellerProducts = () => {
       });
 
       if (res.ok) {
-        showToast(`✓ Removed "${productTitle}" successfully.`, 'success');
+        showToast(`Removed "${productTitle}" successfully.`, 'success');
         fetchProducts();
       } else {
         showToast('Failed to delete product.', 'error');

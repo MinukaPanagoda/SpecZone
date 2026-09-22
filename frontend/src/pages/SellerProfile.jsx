@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import SellerSidebar from '../components/SellerSidebar';
 import { 
   Store, User, Phone, MapPin, ShieldCheck, AlertTriangle, 
-  Lock, Save, Shield, Menu, CheckCircle2, AlertCircle, Building2, CreditCard 
+  Lock, Save, Shield, Menu, CheckCircle2, AlertCircle, Building2, CreditCard, Check 
 } from 'lucide-react';
 
 const SellerProfile = () => {
@@ -536,20 +536,20 @@ const SellerProfile = () => {
                 />
                 {/* Live Password Checklist */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.4rem', marginTop: '0.6rem', fontSize: '0.78rem' }}>
-                  <span style={{ color: hasPwdMinLength ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: hasPwdMinLength ? '600' : 'normal' }}>
-                    {hasPwdMinLength ? '✓' : '○'} Min. 8 Chars
+                  <span style={{ color: hasPwdMinLength ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: hasPwdMinLength ? '600' : 'normal' }}>
+                    {hasPwdMinLength ? <Check size={12} /> : <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: 'currentColor', opacity: 0.6 }} />} Min. 8 Chars
                   </span>
-                  <span style={{ color: hasPwdUppercase ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: hasPwdUppercase ? '600' : 'normal' }}>
-                    {hasPwdUppercase ? '✓' : '○'} Capital (A-Z)
+                  <span style={{ color: hasPwdUppercase ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: hasPwdUppercase ? '600' : 'normal' }}>
+                    {hasPwdUppercase ? <Check size={12} /> : <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: 'currentColor', opacity: 0.6 }} />} Capital (A-Z)
                   </span>
-                  <span style={{ color: hasPwdLowercase ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: hasPwdLowercase ? '600' : 'normal' }}>
-                    {hasPwdLowercase ? '✓' : '○'} Simple (a-z)
+                  <span style={{ color: hasPwdLowercase ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: hasPwdLowercase ? '600' : 'normal' }}>
+                    {hasPwdLowercase ? <Check size={12} /> : <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: 'currentColor', opacity: 0.6 }} />} Simple (a-z)
                   </span>
-                  <span style={{ color: hasPwdNumber ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: hasPwdNumber ? '600' : 'normal' }}>
-                    {hasPwdNumber ? '✓' : '○'} Number (0-9)
+                  <span style={{ color: hasPwdNumber ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: hasPwdNumber ? '600' : 'normal' }}>
+                    {hasPwdNumber ? <Check size={12} /> : <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: 'currentColor', opacity: 0.6 }} />} Number (0-9)
                   </span>
-                  <span style={{ color: hasPwdSpecial ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: hasPwdSpecial ? '600' : 'normal' }}>
-                    {hasPwdSpecial ? '✓' : '○'} Special (!@#$)
+                  <span style={{ color: hasPwdSpecial ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: hasPwdSpecial ? '600' : 'normal' }}>
+                    {hasPwdSpecial ? <Check size={12} /> : <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: 'currentColor', opacity: 0.6 }} />} Special (!@#$)
                   </span>
                 </div>
               </div>

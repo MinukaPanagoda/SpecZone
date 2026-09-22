@@ -15,6 +15,7 @@ class Cart {
     public function getItems($buyer_id) {
         $query = "SELECT c.id as cart_id, c.quantity, p.id as product_id, p.title, p.price, p.stock_quantity, p.seller_id,
                          u.first_name as seller_name, s.shop_name,
+                         s.bank_name, s.bank_account_number, s.bank_account_name, s.bank_branch,
                          COALESCE(s.warning_count, 0) as seller_warning_count,
                          COALESCE((SELECT ROUND(AVG(r.rating), 1) FROM reviews r JOIN products pr ON r.product_id = pr.id WHERE pr.seller_id = p.seller_id), 0) as seller_avg_rating,
                          (SELECT COUNT(c.id) FROM complaints c WHERE c.seller_id = p.seller_id AND c.status = 'pending') as seller_complaint_count,

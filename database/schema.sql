@@ -46,6 +46,7 @@ CREATE TABLE `orders` (
   `id` int(11) NOT NULL,
   `buyer_id` int(11) NOT NULL,
   `total_amount` decimal(10,2) NOT NULL,
+  `payment_method` varchar(50) NOT NULL DEFAULT 'cod',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -55,6 +56,11 @@ CREATE TABLE `order_items` (
   `product_id` int(11) NOT NULL,
   `quantity` int(11) NOT NULL,
   `unit_price` decimal(10,2) NOT NULL,
+  `payment_method` varchar(50) NOT NULL DEFAULT 'cod',
+  `payment_status` enum('cod','pending_slip','under_review','approved','rejected') NOT NULL DEFAULT 'cod',
+  `payment_slip_url` text DEFAULT NULL,
+  `payment_reject_reason` text DEFAULT NULL,
+  `payment_reviewed_at` datetime DEFAULT NULL,
   `status` enum('pending','shipped','delivered') NOT NULL DEFAULT 'pending',
   `payout_status` enum('pending','paid') NOT NULL DEFAULT 'pending',
   `payout_date` datetime DEFAULT NULL,

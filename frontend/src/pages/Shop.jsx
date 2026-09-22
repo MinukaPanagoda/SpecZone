@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Filter, Star, Search, Image as ImageIcon, ChevronDown, Heart, AlertTriangle } from 'lucide-react';
+import { Filter, Star, Search, Image as ImageIcon, ChevronDown, Heart, AlertTriangle, Gamepad2, Briefcase, Palette } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
@@ -23,7 +23,6 @@ const Shop = () => {
 
   // Filter state
   const [selectedCategories, setSelectedCategories] = useState([]);
-  const [selectedBrands, setSelectedBrands] = useState([]);
   const [selectedPriceRange, setSelectedPriceRange] = useState(null);
   const [selectedUseCase, setSelectedUseCase] = useState(null);
 
@@ -59,7 +58,7 @@ const Shop = () => {
       return;
     }
     addToCart(product.id, 1);
-    showToast(`✓ Added "${product.title}" to cart!`);
+    showToast(`Added "${product.title}" to cart!`);
   };
 
   const sortOptions = [
@@ -150,28 +149,15 @@ const Shop = () => {
     );
   };
 
-  const handleBrandChange = (brandName, checked) => {
-    setSelectedBrands(prev =>
-      checked ? [...prev, brandName] : prev.filter(b => b !== brandName)
-    );
-  };
-
   const handlePriceRangeChange = (range) => {
     setSelectedPriceRange(range);
   };
 
   const handleClearFilters = () => {
     setSelectedCategories([]);
-    setSelectedBrands([]);
     setSelectedPriceRange(null);
     setSelectedUseCase(null);
     setSearchQuery('');
-  };
-
-  const matchesBrand = (product, brands) => {
-    if (!brands || brands.length === 0) return true;
-    const text = `${product.title || ''} ${product.description || ''} ${JSON.stringify(product.specs || {})}`.toLowerCase();
-    return brands.some(b => text.includes(b.toLowerCase()));
   };
 
   const matchesUseCase = (product, useCase) => {
@@ -238,13 +224,12 @@ const Shop = () => {
       const categoryMatch = selectedCategories.length === 0 || selectedCategories.includes(product.category_id);
       const priceMatch = selectedPriceRange === null || matchesPriceRange(product.price, selectedPriceRange);
       const useCaseMatch = selectedUseCase === null || matchesUseCase(product, selectedUseCase);
-      const brandMatch = selectedBrands.length === 0 || matchesBrand(product, selectedBrands);
       const query = searchQuery.trim().toLowerCase();
       const searchMatch = !query || 
         product.title?.toLowerCase().includes(query) ||
         product.description?.toLowerCase().includes(query) ||
         product.category_name?.toLowerCase().includes(query);
-      return categoryMatch && priceMatch && useCaseMatch && brandMatch && searchMatch;
+      return categoryMatch && priceMatch && useCaseMatch && searchMatch;
     })
     .sort((a, b) => {
       if (selectedSort === 'Price: Low to High' || selectedSort === 'Low to High') {
@@ -331,26 +316,8 @@ const Shop = () => {
           </div>
 
           <div className="filter-group">
-            <h4>Brand</h4>
-            <div style={{ maxHeight: '180px', overflowY: 'auto', paddingRight: '0.4rem' }}>
-              {['ASUS', 'MSI', 'Gigabyte', 'Corsair', 'Kingston', 'Intel', 'AMD', 'NVIDIA', 'Samsung', 'Crucial', 'DeepCool'].map(brand => (
-                <label key={brand} className="filter-label">
-                  <input
-                    type="checkbox"
-                    value={brand}
-                    className="speczone-control"
-                    checked={selectedBrands.includes(brand)}
-                    onChange={(e) => handleBrandChange(brand, e.target.checked)}
-                  />
-                  {brand}
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div className="filter-group">
             <h4>Recommended For</h4>
-            <label className="filter-label">
+            <label className="filter-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <input
                 type="radio"
                 name="usecase"
@@ -359,9 +326,11 @@ const Shop = () => {
                 checked={selectedUseCase === 'gaming'}
                 onChange={() => setSelectedUseCase(prev => prev === 'gaming' ? null : 'gaming')}
               />
-              🎮 Gaming & Streaming
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                <Gamepad2 size={15} color="var(--accent-primary)" /> Gaming & Streaming
+              </span>
             </label>
-            <label className="filter-label">
+            <label className="filter-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <input
                 type="radio"
                 name="usecase"
@@ -370,9 +339,11 @@ const Shop = () => {
                 checked={selectedUseCase === 'office'}
                 onChange={() => setSelectedUseCase(prev => prev === 'office' ? null : 'office')}
               />
-              💼 Office & Study
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                <Briefcase size={15} color="var(--accent-primary)" /> Office & Study
+              </span>
             </label>
-            <label className="filter-label">
+            <label className="filter-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <input
                 type="radio"
                 name="usecase"
@@ -381,7 +352,9 @@ const Shop = () => {
                 checked={selectedUseCase === 'design'}
                 onChange={() => setSelectedUseCase(prev => prev === 'design' ? null : 'design')}
               />
-              🎨 Graphic Design & Editing
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                <Palette size={15} color="var(--accent-primary)" /> Graphic Design & Editing
+              </span>
             </label>
           </div>
 
@@ -733,7 +706,7 @@ const Shop = () => {
 
                     {isSellerFlagged(product) && (
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', color: 'var(--warning)', background: 'rgba(255, 180, 0, 0.12)', border: '1px solid rgba(255, 180, 0, 0.25)', padding: '0.15rem 0.5rem', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 'bold', marginBottom: '0.8rem', width: 'fit-content' }}>
-                        <AlertTriangle size={12} /> Low rated seller ({product.seller_avg_rating ? `${product.seller_avg_rating}★` : 'Notice'})
+                        <AlertTriangle size={12} /> Low rated seller ({product.seller_avg_rating ? `${product.seller_avg_rating}/10` : 'Notice'})
                       </div>
                     )}
 
@@ -800,7 +773,7 @@ const Shop = () => {
         onConfirm={() => {
           if (pendingWarningProduct) {
             addToCart(pendingWarningProduct.id, 1);
-            showToast(`✓ Added "${pendingWarningProduct.title}" to cart!`);
+            showToast(`Added "${pendingWarningProduct.title}" to cart!`);
             setPendingWarningProduct(null);
           }
         }}

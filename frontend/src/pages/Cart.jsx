@@ -63,7 +63,7 @@ const Cart = () => {
                       <span>Sold by: <strong>{item.shop_name || item.seller_name}</strong></span>
                       {isSellerWarned && (
                         <span style={{ color: 'var(--warning)', display: 'inline-flex', alignItems: 'center', gap: '0.2rem', background: 'rgba(255,180,0,0.1)', padding: '0.1rem 0.4rem', borderRadius: '3px', fontSize: '0.75rem' }}>
-                          <AlertTriangle size={11} /> Low rated merchant ({sRating > 0 ? `${sRating}★` : 'Notice'})
+                          <AlertTriangle size={11} /> Low rated merchant ({sRating > 0 ? `${sRating} / 5` : 'Notice'})
                         </span>
                       )}
                     </div>

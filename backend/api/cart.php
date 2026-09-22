@@ -31,8 +31,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'get') {
                 'quantity' => $row['quantity'],
                 'stock_quantity' => $row['stock_quantity'],
                 'image_url' => $row['image_url'],
+                'seller_id' => $row['seller_id'] ?? null,
                 'seller_name' => $row['seller_name'],
                 'shop_name' => $row['shop_name'],
+                'bank_name' => $row['bank_name'] ?? null,
+                'bank_account_number' => $row['bank_account_number'] ?? null,
+                'bank_account_name' => $row['bank_account_name'] ?? null,
+                'bank_branch' => $row['bank_branch'] ?? null,
                 'seller_warning_count' => intval($row['seller_warning_count'] ?? 0),
                 'seller_avg_rating' => floatval($row['seller_avg_rating'] ?? 0),
                 'seller_complaint_count' => intval($row['seller_complaint_count'] ?? 0)

@@ -7,6 +7,8 @@ class Order {
 
     public $buyer_id;
     public $total_amount;
+    public $payment_method = 'cod';
+    public $payment_slip_url = null;
 
     public function __construct($db) {
         $this->conn = $db;
@@ -43,17 +45,28 @@ class Order {
                 }
             }
 
+            // Determine item payment status
+            $isBankTransfer = ($this->payment_method === 'bank_transfer');
+            $itemPaymentStatus = $isBankTransfer
+                ? (!empty($this->payment_slip_url) ? 'under_review' : 'pending_slip')
+                : 'cod';
+            $slipUrl = $isBankTransfer ? $this->payment_slip_url : null;
+
             // 2. Insert into orders table
-            $order_query = "INSERT INTO " . $this->table_orders . " SET buyer_id = :buyer_id, total_amount = :total_amount";
+            $order_query = "INSERT INTO " . $this->table_orders . " 
+                            SET buyer_id = :buyer_id, total_amount = :total_amount, payment_method = :payment_method";
             $order_stmt = $this->conn->prepare($order_query);
             $order_stmt->bindParam(':buyer_id', $this->buyer_id);
             $order_stmt->bindParam(':total_amount', $total_amount);
+            $order_stmt->bindParam(':payment_method', $this->payment_method);
             $order_stmt->execute();
             
             $order_id = $this->conn->lastInsertId();
 
             // 3. Insert into order_items table and reduce stock
-            $item_query = "INSERT INTO " . $this->table_items . " SET order_id = :order_id, product_id = :product_id, quantity = :quantity, unit_price = :unit_price";
+            $item_query = "INSERT INTO " . $this->table_items . " 
+                           SET order_id = :order_id, product_id = :product_id, quantity = :quantity, unit_price = :unit_price,
+                               payment_method = :payment_method, payment_status = :payment_status, payment_slip_url = :payment_slip_url";
             $item_stmt = $this->conn->prepare($item_query);
             
             $stock_query = "UPDATE products SET stock_quantity = stock_quantity - :quantity WHERE id = :product_id";
@@ -65,6 +78,9 @@ class Order {
                 $item_stmt->bindValue(':product_id', $item['product_id']);
                 $item_stmt->bindValue(':quantity', $item['quantity']);
                 $item_stmt->bindValue(':unit_price', $item['price']);
+                $item_stmt->bindValue(':payment_method', $this->payment_method);
+                $item_stmt->bindValue(':payment_status', $itemPaymentStatus);
+                $item_stmt->bindValue(':payment_slip_url', $slipUrl);
                 $item_stmt->execute();
 
                 // Reduce stock

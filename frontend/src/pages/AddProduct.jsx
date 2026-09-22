@@ -127,7 +127,7 @@ const AddProduct = () => {
       const data = await response.json();
 
       if (response.ok) {
-        setStatus({ type: 'success', message: '✓ Product and category specifications added successfully!' });
+        setStatus({ type: 'success', message: 'Product and category specifications added successfully!' });
         setFormData({
           name: '',
           description: '',

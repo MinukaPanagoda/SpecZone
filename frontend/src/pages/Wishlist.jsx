@@ -151,7 +151,7 @@ const Wishlist = () => {
                   disabled={item.stock <= 0}
                   onClick={() => {
                     addToCart(item.product_id, 1);
-                    showToast(`✓ Added "${item.title}" to cart!`, 'success');
+                    showToast(`Added "${item.title}" to cart!`, 'success');
                   }}
                 >
                   <ShoppingCart size={16} /> Add to Cart

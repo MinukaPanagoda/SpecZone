@@ -7,7 +7,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, ShoppingBag, Heart, Wrench, Menu, X, Trash2, 
   ShoppingCart, Printer, CheckCircle2, AlertTriangle, Plus, Play, 
-  ArrowRight, FileText, User, Lock, Shield, Save, Phone, MapPin, Check, AlertCircle 
+  ArrowRight, FileText, User, Lock, Shield, Save, Phone, MapPin, Check, AlertCircle,
+  Truck, Clock, Building2, Upload, Eye, ExternalLink, Copy, FileCheck, DollarSign
 } from 'lucide-react';
 
 const BuyerDashboard = () => {
@@ -24,6 +25,18 @@ const BuyerDashboard = () => {
   const [loadingBuilds, setLoadingBuilds] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
+
+  // Bank Slip Upload & View State
+  const [uploadSlipModalOpen, setUploadSlipModalOpen] = useState(false);
+  const [selectedItemForSlip, setSelectedItemForSlip] = useState(null);
+  const [buyerSlipImage, setBuyerSlipImage] = useState(null);
+  const [buyerSlipPreview, setBuyerSlipPreview] = useState(null);
+  const [buyerSlipFileName, setBuyerSlipFileName] = useState('');
+  const [buyerSlipFileSize, setBuyerSlipFileSize] = useState('');
+  const [submittingSlip, setSubmittingSlip] = useState(false);
+  const [viewSlipModalOpen, setViewSlipModalOpen] = useState(false);
+  const [selectedItemForViewSlip, setSelectedItemForViewSlip] = useState(null);
+  const [copiedBankAcc, setCopiedBankAcc] = useState(false);
 
   // Profile and Password State
   const [profileData, setProfileData] = useState({
@@ -265,7 +278,7 @@ const BuyerDashboard = () => {
       });
       const data = await res.json();
       if (res.ok) {
-        showToast("✓ Saved build configuration deleted.", "success");
+        showToast("Saved build configuration deleted.", "success");
         setSavedBuilds(prev => prev.filter(b => b.id !== buildId));
       } else {
         showToast(data.message || "Failed to delete build.", "error");
@@ -346,7 +359,7 @@ const BuyerDashboard = () => {
       });
       const data = await res.json();
       if (res.ok) {
-        showToast("✓ Package marked as received! The order item is now completed.", "success");
+        showToast("Package marked as received! The order item is now completed.", "success");
         fetchOrders();
       } else {
         showToast(data.message || "Failed to confirm receipt.", "error");
@@ -355,6 +368,86 @@ const BuyerDashboard = () => {
       console.error(err);
       showToast("Network error confirming receipt.", "error");
     }
+  };
+
+  const openUploadSlipModal = (item) => {
+    setSelectedItemForSlip(item);
+    setBuyerSlipImage(null);
+    setBuyerSlipPreview(null);
+    setBuyerSlipFileName('');
+    setBuyerSlipFileSize('');
+    setUploadSlipModalOpen(true);
+  };
+
+  const openViewSlipModal = (item) => {
+    setSelectedItemForViewSlip(item);
+    setViewSlipModalOpen(true);
+  };
+
+  const handleBuyerSlipFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast("Slip image size must be less than 5MB.", "error");
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      showToast("Please upload a valid image file (PNG, JPG, JPEG, WEBP).", "warning");
+      return;
+    }
+
+    setBuyerSlipFileName(file.name);
+    setBuyerSlipFileSize((file.size / 1024).toFixed(1) + ' KB');
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setBuyerSlipPreview(reader.result);
+      setBuyerSlipImage(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSubmitSlip = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!buyerSlipImage || !selectedItemForSlip) {
+      showToast("Please select a valid deposit slip image to upload.", "warning");
+      return;
+    }
+
+    setSubmittingSlip(true);
+    try {
+      const res = await fetch(`http://localhost/SpecZone/backend/api/orders.php?action=upload_slip`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          item_id: selectedItemForSlip.item_id,
+          buyer_id: user.id,
+          slip_image: buyerSlipImage
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast("Bank slip uploaded successfully! It is now under review by the vendor.", "success");
+        setUploadSlipModalOpen(false);
+        fetchOrders();
+      } else {
+        showToast(data.message || "Failed to upload payment slip.", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Network error uploading payment slip.", "error");
+    } finally {
+      setSubmittingSlip(false);
+    }
+  };
+
+  const copyBankAcc = (text) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedBankAcc(true);
+    setTimeout(() => setCopiedBankAcc(false), 2000);
   };
 
   const getStatusColor = (status) => {
@@ -607,8 +700,8 @@ const BuyerDashboard = () => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '0.2rem' }}>
                           <h4 style={{ margin: 0, fontSize: '1.15rem' }}>Order #{order.id}</h4>
                           {isDelivered && (
-                            <span style={{ padding: '0.15rem 0.5rem', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 'bold', background: 'rgba(0, 255, 150, 0.15)', color: 'var(--success)', border: '1px solid rgba(0, 255, 150, 0.3)' }}>
-                              ✓ COMPLETED
+                            <span style={{ padding: '0.15rem 0.5rem', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 'bold', background: 'rgba(0, 255, 150, 0.15)', color: 'var(--success)', border: '1px solid rgba(0, 255, 150, 0.3)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                              <CheckCircle2 size={12} /> COMPLETED
                             </span>
                           )}
                         </div>
@@ -660,78 +753,239 @@ const BuyerDashboard = () => {
                       </div>
                     </div>
                     <div style={{ padding: '1.5rem' }}>
-                      {order.items && order.items.map(item => (
-                        <div key={item.item_id} style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', padding: '1rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                          <img src={item.image_url || 'https://via.placeholder.com/60'} alt={item.title} style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '4px' }} />
-                          <div style={{ flex: 1 }}>
-                            <h5 style={{ margin: '0 0 0.3rem 0', fontSize: '1rem' }}>{item.title}</h5>
-                            <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Sold by: {item.seller_name} | Qty: {item.quantity}</p>
-                          </div>
-                          <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontWeight: 'bold', marginBottom: '0.3rem' }}>Rs. {(item.quantity * item.unit_price).toLocaleString('en-IN')}</div>
-                            <div style={{
-                              display: 'flex',
-                              flexDirection: 'column',
-                              alignItems: 'flex-end',
-                              gap: '0.5rem'
-                            }}>
-                              <span style={{ 
-                                padding: '0.2rem 0.5rem', 
-                                borderRadius: '4px', 
-                                fontSize: '0.75rem', 
-                                fontWeight: 'bold',
-                                textTransform: 'uppercase',
-                                background: 'rgba(255,255,255,0.1)',
-                                color: getStatusColor(item.status)
-                              }}>
-                                {item.status === 'delivered' ? '✓ RECEIVED' : item.status === 'shipped' ? '🚚 SHIPPED' : '⏳ PENDING'}
-                              </span>
+                      {order.items && order.items.map(item => {
+                        const isBank = item.payment_method === 'bank_transfer';
+                        const isSlipApproved = item.payment_status === 'approved';
+                        const isSlipUnderReview = item.payment_status === 'under_review';
+                        const isSlipPending = item.payment_status === 'pending_slip';
+                        const isSlipRejected = item.payment_status === 'rejected';
 
-                              {item.status === 'shipped' && (
+                        return (
+                        <div key={item.item_id} style={{ padding: '1rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+                            <img src={item.image_url || 'https://via.placeholder.com/60'} alt={item.title} style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '4px' }} />
+                            <div style={{ flex: 1, minWidth: '220px' }}>
+                              <h5 style={{ margin: '0 0 0.3rem 0', fontSize: '1rem' }}>{item.title}</h5>
+                              <p style={{ margin: '0 0 0.4rem 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                Sold by: {item.seller_name} | Qty: {item.quantity}
+                              </p>
+
+                              {/* Payment Method & Slip Status Badges */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                {!isBank ? (
+                                  <span style={{ padding: '0.15rem 0.45rem', borderRadius: '4px', fontSize: '0.72rem', fontWeight: '600', background: 'rgba(0, 240, 255, 0.1)', color: 'var(--accent-primary)', border: '1px solid rgba(0, 240, 255, 0.25)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                                    <DollarSign size={11} /> COD Order
+                                  </span>
+                                ) : (
+                                  <>
+                                    <span style={{ padding: '0.15rem 0.45rem', borderRadius: '4px', fontSize: '0.72rem', fontWeight: '600', background: 'rgba(168, 85, 247, 0.12)', color: '#c084fc', border: '1px solid rgba(168, 85, 247, 0.25)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                                      <Building2 size={11} /> Bank Transfer
+                                    </span>
+                                    {isSlipApproved && (
+                                      <span style={{ padding: '0.15rem 0.45rem', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 'bold', background: 'rgba(0, 255, 150, 0.15)', color: 'var(--success)', border: '1px solid rgba(0, 255, 150, 0.3)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                                        <CheckCircle2 size={11} /> Slip Approved
+                                      </span>
+                                    )}
+                                    {isSlipUnderReview && (
+                                      <span style={{ padding: '0.15rem 0.45rem', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 'bold', background: 'rgba(255, 180, 0, 0.15)', color: 'var(--warning)', border: '1px solid rgba(255, 180, 0, 0.35)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                                        <Clock size={11} /> Slip Under Review
+                                      </span>
+                                    )}
+                                    {isSlipPending && (
+                                      <span style={{ padding: '0.15rem 0.45rem', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 'bold', background: 'rgba(255, 255, 255, 0.08)', color: 'var(--text-secondary)', border: '1px solid rgba(255, 255, 255, 0.15)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                                        <AlertCircle size={11} /> Slip Needed
+                                      </span>
+                                    )}
+                                    {isSlipRejected && (
+                                      <span style={{ padding: '0.15rem 0.45rem', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 'bold', background: 'rgba(255, 51, 102, 0.15)', color: 'var(--danger)', border: '1px solid rgba(255, 51, 102, 0.3)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                                        <AlertTriangle size={11} /> Slip Rejected
+                                      </span>
+                                    )}
+                                    {item.payment_slip_url && (
+                                      <button
+                                        type="button"
+                                        onClick={() => openViewSlipModal(item)}
+                                        style={{
+                                          background: 'none',
+                                          border: 'none',
+                                          color: 'var(--accent-primary)',
+                                          fontSize: '0.74rem',
+                                          cursor: 'pointer',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '0.25rem',
+                                          textDecoration: 'underline',
+                                          padding: 0
+                                        }}
+                                      >
+                                        <Eye size={12} /> View Slip
+                                      </button>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            </div>
+
+                            <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+                              <div style={{ fontWeight: 'bold', marginBottom: '0.2rem' }}>Rs. {(item.quantity * item.unit_price).toLocaleString('en-IN')}</div>
+                              
+                              <div style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'flex-end',
+                                gap: '0.45rem'
+                              }}>
+                                <span style={{ 
+                                  padding: '0.2rem 0.5rem', 
+                                  borderRadius: '4px', 
+                                  fontSize: '0.75rem', 
+                                  fontWeight: 'bold',
+                                  textTransform: 'uppercase',
+                                  background: 'rgba(255,255,255,0.1)',
+                                  color: getStatusColor(item.status),
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.3rem'
+                                }}>
+                                  {item.status === 'delivered' ? (
+                                    <><CheckCircle2 size={12} /> RECEIVED</>
+                                  ) : item.status === 'shipped' ? (
+                                    <><Truck size={12} /> SHIPPED</>
+                                  ) : (
+                                    <><Clock size={12} /> PENDING</>
+                                  )}
+                                </span>
+
+                                {item.status === 'shipped' && (
+                                  <button
+                                    type="button"
+                                    className="btn"
+                                    style={{
+                                      padding: '0.35rem 0.75rem',
+                                      fontSize: '0.78rem',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '0.35rem',
+                                      background: 'linear-gradient(135deg, #00ff96, #00b4d8)',
+                                      color: '#000',
+                                      fontWeight: 'bold',
+                                      border: 'none',
+                                      borderRadius: '6px',
+                                      cursor: 'pointer',
+                                      boxShadow: '0 2px 8px rgba(0, 255, 150, 0.3)'
+                                    }}
+                                    onClick={() => handleConfirmReceived(item.item_id, item.title)}
+                                    title="Click to confirm you have received this parcel"
+                                  >
+                                    <CheckCircle2 size={14} /> Mark as Received
+                                  </button>
+                                )}
+
                                 <button
                                   type="button"
-                                  className="btn"
+                                  className="btn btn-outline"
                                   style={{
-                                    padding: '0.35rem 0.75rem',
-                                    fontSize: '0.78rem',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '0.35rem',
-                                    background: 'linear-gradient(135deg, #00ff96, #00b4d8)',
-                                    color: '#000',
-                                    fontWeight: 'bold',
-                                    border: 'none',
-                                    borderRadius: '6px',
-                                    cursor: 'pointer',
-                                    boxShadow: '0 2px 8px rgba(0, 255, 150, 0.3)'
+                                    padding: '0.2rem 0.6rem',
+                                    fontSize: '0.75rem',
+                                    color: 'var(--danger)',
+                                    borderColor: 'var(--danger)'
                                   }}
-                                  onClick={() => handleConfirmReceived(item.item_id, item.title)}
-                                  title="Click to confirm you have received this parcel"
+                                  onClick={() => {
+                                    setReportItem(item);
+                                    setReportModalOpen(true);
+                                  }}
                                 >
-                                  <CheckCircle2 size={14} /> Mark as Received
+                                  Report Issue
                                 </button>
-                              )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Slip Rejected Prompt Banner */}
+                          {isBank && isSlipRejected && (
+                            <div style={{
+                              marginTop: '0.9rem',
+                              padding: '0.85rem 1.1rem',
+                              borderRadius: '8px',
+                              background: 'rgba(255, 51, 102, 0.1)',
+                              border: '1px solid rgba(255, 51, 102, 0.35)',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              flexWrap: 'wrap',
+                              gap: '0.8rem'
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', flex: 1, minWidth: '240px' }}>
+                                <AlertTriangle size={18} color="var(--danger)" style={{ flexShrink: 0, marginTop: '0.1rem' }} />
+                                <div>
+                                  <strong style={{ color: 'var(--danger)', fontSize: '0.88rem', display: 'block' }}>
+                                    Payment Slip Rejected by Seller
+                                  </strong>
+                                  <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.82rem', color: 'rgba(255,255,255,0.85)' }}>
+                                    {item.payment_reject_reason ? `Reason: "${item.payment_reject_reason}"` : 'Please upload a clear and valid deposit slip.'}
+                                  </p>
+                                </div>
+                              </div>
 
                               <button
                                 type="button"
-                                className="btn btn-outline"
+                                className="btn btn-primary"
                                 style={{
-                                  padding: '0.2rem 0.6rem',
-                                  fontSize: '0.75rem',
-                                  color: 'var(--danger)',
-                                  borderColor: 'var(--danger)'
+                                  padding: '0.45rem 0.9rem',
+                                  fontSize: '0.82rem',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.4rem',
+                                  cursor: 'pointer'
                                 }}
-                                onClick={() => {
-                                  setReportItem(item);
-                                  setReportModalOpen(true);
-                                }}
+                                onClick={() => openUploadSlipModal(item)}
                               >
-                                Report Issue
+                                <Upload size={14} /> Upload Correct Slip
                               </button>
                             </div>
-                          </div>
+                          )}
+
+                          {/* Slip Pending Upload Button Banner */}
+                          {isBank && isSlipPending && (
+                            <div style={{
+                              marginTop: '0.9rem',
+                              padding: '0.85rem 1.1rem',
+                              borderRadius: '8px',
+                              background: 'rgba(0, 240, 255, 0.08)',
+                              border: '1px solid rgba(0, 240, 255, 0.25)',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              flexWrap: 'wrap',
+                              gap: '0.8rem'
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                <Clock size={18} color="var(--accent-primary)" />
+                                <span style={{ fontSize: '0.85rem', color: '#fff' }}>
+                                  Direct bank transfer selected. Please upload your deposit slip so the seller can verify and ship your order.
+                                </span>
+                              </div>
+
+                              <button
+                                type="button"
+                                className="btn btn-primary"
+                                style={{
+                                  padding: '0.45rem 0.9rem',
+                                  fontSize: '0.82rem',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.4rem',
+                                  cursor: 'pointer'
+                                }}
+                                onClick={() => openUploadSlipModal(item)}
+                              >
+                                <Upload size={14} /> Upload Deposit Slip
+                              </button>
+                            </div>
+                          )}
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                   );
@@ -1191,20 +1445,20 @@ const BuyerDashboard = () => {
                       />
                       {/* Live Password Checklist */}
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.4rem', marginTop: '0.6rem', fontSize: '0.78rem' }}>
-                        <span style={{ color: hasPwdMinLength ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: hasPwdMinLength ? '600' : 'normal' }}>
-                          {hasPwdMinLength ? '✓' : '○'} Min. 8 Chars
+                        <span style={{ color: hasPwdMinLength ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: hasPwdMinLength ? '600' : 'normal' }}>
+                          {hasPwdMinLength ? <Check size={12} /> : <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: 'currentColor', opacity: 0.6 }} />} Min. 8 Chars
                         </span>
-                        <span style={{ color: hasPwdUppercase ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: hasPwdUppercase ? '600' : 'normal' }}>
-                          {hasPwdUppercase ? '✓' : '○'} Capital (A-Z)
+                        <span style={{ color: hasPwdUppercase ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: hasPwdUppercase ? '600' : 'normal' }}>
+                          {hasPwdUppercase ? <Check size={12} /> : <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: 'currentColor', opacity: 0.6 }} />} Capital (A-Z)
                         </span>
-                        <span style={{ color: hasPwdLowercase ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: hasPwdLowercase ? '600' : 'normal' }}>
-                          {hasPwdLowercase ? '✓' : '○'} Simple (a-z)
+                        <span style={{ color: hasPwdLowercase ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: hasPwdLowercase ? '600' : 'normal' }}>
+                          {hasPwdLowercase ? <Check size={12} /> : <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: 'currentColor', opacity: 0.6 }} />} Simple (a-z)
                         </span>
-                        <span style={{ color: hasPwdNumber ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: hasPwdNumber ? '600' : 'normal' }}>
-                          {hasPwdNumber ? '✓' : '○'} Number (0-9)
+                        <span style={{ color: hasPwdNumber ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: hasPwdNumber ? '600' : 'normal' }}>
+                          {hasPwdNumber ? <Check size={12} /> : <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: 'currentColor', opacity: 0.6 }} />} Number (0-9)
                         </span>
-                        <span style={{ color: hasPwdSpecial ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: hasPwdSpecial ? '600' : 'normal' }}>
-                          {hasPwdSpecial ? '✓' : '○'} Special (!@#$)
+                        <span style={{ color: hasPwdSpecial ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: hasPwdSpecial ? '600' : 'normal' }}>
+                          {hasPwdSpecial ? <Check size={12} /> : <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: 'currentColor', opacity: 0.6 }} />} Special (!@#$)
                         </span>
                       </div>
                     </div>
@@ -1354,8 +1608,8 @@ const BuyerDashboard = () => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                   <h2 style={{ margin: 0, fontSize: '1.8rem', color: 'var(--accent-primary)' }}>SpecZone</h2>
                   {isDelivered && (
-                    <span style={{ padding: '0.2rem 0.5rem', background: 'rgba(0, 255, 150, 0.15)', color: 'var(--success)', border: '1px solid rgba(0, 255, 150, 0.3)', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold' }}>
-                      ✓ DELIVERED
+                    <span style={{ padding: '0.2rem 0.5rem', background: 'rgba(0, 255, 150, 0.15)', color: 'var(--success)', border: '1px solid rgba(0, 255, 150, 0.3)', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                      <CheckCircle2 size={12} /> DELIVERED
                     </span>
                   )}
                 </div>
@@ -1448,9 +1702,14 @@ const BuyerDashboard = () => {
                 fontSize: '0.8rem',
                 color: isDelivered ? 'var(--success)' : 'var(--text-secondary)'
               }}>
-                {isDelivered
-                  ? '✓ Order Completed & Delivered: This document serves as your official Tax Invoice and valid Manufacturer Warranty Certificate.'
-                  : 'Order is currently being processed or shipped. Your official final tax invoice with warranty coverage will be fully unlocked upon delivery.'}
+                {isDelivered ? (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <CheckCircle2 size={14} style={{ flexShrink: 0 }} />
+                    <span>Order Completed & Delivered: This document serves as your official Tax Invoice and valid Manufacturer Warranty Certificate.</span>
+                  </span>
+                ) : (
+                  'Order is currently being processed or shipped. Your official final tax invoice with warranty coverage will be fully unlocked upon delivery.'
+                )}
               </div>
             </div>
 
@@ -1562,6 +1821,416 @@ const BuyerDashboard = () => {
             >
               {reportStatusModal.type === 'success' ? 'Understood & Close' : 'Dismiss'}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Upload / Re-Upload Bank Slip Modal */}
+      {uploadSlipModalOpen && selectedItemForSlip && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.82)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2000,
+            padding: '1rem',
+            animation: 'fadeIn 0.2s ease-out'
+          }}
+          onClick={() => {
+            if (!submittingSlip) setUploadSlipModalOpen(false);
+          }}
+        >
+          <div
+            className="glass-panel"
+            style={{
+              width: '100%',
+              maxWidth: '580px',
+              maxHeight: '92vh',
+              overflowY: 'auto',
+              padding: '1.8rem',
+              borderRadius: '16px',
+              border: '1px solid rgba(0, 240, 255, 0.3)',
+              boxShadow: '0 0 35px rgba(0, 0, 0, 0.6)',
+              background: 'linear-gradient(145deg, rgba(18, 24, 38, 0.98), rgba(10, 14, 22, 0.98))',
+              animation: 'popupScaleIn 0.25s ease-out'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.2rem', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '0.8rem' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Upload size={20} color="var(--accent-primary)" />
+                  <h3 style={{ margin: 0, fontSize: '1.2rem' }}>
+                    {selectedItemForSlip.payment_status === 'rejected' ? 'Re-Upload Payment Slip' : 'Upload Bank Deposit Slip'}
+                  </h3>
+                </div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                  Order #{selectedItemForSlip.order_id} &bull; {selectedItemForSlip.title}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setUploadSlipModalOpen(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  padding: '0.3rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* If Previously Rejected, show reason notice */}
+            {selectedItemForSlip.payment_status === 'rejected' && selectedItemForSlip.payment_reject_reason && (
+              <div style={{
+                padding: '0.8rem 1rem',
+                borderRadius: '8px',
+                background: 'rgba(255, 51, 102, 0.12)',
+                border: '1px solid var(--danger)',
+                color: '#fff',
+                fontSize: '0.84rem',
+                marginBottom: '1.2rem',
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '0.6rem'
+              }}>
+                <AlertTriangle size={16} color="var(--danger)" style={{ flexShrink: 0, marginTop: '0.15rem' }} />
+                <div>
+                  <strong style={{ color: 'var(--danger)', display: 'block' }}>Previous Slip Rejected by Vendor</strong>
+                  <span style={{ color: 'rgba(255,255,255,0.85)' }}>
+                    Reason: "{selectedItemForSlip.payment_reject_reason}"
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Merchant Bank Account Info Box */}
+            <div style={{
+              padding: '1rem',
+              borderRadius: '8px',
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              marginBottom: '1.2rem'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <span style={{ fontWeight: 'bold', color: 'var(--accent-primary)', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <Building2 size={14} /> Vendor Bank Details: {selectedItemForSlip.shop_name || selectedItemForSlip.seller_name}
+                </span>
+                <span style={{ fontWeight: 'bold', color: '#fff', fontSize: '0.88rem' }}>
+                  Amount: Rs. {(selectedItemForSlip.quantity * selectedItemForSlip.unit_price).toLocaleString('en-IN')}
+                </span>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '0.6rem', fontSize: '0.82rem' }}>
+                <div>
+                  <span style={{ color: 'var(--text-secondary)', display: 'block', fontSize: '0.72rem' }}>Bank Name</span>
+                  <strong style={{ color: '#fff' }}>{selectedItemForSlip.bank_name || 'Bank of Ceylon'}</strong>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-secondary)', display: 'block', fontSize: '0.72rem' }}>Account Number</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <strong style={{ color: '#fff', fontFamily: 'monospace', fontSize: '0.92rem' }}>
+                      {selectedItemForSlip.bank_account_number || '7890123456'}
+                    </strong>
+                    <button
+                      type="button"
+                      onClick={() => copyBankAcc(selectedItemForSlip.bank_account_number || '7890123456')}
+                      title="Copy Account Number"
+                      style={{
+                        background: 'rgba(0, 240, 255, 0.1)',
+                        border: '1px solid rgba(0, 240, 255, 0.3)',
+                        color: 'var(--accent-primary)',
+                        borderRadius: '4px',
+                        padding: '0.15rem 0.35rem',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.2rem',
+                        fontSize: '0.68rem'
+                      }}
+                    >
+                      {copiedBankAcc ? <><Check size={10} /> Copied</> : <><Copy size={10} /> Copy</>}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-secondary)', display: 'block', fontSize: '0.72rem' }}>Account Name</span>
+                  <strong style={{ color: '#fff' }}>{selectedItemForSlip.bank_account_name || selectedItemForSlip.seller_name}</strong>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-secondary)', display: 'block', fontSize: '0.72rem' }}>Branch</span>
+                  <strong style={{ color: '#fff' }}>{selectedItemForSlip.bank_branch || 'Main Branch'}</strong>
+                </div>
+              </div>
+            </div>
+
+            {/* Slip File Upload / Preview Area */}
+            <form onSubmit={handleSubmitSlip}>
+              <div style={{ marginBottom: '1.4rem' }}>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: '#fff', marginBottom: '0.4rem' }}>
+                  Select Slip Image (JPG, PNG, WEBP, max 5MB) *
+                </label>
+
+                {!buyerSlipPreview ? (
+                  <label
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.7rem',
+                      padding: '1.8rem 1.2rem',
+                      borderRadius: '10px',
+                      border: '2px dashed rgba(0, 240, 255, 0.35)',
+                      background: 'rgba(0, 240, 255, 0.03)',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      textAlign: 'center'
+                    }}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const file = e.dataTransfer?.files?.[0];
+                      if (file) handleBuyerSlipFileChange({ target: { files: [file] } });
+                    }}
+                  >
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleBuyerSlipFileChange}
+                      style={{ display: 'none' }}
+                    />
+                    <div
+                      style={{
+                        width: '44px',
+                        height: '44px',
+                        borderRadius: '50%',
+                        background: 'rgba(0, 240, 255, 0.1)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'var(--accent-primary)'
+                      }}
+                    >
+                      <Upload size={22} />
+                    </div>
+                    <div>
+                      <span style={{ color: 'var(--accent-primary)', fontWeight: 'bold', fontSize: '0.88rem' }}>
+                        Click to select image
+                      </span>
+                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.82rem' }}> or drag and drop here</span>
+                    </div>
+                  </label>
+                ) : (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '1rem',
+                      padding: '0.9rem 1.2rem',
+                      borderRadius: '8px',
+                      background: 'rgba(0, 255, 150, 0.08)',
+                      border: '1px solid rgba(0, 255, 150, 0.3)',
+                      flexWrap: 'wrap'
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: '56px',
+                        height: '56px',
+                        borderRadius: '6px',
+                        overflow: 'hidden',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        flexShrink: 0
+                      }}
+                    >
+                      <img
+                        src={buyerSlipPreview}
+                        alt="Slip Preview"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    </div>
+
+                    <div style={{ flex: 1, minWidth: '160px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--success)', fontWeight: 'bold', fontSize: '0.88rem' }}>
+                        <CheckCircle2 size={15} /> File Ready to Submit
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '240px' }}>
+                        {buyerSlipFileName}
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                        {buyerSlipFileSize}
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBuyerSlipImage(null);
+                        setBuyerSlipPreview(null);
+                        setBuyerSlipFileName('');
+                        setBuyerSlipFileSize('');
+                      }}
+                      style={{
+                        background: 'rgba(255, 51, 102, 0.15)',
+                        border: '1px solid rgba(255, 51, 102, 0.3)',
+                        color: 'var(--danger)',
+                        borderRadius: '6px',
+                        padding: '0.35rem 0.75rem',
+                        fontSize: '0.78rem',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.3rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <Trash2 size={13} /> Change
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Submit Buttons */}
+              <div style={{ display: 'flex', gap: '0.8rem', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={() => setUploadSlipModalOpen(false)}
+                  disabled={submittingSlip}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    padding: '0.6rem 1.4rem',
+                    fontWeight: 'bold'
+                  }}
+                  disabled={submittingSlip || !buyerSlipImage}
+                >
+                  <Upload size={15} /> {submittingSlip ? 'Submitting...' : 'Submit Payment Slip'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Submitted Slip Modal */}
+      {viewSlipModalOpen && selectedItemForViewSlip && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.82)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 2000,
+            padding: '1rem',
+            animation: 'fadeIn 0.2s ease-out'
+          }}
+          onClick={() => setViewSlipModalOpen(false)}
+        >
+          <div
+            className="glass-panel"
+            style={{
+              width: '100%',
+              maxWidth: '560px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              padding: '1.8rem',
+              borderRadius: '16px',
+              border: '1px solid rgba(0, 240, 255, 0.3)',
+              boxShadow: '0 0 35px rgba(0, 0, 0, 0.6)',
+              background: 'linear-gradient(145deg, rgba(18, 24, 38, 0.98), rgba(10, 14, 22, 0.98))',
+              animation: 'popupScaleIn 0.25s ease-out'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.2rem', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '0.8rem' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <FileCheck size={20} color="var(--accent-primary)" />
+                  <h3 style={{ margin: 0, fontSize: '1.2rem' }}>Submitted Payment Slip</h3>
+                </div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                  Order #{selectedItemForViewSlip.order_id} &bull; {selectedItemForViewSlip.title}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setViewSlipModalOpen(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  padding: '0.3rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Slip Image */}
+            <div style={{
+              maxHeight: '380px',
+              borderRadius: '8px',
+              overflow: 'hidden',
+              border: '1px solid rgba(255,255,255,0.12)',
+              background: '#000',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: '1.2rem'
+            }}>
+              <img
+                src={selectedItemForViewSlip.payment_slip_url}
+                alt="Submitted Deposit Slip"
+                style={{ maxWidth: '100%', maxHeight: '380px', objectFit: 'contain' }}
+              />
+            </div>
+
+            {/* Footer */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.8rem' }}>
+              <a
+                href={selectedItemForViewSlip.payment_slip_url}
+                target="_blank"
+                rel="noreferrer"
+                style={{ fontSize: '0.82rem', color: 'var(--accent-primary)', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', textDecoration: 'none' }}
+              >
+                <ExternalLink size={14} /> Open Full Resolution
+              </a>
+
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={() => setViewSlipModalOpen(false)}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

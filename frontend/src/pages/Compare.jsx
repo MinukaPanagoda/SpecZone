@@ -16,7 +16,8 @@ import {
   Activity,
   Briefcase,
   Monitor,
-  Flame
+  Flame,
+  Star
 } from 'lucide-react';
 import SellerWarningModal from '../components/SellerWarningModal';
 
@@ -238,7 +239,7 @@ const Compare = () => {
       return;
     }
     addToCart(product.id, 1);
-    showToast(`✓ Added "${product.title}" to cart!`);
+    showToast(`Added "${product.title}" to cart!`);
   };
 
   if (loading) {
@@ -532,7 +533,7 @@ const Compare = () => {
                     </td>
                   </tr>
 
-                  {/* ⚡ Power Usage (TDP) Row */}
+                  {/* Power Usage (TDP) Row */}
                   <tr style={{ borderBottom: '1px solid rgba(255, 180, 0, 0.15)', background: 'rgba(255, 180, 0, 0.03)' }}>
                     <td style={{ padding: '0.7rem 0.8rem', fontWeight: 'bold', color: '#ffb703', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                       <Zap size={14} /> Power Draw (TDP)
@@ -542,8 +543,8 @@ const Compare = () => {
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
                           {powerA.raw}
                           {powerA.num && powerB?.num && powerA.num < powerB.num && (
-                            <span style={{ fontSize: '0.7rem', background: 'rgba(0, 255, 150, 0.15)', color: 'var(--success)', padding: '0.1rem 0.35rem', borderRadius: '4px' }}>
-                              ✓ Lower Power
+                            <span style={{ fontSize: '0.7rem', background: 'rgba(0, 255, 150, 0.15)', color: 'var(--success)', padding: '0.1rem 0.35rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
+                              <Check size={11} /> Lower Power
                             </span>
                           )}
                         </span>
@@ -554,8 +555,8 @@ const Compare = () => {
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
                           {powerB.raw}
                           {powerB.num && powerA?.num && powerB.num < powerA.num && (
-                            <span style={{ fontSize: '0.7rem', background: 'rgba(0, 255, 150, 0.15)', color: 'var(--success)', padding: '0.1rem 0.35rem', borderRadius: '4px' }}>
-                              ✓ Lower Power
+                            <span style={{ fontSize: '0.7rem', background: 'rgba(0, 255, 150, 0.15)', color: 'var(--success)', padding: '0.1rem 0.35rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
+                              <Check size={11} /> Lower Power
                             </span>
                           )}
                         </span>
@@ -563,7 +564,7 @@ const Compare = () => {
                     </td>
                   </tr>
 
-                  {/* 📊 Benchmark Performance Meter Row */}
+                  {/* Benchmark Performance Meter Row */}
                   {(benchA || benchB) && (
                     <tr style={{ borderBottom: '1px solid rgba(0, 240, 255, 0.2)', background: 'rgba(0, 240, 255, 0.04)' }}>
                       <td style={{ padding: '0.7rem 0.8rem', fontWeight: 'bold', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
@@ -602,7 +603,7 @@ const Compare = () => {
                     </tr>
                   )}
 
-                  {/* 🏷️ Recommended Use-Case Category */}
+                  {/* Recommended Use-Case Category */}
                   <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
                     <td style={{ padding: '0.7rem 0.8rem', fontWeight: 'bold', color: 'var(--text-secondary)' }}>Recommended For</td>
                     <td style={{ padding: '0.7rem 0.8rem' }}>
@@ -621,10 +622,18 @@ const Compare = () => {
                   <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)', background: 'rgba(255, 255, 255, 0.02)' }}>
                     <td style={{ padding: '0.7rem 0.8rem', fontWeight: 'bold', color: 'var(--text-secondary)' }}>Rating</td>
                     <td style={{ padding: '0.7rem 0.8rem' }}>
-                      {productA?.avg_rating > 0 ? `⭐ ${productA.avg_rating}/10 (${productA.review_count || 0})` : 'No ratings'}
+                      {productA?.avg_rating > 0 ? (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                          <Star size={13} color="var(--warning)" fill="var(--warning)" /> {productA.avg_rating}/10 ({productA.review_count || 0})
+                        </span>
+                      ) : 'No ratings'}
                     </td>
                     <td style={{ padding: '0.7rem 0.8rem' }}>
-                      {productB?.avg_rating > 0 ? `⭐ ${productB.avg_rating}/10 (${productB.review_count || 0})` : 'No ratings'}
+                      {productB?.avg_rating > 0 ? (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                          <Star size={13} color="var(--warning)" fill="var(--warning)" /> {productB.avg_rating}/10 ({productB.review_count || 0})
+                        </span>
+                      ) : 'No ratings'}
                     </td>
                   </tr>
 
@@ -689,7 +698,7 @@ const Compare = () => {
         onConfirm={() => {
           if (pendingWarningProduct) {
             addToCart(pendingWarningProduct.id, 1);
-            showToast(`✓ Added "${pendingWarningProduct.title}" to cart!`);
+            showToast(`Added "${pendingWarningProduct.title}" to cart!`);
             setPendingWarningProduct(null);
           }
         }}

@@ -6,7 +6,7 @@ import {
   Users, ShoppingBag, Package, LayoutDashboard, Trash2, LogOut, Star, 
   AlertTriangle, ChevronDown, Menu, X, MessageSquareWarning, CheckCircle, 
   ShieldCheck, ShieldAlert, Layers, Plus, Search, AlertCircle, Store,
-  Building2, DollarSign, Wallet, CheckCircle2, Clock
+  Building2, DollarSign, Wallet, CheckCircle2, Clock, Zap, Lock, ArrowUpRight
 } from 'lucide-react';
 
 const AdminDashboard = () => {
@@ -117,7 +117,7 @@ const AdminDashboard = () => {
       });
       const data = await res.json();
       if (res.ok) {
-        showToast(`✓ Payout of Rs. ${parseFloat(item.total_item_price).toLocaleString('en-IN')} successfully released to ${item.seller_name}! Reference ID: ${data.payout_ref}`, 'success');
+        showToast(`Payout of Rs. ${parseFloat(item.total_item_price).toLocaleString('en-IN')} successfully released to ${item.seller_name}! Reference ID: ${data.payout_ref}`, 'success');
         fetchPayouts();
         fetchAdminStats();
       } else {
@@ -202,7 +202,7 @@ const AdminDashboard = () => {
       
       const data = await res.json();
       if (res.ok) {
-        showToast(data.message || "✓ User deleted successfully.", 'success');
+        showToast(data.message || "User deleted successfully.", 'success');
         setUsers(users.filter(u => u.id !== userId));
         setStats(prev => ({
           ...prev,
@@ -235,7 +235,7 @@ const AdminDashboard = () => {
           }
           return u;
         }));
-        showToast(data.message || "✓ Seller verification status updated.", 'success');
+        showToast(data.message || "Seller verification status updated.", 'success');
       } else {
         showToast(data.message || "Failed to update seller verification status.", 'error');
       }
@@ -270,7 +270,7 @@ const AdminDashboard = () => {
           }
           return u;
         }));
-        showToast(data.message || "✓ Warning issued to seller.", 'warning');
+        showToast(data.message || "Warning issued to seller.", 'warning');
       } else {
         showToast(data.message || "Failed to issue warning.", 'error');
       }
@@ -299,7 +299,7 @@ const AdminDashboard = () => {
 
       const data = await res.json();
       if (res.ok) {
-        showToast(data.message || "✓ Product removed successfully.", 'success');
+        showToast(data.message || "Product removed successfully.", 'success');
         setProducts(products.filter(p => p.id !== productId));
         setStats(prev => ({ ...prev, total_products: Math.max(0, prev.total_products - 1) }));
       } else {
@@ -333,7 +333,7 @@ const AdminDashboard = () => {
 
       const data = await res.json();
       if (res.ok) {
-        showToast(data.message || "✓ Category added successfully.", 'success');
+        showToast(data.message || "Category added successfully.", 'success');
         setCategories([...categories, {
           id: data.id,
           name: newCategoryName.trim(),
@@ -373,7 +373,7 @@ const AdminDashboard = () => {
 
       const data = await res.json();
       if (res.ok) {
-        showToast(data.message || "✓ Category deleted successfully.", 'success');
+        showToast(data.message || "Category deleted successfully.", 'success');
         setCategories(categories.filter(c => c.id !== categoryId));
         setStats(prev => ({ ...prev, total_categories: Math.max(0, prev.total_categories - 1) }));
       } else {
@@ -413,7 +413,7 @@ const AdminDashboard = () => {
               : c
           )
         );
-        showToast("✓ Dispute marked as resolved.", 'success');
+        showToast("Dispute marked as resolved.", 'success');
       } else {
         showToast("Failed to resolve complaint.", 'error');
       }
@@ -545,7 +545,32 @@ const AdminDashboard = () => {
           </button>
         </nav>
 
-        <div style={{ marginTop: 'auto', paddingTop: '1.5rem', borderTop: '1px solid var(--border-color)' }}>
+        <div style={{ marginTop: 'auto', paddingTop: '1.25rem', borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+          <button 
+            type="button"
+            className="btn btn-outline" 
+            style={{ 
+              width: '100%', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.8rem', 
+              justifyContent: 'flex-start', 
+              padding: '0.75rem 1rem', 
+              color: 'var(--accent-primary)',
+              background: 'rgba(0, 240, 255, 0.08)',
+              border: '1px solid rgba(0, 240, 255, 0.25)',
+              fontWeight: '600'
+            }}
+            onClick={() => {
+              navigate('/shop');
+              setSidebarOpen(false);
+            }}
+          >
+            <Store size={18} />
+            <span>View Store</span>
+            <ArrowUpRight size={15} style={{ marginLeft: 'auto', opacity: 0.8 }} />
+          </button>
+
           <button 
             className="btn btn-outline" 
             style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.8rem', justifyContent: 'flex-start', padding: '0.75rem 1rem', border: 'none', color: 'var(--danger)' }}
@@ -741,7 +766,7 @@ const AdminDashboard = () => {
                       {filterRole === 'all' ? 'All Roles' :
                        filterRole === 'buyer' ? 'Buyers Only' :
                        filterRole === 'seller' ? 'Sellers Only' :
-                       'Critical Sellers (≤ 4★)'}
+                       'Critical Sellers (≤ 4.0)'}
                     </span>
                     <ChevronDown size={16} style={{ position: 'absolute', right: '0.8rem', top: '50%', transform: `translateY(-50%) rotate(${filterOpen ? 180 : 0}deg)`, color: 'var(--text-secondary)' }} />
                   </button>
@@ -762,7 +787,7 @@ const AdminDashboard = () => {
                         { value: 'all', label: 'All Roles' },
                         { value: 'buyer', label: 'Buyers Only' },
                         { value: 'seller', label: 'Sellers Only' },
-                        { value: 'critical_seller', label: 'Critical Sellers (≤ 4★)' }
+                        { value: 'critical_seller', label: 'Critical Sellers (≤ 4.0)' }
                       ].map(opt => (
                         <div
                           key={opt.value}
@@ -1655,11 +1680,11 @@ const AdminDashboard = () => {
                                         </span>
                                       )}
                                     </div>
-                                    <div style={{ fontSize: '0.82rem', color: item.bank_name ? 'var(--text-secondary)' : 'var(--warning)', marginTop: '0.25rem' }}>
+                                    <div style={{ fontSize: '0.82rem', color: item.bank_name ? 'var(--text-secondary)' : 'var(--warning)', marginTop: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                                       {item.bank_name ? (
-                                        <span>🏦 <strong>{item.bank_name}</strong> · A/C: {item.bank_account_number || 'N/A'} {item.bank_branch ? `(${item.bank_branch})` : ''}</span>
+                                        <span><Building2 size={13} style={{ verticalAlign: 'middle', marginRight: '0.25rem', color: 'var(--accent-primary)' }} /><strong>{item.bank_name}</strong> · A/C: {item.bank_account_number || 'N/A'} {item.bank_branch ? `(${item.bank_branch})` : ''}</span>
                                       ) : (
-                                        <span>⚠️ Bank info pending</span>
+                                        <span><AlertTriangle size={13} style={{ verticalAlign: 'middle', marginRight: '0.25rem' }} />Bank info pending</span>
                                       )}
                                     </div>
                                   </td>
@@ -1682,7 +1707,7 @@ const AdminDashboard = () => {
                                           background: 'rgba(0, 255, 150, 0.15)',
                                           color: 'var(--success)'
                                         }}>
-                                          ✓ SETTLED
+                                          <CheckCircle2 size={12} /> SETTLED
                                         </span>
                                         {item.payout_ref && (
                                           <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
@@ -1704,10 +1729,10 @@ const AdminDashboard = () => {
                                           color: 'var(--accent-primary)',
                                           border: '1px solid rgba(0, 240, 255, 0.3)'
                                         }}>
-                                          ⚡ READY TO PAY
+                                          <Zap size={12} /> READY TO PAY
                                         </span>
-                                        <div style={{ fontSize: '0.7rem', color: 'var(--success)', marginTop: '0.2rem' }}>
-                                          ✓ Delivered to Buyer
+                                        <div style={{ fontSize: '0.7rem', color: 'var(--success)', marginTop: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                          <CheckCircle2 size={11} /> Delivered to Buyer
                                         </div>
                                       </div>
                                     ) : (
@@ -1722,7 +1747,7 @@ const AdminDashboard = () => {
                                         background: 'rgba(255, 180, 0, 0.12)',
                                         color: 'var(--warning)'
                                       }}>
-                                        🔒 In Escrow ({item.order_status === 'shipped' ? 'In Transit' : 'Processing'})
+                                        <Lock size={12} /> In Escrow ({item.order_status === 'shipped' ? 'In Transit' : 'Processing'})
                                       </span>
                                     )}
                                   </td>
@@ -1751,8 +1776,8 @@ const AdminDashboard = () => {
                                         <DollarSign size={15} /> {releasingId === item.item_id ? 'Releasing...' : 'Release Payout'}
                                       </button>
                                     ) : isPaid ? (
-                                      <span style={{ color: 'var(--success)', fontSize: '0.82rem', fontWeight: '500' }}>
-                                        ✓ Paid (EFT)
+                                      <span style={{ color: 'var(--success)', fontSize: '0.82rem', fontWeight: '500', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                                        <CheckCircle2 size={12} /> Paid (EFT)
                                       </span>
                                     ) : (
                                       <span style={{ color: 'var(--text-secondary)', fontSize: '0.78rem' }}>
@@ -1810,16 +1835,16 @@ const AdminDashboard = () => {
                             </div>
                             <div>
                               {isPaid ? (
-                                <span style={{ padding: '0.2rem 0.55rem', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 'bold', background: 'rgba(0, 255, 150, 0.15)', color: 'var(--success)' }}>
-                                  ✓ SETTLED
+                                <span style={{ padding: '0.2rem 0.55rem', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 'bold', background: 'rgba(0, 255, 150, 0.15)', color: 'var(--success)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                                  <CheckCircle2 size={12} /> SETTLED
                                 </span>
                               ) : isReadyForPayout ? (
-                                <span style={{ padding: '0.2rem 0.55rem', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 'bold', background: 'rgba(0, 240, 255, 0.15)', color: 'var(--accent-primary)', border: '1px solid rgba(0, 240, 255, 0.3)' }}>
-                                  ⚡ READY TO PAY
+                                <span style={{ padding: '0.2rem 0.55rem', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 'bold', background: 'rgba(0, 240, 255, 0.15)', color: 'var(--accent-primary)', border: '1px solid rgba(0, 240, 255, 0.3)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                                  <Zap size={12} /> READY TO PAY
                                 </span>
                               ) : (
-                                <span style={{ padding: '0.2rem 0.55rem', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 'bold', background: 'rgba(255, 180, 0, 0.12)', color: 'var(--warning)' }}>
-                                  🔒 IN ESCROW
+                                <span style={{ padding: '0.2rem 0.55rem', borderRadius: '4px', fontSize: '0.72rem', fontWeight: 'bold', background: 'rgba(255, 180, 0, 0.12)', color: 'var(--warning)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                                  <Lock size={12} /> IN ESCROW
                                 </span>
                               )}
                             </div>
@@ -1828,8 +1853,12 @@ const AdminDashboard = () => {
                           <div style={{ background: 'rgba(0, 0, 0, 0.25)', padding: '0.75rem', borderRadius: '6px', fontSize: '0.85rem', marginBottom: '0.9rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                             <div><strong>Product:</strong> {item.product_title} (Qty: {item.quantity})</div>
                             <div><strong>Merchant:</strong> {item.seller_name} {item.shop_name ? `(${item.shop_name})` : ''}</div>
-                            <div style={{ color: item.bank_name ? 'var(--text-secondary)' : 'var(--warning)' }}>
-                              <strong>Bank:</strong> {item.bank_name ? `${item.bank_name} · A/C: ${item.bank_account_number || 'N/A'}` : '⚠️ Bank details pending'}
+                            <div style={{ color: item.bank_name ? 'var(--text-secondary)' : 'var(--warning)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                              <strong>Bank:</strong> {item.bank_name ? (
+                                <span><Building2 size={12} style={{ verticalAlign: 'middle', marginRight: '0.2rem', color: 'var(--accent-primary)' }} />{item.bank_name} · A/C: {item.bank_account_number || 'N/A'}</span>
+                              ) : (
+                                <span><AlertTriangle size={12} style={{ verticalAlign: 'middle', marginRight: '0.2rem' }} />Bank details pending</span>
+                              )}
                             </div>
                             {item.payout_ref && (
                               <div style={{ color: 'var(--success)', fontSize: '0.75rem' }}><strong>Ref ID:</strong> {item.payout_ref}</div>

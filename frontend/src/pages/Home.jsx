@@ -53,7 +53,7 @@ const Home = () => {
       return;
     }
     addToCart(product.id);
-    showToast(`✓ Added "${product.title}" to cart!`, "success");
+    showToast(`Added "${product.title}" to cart!`, "success");
   };
 
   const handleCardClick = (product) => {
@@ -194,7 +194,7 @@ const Home = () => {
           onConfirm={() => {
             if (pendingWarningProduct) {
               addToCart(pendingWarningProduct.id);
-              showToast(`✓ Added "${pendingWarningProduct.title}" to cart!`, "success");
+              showToast(`Added "${pendingWarningProduct.title}" to cart!`, "success");
               setPendingWarningProduct(null);
             }
           }}

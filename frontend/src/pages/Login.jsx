@@ -608,20 +608,20 @@ const Login = () => {
                   />
                   {/* Live Password Checklist */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '0.3rem', marginTop: '0.5rem', fontSize: '0.74rem' }}>
-                    <span style={{ color: hasMinLength ? 'var(--success)' : 'var(--text-secondary)' }}>
-                      {hasMinLength ? '✓' : '○'} Min 8 chars
+                    <span style={{ color: hasMinLength ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      {hasMinLength ? <Check size={11} /> : <span style={{ display: 'inline-block', width: 5, height: 5, borderRadius: '50%', background: 'currentColor', opacity: 0.6 }} />} Min 8 chars
                     </span>
-                    <span style={{ color: hasUppercase ? 'var(--success)' : 'var(--text-secondary)' }}>
-                      {hasUppercase ? '✓' : '○'} Upper (A-Z)
+                    <span style={{ color: hasUppercase ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      {hasUppercase ? <Check size={11} /> : <span style={{ display: 'inline-block', width: 5, height: 5, borderRadius: '50%', background: 'currentColor', opacity: 0.6 }} />} Upper (A-Z)
                     </span>
-                    <span style={{ color: hasLowercase ? 'var(--success)' : 'var(--text-secondary)' }}>
-                      {hasLowercase ? '✓' : '○'} Lower (a-z)
+                    <span style={{ color: hasLowercase ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      {hasLowercase ? <Check size={11} /> : <span style={{ display: 'inline-block', width: 5, height: 5, borderRadius: '50%', background: 'currentColor', opacity: 0.6 }} />} Lower (a-z)
                     </span>
-                    <span style={{ color: hasNumber ? 'var(--success)' : 'var(--text-secondary)' }}>
-                      {hasNumber ? '✓' : '○'} Number (0-9)
+                    <span style={{ color: hasNumber ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      {hasNumber ? <Check size={11} /> : <span style={{ display: 'inline-block', width: 5, height: 5, borderRadius: '50%', background: 'currentColor', opacity: 0.6 }} />} Number (0-9)
                     </span>
-                    <span style={{ color: hasSpecial ? 'var(--success)' : 'var(--text-secondary)' }}>
-                      {hasSpecial ? '✓' : '○'} Special (!@#$)
+                    <span style={{ color: hasSpecial ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      {hasSpecial ? <Check size={11} /> : <span style={{ display: 'inline-block', width: 5, height: 5, borderRadius: '50%', background: 'currentColor', opacity: 0.6 }} />} Special (!@#$)
                     </span>
                   </div>
                 </div>

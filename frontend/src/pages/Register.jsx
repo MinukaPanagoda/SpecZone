@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Check } from 'lucide-react';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -196,20 +196,20 @@ const Register = () => {
             
             {/* Live Password Strength Checklist */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.4rem', marginTop: '0.6rem', fontSize: '0.78rem' }}>
-              <span style={{ color: hasMinLength ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: hasMinLength ? '600' : 'normal' }}>
-                {hasMinLength ? '✓' : '○'} Min. 8 Chars
+              <span style={{ color: hasMinLength ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: hasMinLength ? '600' : 'normal' }}>
+                {hasMinLength ? <Check size={12} /> : <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: 'currentColor', opacity: 0.6 }} />} Min. 8 Chars
               </span>
-              <span style={{ color: hasUppercase ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: hasUppercase ? '600' : 'normal' }}>
-                {hasUppercase ? '✓' : '○'} Capital (A-Z)
+              <span style={{ color: hasUppercase ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: hasUppercase ? '600' : 'normal' }}>
+                {hasUppercase ? <Check size={12} /> : <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: 'currentColor', opacity: 0.6 }} />} Capital (A-Z)
               </span>
-              <span style={{ color: hasLowercase ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: hasLowercase ? '600' : 'normal' }}>
-                {hasLowercase ? '✓' : '○'} Simple (a-z)
+              <span style={{ color: hasLowercase ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: hasLowercase ? '600' : 'normal' }}>
+                {hasLowercase ? <Check size={12} /> : <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: 'currentColor', opacity: 0.6 }} />} Simple (a-z)
               </span>
-              <span style={{ color: hasNumber ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: hasNumber ? '600' : 'normal' }}>
-                {hasNumber ? '✓' : '○'} Number (0-9)
+              <span style={{ color: hasNumber ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: hasNumber ? '600' : 'normal' }}>
+                {hasNumber ? <Check size={12} /> : <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: 'currentColor', opacity: 0.6 }} />} Number (0-9)
               </span>
-              <span style={{ color: hasSpecial ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: hasSpecial ? '600' : 'normal' }}>
-                {hasSpecial ? '✓' : '○'} Special (!@#$)
+              <span style={{ color: hasSpecial ? 'var(--success)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: hasSpecial ? '600' : 'normal' }}>
+                {hasSpecial ? <Check size={12} /> : <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: 'currentColor', opacity: 0.6 }} />} Special (!@#$)
               </span>
             </div>
           </div>

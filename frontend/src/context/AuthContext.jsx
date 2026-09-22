@@ -2,8 +2,8 @@ import React, { createContext, useState, useEffect, useContext, useRef, useCallb
 
 const AuthContext = createContext();
 
-// Session Timeout Duration: 4 Minutes (240,000 ms) of Inactivity
-const SESSION_TIMEOUT_MS = 4 * 60 * 1000;
+// Session Timeout: ex.(4 Mins = 240,000 ms) 
+const SESSION_TIMEOUT_MS = 60 * 60 * 1000;
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);

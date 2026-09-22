@@ -184,7 +184,7 @@ const Builder = () => {
 
       if (res.ok) {
         setSaveModalOpen(false);
-        showToast(`✓ Build "${buildName.trim()}" saved successfully!`, "success");
+        showToast(`Build "${buildName.trim()}" saved successfully!`, "success");
       } else {
         showToast(data.message || "Unable to save PC build configuration.", "error");
       }

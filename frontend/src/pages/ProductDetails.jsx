@@ -198,7 +198,7 @@ const ProductDetails = () => {
                 fontSize: '0.78rem',
                 fontWeight: 'bold'
               }}>
-                <AlertTriangle size={13} /> Low Rated Merchant ({sellerRating > 0 ? `${sellerRating}★` : 'Notice'})
+                <AlertTriangle size={13} /> Low Rated Merchant ({sellerRating > 0 ? `${sellerRating} / 5` : 'Notice'})
               </span>
             )}
           </div>

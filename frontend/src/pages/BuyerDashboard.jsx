@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
+import { useNotification } from '../context/NotificationContext';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, ShoppingBag, Heart, Wrench, Menu, X, Trash2, 
@@ -11,6 +12,7 @@ import {
 
 const BuyerDashboard = () => {
   const { user, updateUser } = useAuth();
+  const { showToast, confirmModal } = useNotification();
   const location = useLocation();
   const navigate = useNavigate();
   const { wishlistItems, removeFromWishlist, wishlistCount } = useWishlist();
@@ -244,7 +246,14 @@ const BuyerDashboard = () => {
   }, [user]);
 
   const handleDeleteBuild = async (buildId) => {
-    if (!window.confirm("Are you sure you want to delete this saved build configuration?")) return;
+    const confirmed = await confirmModal({
+      title: "Delete Saved Build",
+      message: "Are you sure you want to delete this saved build configuration?",
+      confirmText: "Delete Build",
+      type: "danger"
+    });
+    if (!confirmed) return;
+
     try {
       const res = await fetch(`http://localhost/SpecZone/backend/api/builds.php?action=delete`, {
         method: 'POST',
@@ -256,12 +265,14 @@ const BuyerDashboard = () => {
       });
       const data = await res.json();
       if (res.ok) {
+        showToast("✓ Saved build configuration deleted.", "success");
         setSavedBuilds(prev => prev.filter(b => b.id !== buildId));
       } else {
-        alert(data.message || "Failed to delete build.");
+        showToast(data.message || "Failed to delete build.", "error");
       }
     } catch (err) {
       console.error(err);
+      showToast("Error deleting build.", "error");
     }
   };
 
@@ -315,7 +326,13 @@ const BuyerDashboard = () => {
   };
 
   const handleConfirmReceived = async (itemId, itemTitle) => {
-    if (!window.confirm(`Have you received "${itemTitle}" in good condition? Confirming will complete the order and enable payout to the vendor.`)) {
+    const confirmed = await confirmModal({
+      title: "Confirm Item Delivery",
+      message: `Have you received "${itemTitle}" in good condition? Confirming will complete the order and enable payout to the vendor.`,
+      confirmText: "Yes, I Received It",
+      type: "success"
+    });
+    if (!confirmed) {
       return;
     }
     try {
@@ -329,14 +346,14 @@ const BuyerDashboard = () => {
       });
       const data = await res.json();
       if (res.ok) {
-        alert("✓ Package marked as received! The order item is now completed.");
+        showToast("✓ Package marked as received! The order item is now completed.", "success");
         fetchOrders();
       } else {
-        alert(data.message || "Failed to confirm receipt.");
+        showToast(data.message || "Failed to confirm receipt.", "error");
       }
     } catch (err) {
       console.error(err);
-      alert("Network error confirming receipt.");
+      showToast("Network error confirming receipt.", "error");
     }
   };
 

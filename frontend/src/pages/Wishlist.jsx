@@ -2,6 +2,7 @@ import React from 'react';
 import { useWishlist } from '../context/WishlistContext';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { Heart, Trash2, ShoppingCart, Star, Image as ImageIcon } from 'lucide-react';
 
@@ -9,6 +10,7 @@ const Wishlist = () => {
   const { wishlistItems, removeFromWishlist, loading } = useWishlist();
   const { addToCart } = useCart();
   const { user } = useAuth();
+  const { showToast } = useNotification();
   const navigate = useNavigate();
 
   if (!user) {
@@ -149,7 +151,7 @@ const Wishlist = () => {
                   disabled={item.stock <= 0}
                   onClick={() => {
                     addToCart(item.product_id, 1);
-                    alert("Added to Cart!");
+                    showToast(`✓ Added "${item.title}" to cart!`, 'success');
                   }}
                 >
                   <ShoppingCart size={16} /> Add to Cart

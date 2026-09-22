@@ -1,10 +1,12 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useAuth } from './AuthContext';
+import { useNotification } from './NotificationContext';
 
 const WishlistContext = createContext();
 
 export const WishlistProvider = ({ children }) => {
   const { user } = useAuth();
+  const { showToast } = useNotification();
   const [wishlistItems, setWishlistItems] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -38,7 +40,7 @@ export const WishlistProvider = ({ children }) => {
 
   const toggleWishlist = async (productId) => {
     if (!user || user.role !== 'buyer') {
-      alert("Please login as a buyer to save items to your wishlist.");
+      showToast("Please login as a buyer to save items to your wishlist.", "warning");
       return false;
     }
 

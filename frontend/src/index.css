@@ -644,6 +644,25 @@ a:hover {
   }
 }
 
+/* Responsive Payout Layout */
+.payout-desktop-view {
+  display: block;
+}
+.payout-mobile-view {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .payout-desktop-view {
+    display: none;
+  }
+  .payout-mobile-view {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
+
 /* Footer Styles */
 .footer {
   background-color: var(--bg-secondary);

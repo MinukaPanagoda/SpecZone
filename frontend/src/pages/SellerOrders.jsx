@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 import { useNavigate } from 'react-router-dom';
 import SellerSidebar from '../components/SellerSidebar';
 import { Package, Truck, CheckCircle, Menu } from 'lucide-react';
 
 const SellerOrders = () => {
   const { user } = useAuth();
+  const { showToast } = useNotification();
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -48,14 +50,15 @@ const SellerOrders = () => {
       });
       const data = await res.json();
       if (res.ok) {
+        showToast("✓ Order status updated successfully!", "success");
         // Refresh orders after successful update
         fetchOrders();
       } else {
-        alert(data.message || "Failed to update status");
+        showToast(data.message || "Failed to update status", "error");
       }
     } catch (err) {
       console.error(err);
-      alert("Error updating status");
+      showToast("Error updating status", "error");
     }
   };
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { NotificationProvider } from './context/NotificationContext';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
@@ -68,15 +69,17 @@ const AppLayout = () => {
 
 const App = () => {
   return (
-    <AuthProvider>
-      <WishlistProvider>
-        <CartProvider>
-          <Router>
-            <AppLayout />
-          </Router>
-        </CartProvider>
-      </WishlistProvider>
-    </AuthProvider>
+    <NotificationProvider>
+      <AuthProvider>
+        <WishlistProvider>
+          <CartProvider>
+            <Router>
+              <AppLayout />
+            </Router>
+          </CartProvider>
+        </WishlistProvider>
+      </AuthProvider>
+    </NotificationProvider>
   );
 };
 

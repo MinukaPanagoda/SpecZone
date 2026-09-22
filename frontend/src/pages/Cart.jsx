@@ -1,10 +1,12 @@
 import React from 'react';
 import { useCart } from '../context/CartContext';
+import { useNotification } from '../context/NotificationContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { Trash2, ShoppingBag, Plus, Minus, Image as ImageIcon, AlertTriangle } from 'lucide-react';
 
 const Cart = () => {
   const { cartItems, updateQuantity, removeFromCart, getCartTotal } = useCart();
+  const { showToast } = useNotification();
   const navigate = useNavigate();
 
   if (cartItems.length === 0) {
@@ -86,7 +88,7 @@ const Cart = () => {
                         style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer', padding: '0.2rem' }}
                         onClick={() => {
                           if(item.quantity < item.stock_quantity) updateQuantity(item.cart_id, item.quantity + 1);
-                          else alert('Maximum available stock reached!');
+                          else showToast('Maximum available stock reached for this item!', 'warning');
                         }}
                       >
                         <Plus size={16} />

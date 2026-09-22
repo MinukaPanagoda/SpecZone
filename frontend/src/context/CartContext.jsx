@@ -1,10 +1,12 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useAuth } from './AuthContext';
+import { useNotification } from './NotificationContext';
 
 const CartContext = createContext();
 
 export const CartProvider = ({ children }) => {
   const { user } = useAuth();
+  const { showToast } = useNotification();
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -30,7 +32,7 @@ export const CartProvider = ({ children }) => {
 
   const addToCart = async (product_id, quantity = 1) => {
     if (!user || user.role !== 'buyer') {
-      alert("Please login as a buyer to add items to cart.");
+      showToast("Please login as a buyer to add items to cart.", "warning");
       return false;
     }
     

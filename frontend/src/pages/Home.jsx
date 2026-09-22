@@ -4,6 +4,7 @@ import { Cpu, Monitor, HardDrive, Zap, Star, Heart, AlertTriangle } from 'lucide
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
+import { useNotification } from '../context/NotificationContext';
 import SellerWarningModal from '../components/SellerWarningModal';
 
 const Home = () => {
@@ -12,6 +13,7 @@ const Home = () => {
   const { user } = useAuth();
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
+  const { showToast } = useNotification();
 
   const [warningModalOpen, setWarningModalOpen] = useState(false);
   const [pendingWarningProduct, setPendingWarningProduct] = useState(null);
@@ -41,7 +43,7 @@ const Home = () => {
   const handleAddToCart = (e, product) => {
     e.stopPropagation();
     if (!user) {
-      alert("Please login first to add to cart!");
+      showToast("Please login first to add to cart!", "warning");
       navigate('/login');
       return;
     }
@@ -51,7 +53,7 @@ const Home = () => {
       return;
     }
     addToCart(product.id);
-    alert('Added to cart successfully!');
+    showToast(`✓ Added "${product.title}" to cart!`, "success");
   };
 
   const handleCardClick = (product) => {
@@ -192,7 +194,7 @@ const Home = () => {
           onConfirm={() => {
             if (pendingWarningProduct) {
               addToCart(pendingWarningProduct.id);
-              alert("Added to cart successfully!");
+              showToast(`✓ Added "${pendingWarningProduct.title}" to cart!`, "success");
               setPendingWarningProduct(null);
             }
           }}

@@ -3,11 +3,13 @@ import { Cpu, Monitor, Zap, HardDrive, Shield, Fan, Box, Trash2, BookmarkPlus, C
 import ProductSelectionModal from '../components/ProductSelectionModal';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const Builder = () => {
   const { addToCart } = useCart();
   const { user } = useAuth();
+  const { showToast } = useNotification();
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -26,12 +28,6 @@ const Builder = () => {
   const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [buildName, setBuildName] = useState('');
   const [saving, setSaving] = useState(false);
-  const [saveStatusModal, setSaveStatusModal] = useState({
-    isOpen: false,
-    type: 'success',
-    title: '',
-    message: ''
-  });
 
   // Support preloading build when loaded from Buyer Dashboard
   useEffect(() => {
@@ -143,32 +139,17 @@ const Builder = () => {
 
   const handleOpenSaveModal = () => {
     if (!user || user.role !== 'buyer') {
-      setSaveStatusModal({
-        isOpen: true,
-        type: 'error',
-        title: 'Authentication Required',
-        message: 'Please log in as a buyer to save your custom PC configurations.'
-      });
+      showToast("Please login as a buyer to save your build.", "warning");
       return;
     }
 
     if (selectedCount === 0) {
-      setSaveStatusModal({
-        isOpen: true,
-        type: 'error',
-        title: 'No Parts Selected',
-        message: 'Please select at least one component before saving your build.'
-      });
+      showToast("Please select at least one component before saving your build.", "warning");
       return;
     }
 
     if (!compStatus.isValid) {
-      setSaveStatusModal({
-        isOpen: true,
-        type: 'error',
-        title: 'Incompatible Configuration',
-        message: `Cannot save build with compatibility conflicts: ${compStatus.status}. Please select compatible parts first.`
-      });
+      showToast(`Cannot save build: ${compStatus.status}. Please select compatible parts first.`, "error");
       return;
     }
 
@@ -181,12 +162,7 @@ const Builder = () => {
     if (!buildName.trim()) return;
 
     if (!compStatus.isValid) {
-      setSaveStatusModal({
-        isOpen: true,
-        type: 'error',
-        title: 'Incompatible Configuration',
-        message: `Cannot save build with compatibility conflicts: ${compStatus.status}. Please fix the conflicting parts.`
-      });
+      showToast(`Cannot save build: ${compStatus.status}. Please fix conflicting parts.`, "error");
       return;
     }
 
@@ -208,27 +184,12 @@ const Builder = () => {
 
       if (res.ok) {
         setSaveModalOpen(false);
-        setSaveStatusModal({
-          isOpen: true,
-          type: 'success',
-          title: 'Build Saved Successfully!',
-          message: `"${buildName.trim()}" has been saved to your account. You can view, load, or order it anytime.`
-        });
+        showToast(`✓ Build "${buildName.trim()}" saved successfully!`, "success");
       } else {
-        setSaveStatusModal({
-          isOpen: true,
-          type: 'error',
-          title: 'Save Failed',
-          message: data.message || 'Unable to save PC build configuration.'
-        });
+        showToast(data.message || "Unable to save PC build configuration.", "error");
       }
     } catch {
-      setSaveStatusModal({
-        isOpen: true,
-        type: 'error',
-        title: 'Connection Error',
-        message: 'An error occurred while connecting to the server. Please try again.'
-      });
+      showToast("Connection error while saving build. Please try again.", "error");
     } finally {
       setSaving(false);
     }
@@ -462,92 +423,6 @@ const Builder = () => {
         </div>
       )}
 
-      {/* Feedback Popup Modal */}
-      {saveStatusModal.isOpen && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.78)',
-            backdropFilter: 'blur(8px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 2000,
-            padding: '1.2rem',
-            animation: 'fadeIn 0.2s ease-out'
-          }}
-          onClick={() => setSaveStatusModal(prev => ({ ...prev, isOpen: false }))}
-        >
-          <div
-            className="glass-panel"
-            style={{
-              width: '100%',
-              maxWidth: '420px',
-              padding: '2.2rem 1.8rem',
-              borderRadius: '16px',
-              border: `1px solid ${saveStatusModal.type === 'success' ? 'rgba(0, 230, 118, 0.35)' : 'rgba(255, 51, 102, 0.4)'}`,
-              boxShadow: `0 0 35px ${saveStatusModal.type === 'success' ? 'rgba(0, 230, 118, 0.2)' : 'rgba(255, 51, 102, 0.2)'}`,
-              background: 'linear-gradient(145deg, rgba(18, 22, 34, 0.98), rgba(10, 14, 22, 0.98))',
-              textAlign: 'center',
-              position: 'relative',
-              animation: 'popupScaleIn 0.25s ease-out'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              style={{
-                width: '64px',
-                height: '64px',
-                borderRadius: '50%',
-                background: saveStatusModal.type === 'success' ? 'rgba(0, 230, 118, 0.15)' : 'rgba(255, 51, 102, 0.15)',
-                border: `2px solid ${saveStatusModal.type === 'success' ? 'var(--success)' : 'var(--danger)'}`,
-                color: saveStatusModal.type === 'success' ? 'var(--success)' : 'var(--danger)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 1.2rem',
-                boxShadow: `0 0 25px ${saveStatusModal.type === 'success' ? 'rgba(0, 230, 118, 0.3)' : 'rgba(255, 51, 102, 0.3)'}`
-              }}
-            >
-              {saveStatusModal.type === 'success' ? (
-                <CheckCircle2 size={36} />
-              ) : (
-                <AlertTriangle size={36} />
-              )}
-            </div>
-
-            <h3 style={{ fontSize: '1.35rem', fontWeight: 'bold', margin: '0 0 0.5rem 0', color: '#ffffff' }}>
-              {saveStatusModal.title}
-            </h3>
-
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.92rem', lineHeight: '1.5', margin: '0 0 1.5rem 0' }}>
-              {saveStatusModal.message}
-            </p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-              {saveStatusModal.type === 'success' && (
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  style={{ width: '100%', padding: '0.75rem', fontSize: '0.95rem' }}
-                  onClick={() => navigate('/buyer/dashboard', { state: { tab: 'builds' } })}
-                >
-                  View My Saved Builds
-                </button>
-              )}
-              <button
-                type="button"
-                className="btn btn-outline"
-                style={{ width: '100%', padding: '0.75rem', fontSize: '0.95rem' }}
-                onClick={() => setSaveStatusModal(prev => ({ ...prev, isOpen: false }))}
-              >
-                {saveStatusModal.type === 'success' ? 'Keep Building' : 'Dismiss'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

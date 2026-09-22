@@ -20,9 +20,11 @@ import {
   Gamepad2
 } from 'lucide-react';
 import { getCategoryFields } from '../utils/categorySpecs';
+import { useNotification } from '../context/NotificationContext';
 
 const SellerProducts = () => {
   const { user } = useAuth();
+  const { showToast, confirmModal } = useNotification();
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,12 +46,6 @@ const SellerProducts = () => {
   const [editCategorySpecs, setEditCategorySpecs] = useState({});
   const [editExtraSpecs, setEditExtraSpecs] = useState([]);
   const [editLoading, setEditLoading] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
-
-  const showToast = (msg) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(''), 3000);
-  };
 
   const fetchProducts = async () => {
     try {
@@ -183,16 +179,16 @@ const SellerProducts = () => {
 
       const data = await res.json();
       if (res.ok) {
-        showToast('✓ Product updated successfully!');
+        showToast('✓ Product updated successfully!', 'success');
         setEditModalOpen(false);
         setEditingProduct(null);
         fetchProducts(); // Refresh list
       } else {
-        alert(data.message || 'Failed to update product.');
+        showToast(data.message || 'Failed to update product.', 'error');
       }
     } catch (err) {
       console.error(err);
-      alert('An error occurred while updating the product.');
+      showToast('An error occurred while updating the product.', 'error');
     } finally {
       setEditLoading(false);
     }
@@ -200,7 +196,13 @@ const SellerProducts = () => {
 
   // Delete Product
   const handleDelete = async (productId, productTitle) => {
-    if (!window.confirm(`Are you sure you want to remove "${productTitle}" from your store?`)) {
+    const confirmed = await confirmModal({
+      title: "Remove Product",
+      message: `Are you sure you want to remove "${productTitle}" from your store?`,
+      confirmText: "Remove Product",
+      type: "danger"
+    });
+    if (!confirmed) {
       return;
     }
 
@@ -215,14 +217,14 @@ const SellerProducts = () => {
       });
 
       if (res.ok) {
-        showToast(`✓ Removed "${productTitle}" successfully.`);
+        showToast(`✓ Removed "${productTitle}" successfully.`, 'success');
         fetchProducts();
       } else {
-        alert('Failed to delete product.');
+        showToast('Failed to delete product.', 'error');
       }
     } catch (err) {
       console.error("Error deleting product:", err);
-      alert('Error deleting product.');
+      showToast('Error deleting product.', 'error');
     }
   };
 
@@ -638,36 +640,6 @@ const SellerProducts = () => {
             </form>
 
           </div>
-        </div>
-      )}
-
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div
-          style={{
-            position: 'fixed',
-            top: '24px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            background: 'rgba(10, 25, 20, 0.95)',
-            border: '1px solid var(--success)',
-            color: 'var(--success)',
-            padding: '0.9rem 1.6rem',
-            borderRadius: '10px',
-            backdropFilter: 'blur(10px)',
-            boxShadow: '0 8px 30px rgba(0, 0, 0, 0.6), 0 0 15px rgba(0, 230, 118, 0.2)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.6rem',
-            zIndex: 1300,
-            fontWeight: 'bold',
-            fontSize: '0.95rem',
-            animation: 'fadeIn 0.2s ease-out',
-            maxWidth: '90vw',
-            textAlign: 'center'
-          }}
-        >
-          <Check size={18} /> {toastMessage}
         </div>
       )}
 

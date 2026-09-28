@@ -8,6 +8,7 @@ const Register = () => {
     lastName: '',
     email: '',
     password: '',
+    confirmPassword: '',
     role: 'buyer',
     phone: '',
     address: '',
@@ -73,7 +74,13 @@ const Register = () => {
       return;
     }
 
-    setIsLoading(true);
+        // Validate Re-entered Password
+    if (formData.password !== formData.confirmPassword) {
+      setStatus({ type: 'error', message: 'Passwords do not match. Please re-enter your password correctly.' });
+      return;
+    }
+
+setIsLoading(true);
 
     try {
       const response = await fetch('http://localhost/SpecZone/backend/api/auth.php?action=register', {
@@ -99,7 +106,7 @@ const Register = () => {
 
       if (response.ok) {
         setStatus({ type: 'success', message: 'Account created successfully! Redirecting to login...' });
-        setFormData({ firstName: '', lastName: '', email: '', password: '', role: 'buyer', phone: '', address: '', city: '', postalCode: '', shopName: '' });
+        setFormData({ firstName: '', lastName: '', email: '', password: '', confirmPassword: '', role: 'buyer', phone: '', address: '', city: '', postalCode: '', shopName: '' });
         setTimeout(() => {
           navigate('/login');
         }, 1500);
@@ -212,6 +219,40 @@ const Register = () => {
                 {hasSpecial ? <Check size={12} /> : <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: 'currentColor', opacity: 0.6 }} />} Special (!@#$)
               </span>
             </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">
+              Re-enter Password <span style={{ color: 'var(--accent-primary)' }}>*</span>
+            </label>
+            <input 
+              type="password" 
+              name="confirmPassword" 
+              className="form-control" 
+              value={formData.confirmPassword} 
+              onChange={handleChange} 
+              placeholder="Re-enter your password"
+              required 
+            />
+            {formData.confirmPassword && (
+              <div style={{ 
+                marginTop: '0.45rem', 
+                fontSize: '0.8rem', 
+                fontWeight: '600',
+                color: formData.password === formData.confirmPassword ? 'var(--success)' : 'var(--danger)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem'
+              }}>
+                {formData.password === formData.confirmPassword ? (
+                  <>
+                    <Check size={14} /> Passwords match
+                  </>
+                ) : (
+                  '✕ Passwords do not match'
+                )}
+              </div>
+            )}
           </div>
 
           <div className="form-group">
